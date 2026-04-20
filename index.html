@@ -614,12 +614,15 @@ window._appReady = async (user) => {
   showLoading('กำลังโหลดข้อมูล...');
   // Load settings from Firebase
   const cfg = await window._fb.getData('settings');
-  if (cfg?.claudeKey) window._claudeKey = cfg.claudeKey;
-  if (cfg?.stravaId) { document.getElementById('set-strava-id').value = cfg.stravaId; }
-  if (cfg?.stravaSecret) { document.getElementById('set-strava-secret').value = cfg.stravaSecret; }
-  if (cfg?.stravaRedirect) { document.getElementById('set-strava-redirect').value = cfg.stravaRedirect; }
-  if (cfg?.claudeKey) document.getElementById('set-claude-key').value = cfg.claudeKey;
-
+  if (cfg?.claudeKey) { window._claudeKey = cfg.claudeKey; document.getElementById('set-claude-key').value = cfg.claudeKey; }
+  if (cfg?.stravaId) document.getElementById('set-strava-id').value = cfg.stravaId;
+  if (cfg?.stravaSecret) document.getElementById('set-strava-secret').value = cfg.stravaSecret;
+  if (cfg?.stravaRedirect) document.getElementById('set-strava-redirect').value = cfg.stravaRedirect;
+  // โหลด garuda เข้า memory cache — ทำให้ updateDocPreview() ไม่ต้อง async
+  if (cfg?.garudaImg) {
+    _garudaCache = cfg.garudaImg;
+    document.getElementById('garuda-preview-thumb').innerHTML = `<img src="${cfg.garudaImg}" style="width:100%;height:100%;object-fit:contain">`;
+  }
   // Start realtime listeners
   startRealtimeListeners();
   hideLoading();
@@ -855,15 +858,33 @@ const STRAVA_TOKEN='https://www.strava.com/oauth/token';
 const STRAVA_API='https://www.strava.com/api/v3';
 
 function stravaConnect() {
-  const clientId=document.getElementById('set-strava-id').value||'';
-  const redirect=document.getElementById('set-strava-redirect').value||window.location.href;
-  if(!clientId){showToast('กรุณาตั้งค่า Strava Client ID ก่อน','error');showPage('settings');return;}
-  window.open(`${STRAVA_AUTH}?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&scope=read,activity:read_all`,'_blank','width=600,height=700');
-  setTimeout(()=>{
-    const d=document.getElementById('strava-status-box');
-    d.innerHTML=`<div style="width:100%"><p class="text-sm text2 mb-8">วาง Authorization Code จาก URL:</p><div class="flex gap-8"><input type="text" id="strava-code-input" placeholder="code=xxx" style="flex:1;font-size:13px"><button class="btn btn-strava btn-sm" onclick="stravaExchangeToken()">แลก Token</button></div></div>`;
-  },500);
+  const d=document.getElementById('strava-status-box');
+  d.innerHTML=`
+    <div style="width:100%">
+      <p class="text-sm bold mb-8">📋 วาง Access Token โดยตรง (แนะนำ)</p>
+      <p class="text-xs text2 mb-8">หา Token ได้ที่ strava.com/settings/api → "โทเค็นการเข้าถึงของคุณ"</p>
+      <div class="flex gap-8">
+        <input type="text" id="strava-token-direct" placeholder="วาง Access Token ที่นี่..." style="flex:1;font-size:12px">
+        <button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ เชื่อมต่อ</button>
+      </div>
+    </div>`;
 }
+
+async function stravaConnectDirect() {
+  const token=(document.getElementById('strava-token-direct')?.value||'').trim();
+  if(!token){showToast('กรุณาวาง Access Token','error');return;}
+  showLoading('กำลังตรวจสอบ Token...');
+  try {
+    const res=await fetch(`${STRAVA_API}/athlete`,{headers:{'Authorization':`Bearer ${token}`}});
+    if(!res.ok) throw new Error(`Token ไม่ถูกต้อง (HTTP ${res.status})`);
+    const athlete=await res.json();
+    await window._fb.setData('strava_token',{access_token:token,refresh_token:'',expires_at:9999999999,athlete});
+    showToast(`✅ เชื่อมต่อสำเร็จ! ยินดีต้อนรับ ${athlete.firstname}`);
+    renderStravaPage();
+  } catch(e){showToast('Error: '+e.message,'error');}
+  finally{hideLoading();}
+}
+
 
 async function stravaExchangeToken() {
   const code=(document.getElementById('strava-code-input')?.value||'').trim().replace('code=','');
@@ -1055,11 +1076,14 @@ async function processImageWithAI(event) {
 
 // ===== DOC PREVIEW =====
 let currentDocType='out';
+let _garudaCache=null; // in-memory cache — no async in updateDocPreview
+
 function esc(s){return(s||'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function v(id){return esc(document.getElementById(id)?.value||'');}
 
 function loadGaruda(e) {
   const r=new FileReader(); r.onload=async ev=>{
+    _garudaCache=ev.target.result;
     await window._fb.setData('settings/garudaImg',ev.target.result);
     document.getElementById('garuda-preview-thumb').innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:contain">`;
     updateDocPreview();
@@ -1067,6 +1091,7 @@ function loadGaruda(e) {
 }
 
 async function clearGaruda() {
+  _garudaCache=null;
   await window._fb.removeData('settings/garudaImg');
   document.getElementById('garuda-preview-thumb').innerHTML='ครุฑ';
   updateDocPreview();
@@ -1080,8 +1105,8 @@ function switchDocTab(type,el) {
   updateDocPreview();
 }
 
-async function updateDocPreview() {
-  const cfg=await window._fb.getData('settings/garudaImg').catch(()=>null);
+function updateDocPreview() {
+  const cfg=_garudaCache;
   const garudaHtml=cfg
     ?`<img src="${cfg}" style="height:3cm;width:auto;display:inline-block;">`
     :`<div style="width:2cm;height:2cm;border:1px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9pt;font-weight:bold;">ครุฑ</div>`;
