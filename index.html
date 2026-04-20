@@ -18,10 +18,6 @@ import { getFirestore, collection, addDoc, getDocs, query, orderBy } from 'fireb
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
 
-// --- Gemini AI Config ---
-const apiKey = ""; // Environment injects this. Do not validate.
-const AI_MODEL = "gemini-2.5-flash-preview-09-2025";
-
 const App = () => {
   // --- States ---
   const [activeTab, setActiveTab] = useState('today');
@@ -31,7 +27,8 @@ const App = () => {
   const [stravaConnected, setStravaConnected] = useState(false);
   const [user, setUser] = useState(null);
   
-  // AI States
+  // AI States (Claude)
+  const [claudeKey, setClaudeKey] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState("");
   const [newsQuery, setNewsQuery] = useState("");
@@ -57,28 +54,47 @@ const App = () => {
     setWorkouts(JSON.parse(localStorage.getItem('my_workouts') || '[]'));
     setDocuments(JSON.parse(localStorage.getItem('my_docs') || '[]'));
     setGarudaImg(localStorage.getItem('garuda_img'));
+    setClaudeKey(localStorage.getItem('claude_api_key') || '');
   }, []);
 
-  // --- AI Logic ---
-  const callGemini = async (prompt, systemInstruction = "") => {
+  // --- Claude AI Logic ---
+  const callClaude = async (prompt, systemInstruction = "") => {
     setAiLoading(true);
     setAiResponse("");
+
+    const keyToUse = claudeKey || localStorage.getItem('claude_api_key');
+    if (!keyToUse) {
+      setAiResponse("กรุณาตั้งค่า Claude API Key ในเมนู 'ตั้งค่าระบบ' ก่อนใช้งาน");
+      setAiLoading(false);
+      return;
+    }
+
     try {
-      const payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        systemInstruction: { parts: [{ text: systemInstruction }] },
-        tools: [{ "google_search": {} }] // Enable search for news
-      };
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${apiKey}`, {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': keyToUse,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-allow-browser': 'true'
+        },
+        body: JSON.stringify({
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 2048,
+          system: systemInstruction,
+          messages: [{ role: "user", content: prompt }]
+        })
       });
+
       const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "ไม่สามารถวิเคราะห์ข้อมูลได้";
+      if (!response.ok) {
+        throw new Error(data.error?.message || "เกิดข้อผิดพลาดจาก API");
+      }
+      
+      const text = data.content?.[0]?.text || "ไม่มีการตอบกลับจาก AI";
       setAiResponse(text);
     } catch (error) {
-      setAiResponse("เกิดข้อผิดพลาดในการเชื่อมต่อ AI: " + error.message);
+      setAiResponse("เกิดข้อผิดพลาดในการเชื่อมต่อ Claude AI: " + error.message);
     } finally {
       setAiLoading(false);
     }
@@ -200,6 +216,9 @@ const App = () => {
           
           <p className="px-4 py-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">Smart System</p>
           <SidebarItem id="news" icon={Newspaper} label="AI ถาม-ตอบ ข่าวสาร" />
+          
+          <p className="px-4 py-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">System</p>
+          <SidebarItem id="settings" icon={Settings} label="ตั้งค่าระบบ" />
         </nav>
         
         <div className="p-4 m-4 bg-white border border-slate-200 rounded-2xl shadow-sm flex items-center gap-3">
@@ -243,7 +262,7 @@ const App = () => {
 
               <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 rounded-3xl text-white shadow-lg shadow-blue-200">
                 <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-4"><Bot size={20} /></div>
-                <p className="text-xs font-bold text-blue-100 uppercase mb-1">AI Assistant</p>
+                <p className="text-xs font-bold text-blue-100 uppercase mb-1">Claude 3.5 Sonnet</p>
                 <p className="text-sm font-medium leading-relaxed">พร้อมใช้งาน! กดให้ AI ช่วยวิเคราะห์ตารางซ้อม หรือสรุปหนังสือราชการได้เลย</p>
               </div>
             </div>
@@ -419,20 +438,20 @@ const App = () => {
         {activeTab === 'coach' && (
           <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
             <h2 className="text-3xl font-bold mb-2">AI Coach 🤖</h2>
-            <p className="text-slate-500 mb-8">ประมวลผลตารางซ้อมจากข้อมูลสุขภาพของคุณ</p>
+            <p className="text-slate-500 mb-8">ประมวลผลตารางซ้อมจากข้อมูลสุขภาพของคุณด้วย Claude 3.5 Sonnet</p>
             
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm mb-6">
               <p className="text-sm text-slate-600 mb-4">ระบบจะส่งข้อมูลการวิ่งล่าสุดของคุณให้ AI เพื่อออกแบบตารางซ้อมหรือคำแนะนำเพื่อเพิ่มประสิทธิภาพ</p>
               <button 
-                onClick={() => callGemini(`ฉันวิ่งล่าสุดระยะทาง ${runForm.distance||'5'} กม. เวลา ${runForm.time||'30'} นาที Pace เฉลี่ย ${calculateAvgPace()}. ช่วยวิเคราะห์ประสิทธิภาพ และจัดตารางซ้อมวิ่ง 3 วันในสัปดาห์หน้าให้หน่อย เน้นพัฒนาความอึด`, "คุณคือโค้ชวิ่งอาชีพ ตอบสั้นๆ ตรงประเด็น เป็นข้อๆ")}
+                onClick={() => callClaude(`ฉันวิ่งล่าสุดระยะทาง ${runForm.distance||'5'} กม. เวลา ${runForm.time||'30'} นาที Pace เฉลี่ย ${calculateAvgPace()}. ช่วยวิเคราะห์ประสิทธิภาพ และจัดตารางซ้อมวิ่ง 3 วันในสัปดาห์หน้าให้หน่อย เน้นพัฒนาความอึด`, "คุณคือโค้ชวิ่งอาชีพ ตอบสั้นๆ ตรงประเด็น เป็นข้อๆ")}
                 disabled={aiLoading}
-                className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50">
-                {aiLoading ? "กำลังวิเคราะห์ข้อมูล..." : "✨ สร้างตารางซ้อมด้วย AI"}
+                className="px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md">
+                {aiLoading ? "กำลังวิเคราะห์ข้อมูล..." : "✨ สร้างตารางซ้อมด้วย Claude AI"}
               </button>
             </div>
 
             {aiResponse && (
-              <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 whitespace-pre-wrap text-indigo-900 leading-relaxed">
+              <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 whitespace-pre-wrap text-indigo-900 leading-relaxed shadow-sm">
                 {aiResponse}
               </div>
             )}
@@ -447,7 +466,7 @@ const App = () => {
                 <h2 className="text-3xl font-bold">ระบบหนังสือราชการ</h2>
                 <p className="text-slate-500 mt-1">จัดหน้าเป๊ะตามระเบียบสารบรรณ (TH Sarabun New)</p>
               </div>
-              <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-md">
+              <button onClick={() => window.print()} className="flex items-center gap-2 px-5 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold shadow-md hover:bg-slate-900 transition-all">
                 <Printer size={16} /> สั่งพิมพ์
               </button>
             </div>
@@ -461,7 +480,7 @@ const App = () => {
                     <h3 className="font-bold flex items-center gap-2 text-blue-800 mb-2"><Bot size={18}/> AI ช่วยสรุปหนังสือ (สำหรับเสนอ ผอ.)</h3>
                     <textarea placeholder="วางเนื้อหาหนังสือเข้า (หรือข้อความจาก PDF) เพื่อให้ AI สรุปสาระสำคัญสั้นๆ..." 
                       className="w-full bg-white p-3 rounded-xl border border-blue-200 text-sm outline-none resize-none h-24 mb-3"></textarea>
-                    <button className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700">สรุปเนื้อหา</button>
+                    <button className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-all shadow-sm">สรุปเนื้อหา</button>
                   </div>
 
                   <div className="flex gap-2 mb-6 p-1 bg-slate-100 rounded-xl">
@@ -474,30 +493,30 @@ const App = () => {
                   </div>
 
                   <div className="space-y-4">
-                     <div><label className="text-xs font-bold text-slate-500">ส่วนราชการ / ที่อยู่ (มุมขวาบน)</label><textarea value={docForm.dept} onChange={e=>setDocForm({...docForm, dept: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1" rows="2"></textarea></div>
+                     <div><label className="text-xs font-bold text-slate-500">ส่วนราชการ / ที่อยู่ (มุมขวาบน)</label><textarea value={docForm.dept} onChange={e=>setDocForm({...docForm, dept: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:border-blue-500 outline-none" rows="2"></textarea></div>
                      <div className="grid grid-cols-2 gap-4">
-                        <div><label className="text-xs font-bold text-slate-500">ที่</label><input type="text" value={docForm.ref} onChange={e=>setDocForm({...docForm, ref: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1" /></div>
-                        <div><label className="text-xs font-bold text-slate-500">วันที่ (เริ่มจากกึ่งกลางหน้า)</label><input type="text" value={docForm.date} onChange={e=>setDocForm({...docForm, date: e.target.value})} placeholder="๑๒ เมษายน ๒๕๖๙" className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1" /></div>
+                        <div><label className="text-xs font-bold text-slate-500">ที่</label><input type="text" value={docForm.ref} onChange={e=>setDocForm({...docForm, ref: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:border-blue-500 outline-none" /></div>
+                        <div><label className="text-xs font-bold text-slate-500">วันที่ (เริ่มจากกึ่งกลางหน้า)</label><input type="text" value={docForm.date} onChange={e=>setDocForm({...docForm, date: e.target.value})} placeholder="๑๒ เมษายน ๒๕๖๙" className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:border-blue-500 outline-none" /></div>
                      </div>
-                     <div><label className="text-xs font-bold text-slate-500">เรื่อง</label><input type="text" value={docForm.subject} onChange={e=>setDocForm({...docForm, subject: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1" /></div>
-                     <div><label className="text-xs font-bold text-slate-500">เรียน</label><input type="text" value={docForm.to} onChange={e=>setDocForm({...docForm, to: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1" /></div>
+                     <div><label className="text-xs font-bold text-slate-500">เรื่อง</label><input type="text" value={docForm.subject} onChange={e=>setDocForm({...docForm, subject: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:border-blue-500 outline-none" /></div>
+                     <div><label className="text-xs font-bold text-slate-500">เรียน</label><input type="text" value={docForm.to} onChange={e=>setDocForm({...docForm, to: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:border-blue-500 outline-none" /></div>
                      {docForm.type === 'out' && (
-                       <div><label className="text-xs font-bold text-slate-500">สิ่งที่ส่งมาด้วย (พิมพ์หลายบรรทัดได้)</label><textarea value={docForm.attach} onChange={e=>setDocForm({...docForm, attach: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1" rows="3"></textarea></div>
+                       <div><label className="text-xs font-bold text-slate-500">สิ่งที่ส่งมาด้วย (พิมพ์หลายบรรทัดได้)</label><textarea value={docForm.attach} onChange={e=>setDocForm({...docForm, attach: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:border-blue-500 outline-none" rows="3"></textarea></div>
                      )}
-                     <div><label className="text-xs font-bold text-slate-500">เนื้อหา</label><textarea value={docForm.body} onChange={e=>setDocForm({...docForm, body: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 h-32"></textarea></div>
-                     <div><label className="text-xs font-bold text-slate-500">สรุปความ (จึงเรียนมาเพื่อ...)</label><textarea value={docForm.conclusion} onChange={e=>setDocForm({...docForm, conclusion: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1" rows="2"></textarea></div>
+                     <div><label className="text-xs font-bold text-slate-500">เนื้อหา</label><textarea value={docForm.body} onChange={e=>setDocForm({...docForm, body: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 h-32 focus:border-blue-500 outline-none"></textarea></div>
+                     <div><label className="text-xs font-bold text-slate-500">สรุปความ (จึงเรียนมาเพื่อ...)</label><textarea value={docForm.conclusion} onChange={e=>setDocForm({...docForm, conclusion: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:border-blue-500 outline-none" rows="2"></textarea></div>
                      <div className="grid grid-cols-2 gap-4">
-                        <div><label className="text-xs font-bold text-slate-500">ผู้ลงนาม</label><input type="text" value={docForm.signer} onChange={e=>setDocForm({...docForm, signer: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1" /></div>
-                        <div><label className="text-xs font-bold text-slate-500">ตำแหน่ง</label><input type="text" value={docForm.position} onChange={e=>setDocForm({...docForm, position: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1" /></div>
+                        <div><label className="text-xs font-bold text-slate-500">ผู้ลงนาม</label><input type="text" value={docForm.signer} onChange={e=>setDocForm({...docForm, signer: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:border-blue-500 outline-none" /></div>
+                        <div><label className="text-xs font-bold text-slate-500">ตำแหน่ง</label><input type="text" value={docForm.position} onChange={e=>setDocForm({...docForm, position: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mt-1 focus:border-blue-500 outline-none" /></div>
                      </div>
                      
                      {/* ส่วนล่างของหนังสือภายนอก */}
                      {docForm.type === 'out' && (
                        <div className="p-4 bg-slate-50 rounded-xl mt-4 border border-slate-100">
                          <h4 className="text-xs font-bold text-slate-800 mb-2">ข้อมูลส่วนราชการ (มุมล่างซ้าย) และ คำขวัญ</h4>
-                         <input type="text" placeholder="กลุ่มงานบริหารทั่วไป" value={docForm.contactDept} onChange={e=>setDocForm({...docForm, contactDept: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mb-2 text-sm" />
-                         <input type="text" placeholder="โทร. ๐ ๔๒xx xxxx" value={docForm.contactPhone} onChange={e=>setDocForm({...docForm, contactPhone: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mb-2 text-sm" />
-                         <textarea placeholder="คำขวัญองค์กร/จังหวัด (พิมพ์ได้ 3 บรรทัด)" rows="3" value={docForm.slogan} onChange={e=>setDocForm({...docForm, slogan: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+                         <input type="text" placeholder="กลุ่มงานบริหารทั่วไป" value={docForm.contactDept} onChange={e=>setDocForm({...docForm, contactDept: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mb-2 text-sm focus:border-blue-500 outline-none" />
+                         <input type="text" placeholder="โทร. ๐ ๔๒xx xxxx" value={docForm.contactPhone} onChange={e=>setDocForm({...docForm, contactPhone: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 mb-2 text-sm focus:border-blue-500 outline-none" />
+                         <textarea placeholder="คำขวัญองค์กร/จังหวัด (พิมพ์ได้ 3 บรรทัด)" rows="3" value={docForm.slogan} onChange={e=>setDocForm({...docForm, slogan: e.target.value})} className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-none focus:border-blue-500 outline-none"></textarea>
                        </div>
                      )}
                   </div>
@@ -505,7 +524,7 @@ const App = () => {
               </div>
 
               {/* --- A4 Paper Preview Area --- */}
-              <div className="xl:col-span-7 flex justify-center bg-gray-200 p-8 rounded-3xl overflow-auto h-[1000px]">
+              <div className="xl:col-span-7 flex justify-center bg-gray-200 p-8 rounded-3xl overflow-auto h-[1000px] shadow-inner">
                 {/* A4 Scale: 210mm x 297mm */}
                 <div className="bg-white shadow-2xl relative" style={{ width: '210mm', minHeight: '297mm', padding: '2.5cm 2cm 2cm 3cm' }}>
                    {/* TH Sarabun New font context */}
@@ -575,28 +594,57 @@ const App = () => {
           </div>
         )}
 
-        {/* AI NEWS TAB (FIXED CORS VIA GEMINI) */}
+        {/* AI NEWS TAB */}
         {activeTab === 'news' && (
           <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
              <h2 className="text-3xl font-bold mb-2">AI ถาม-ตอบ ข่าวสาร 📰</h2>
-             <p className="text-slate-500 mb-8">เนื่องจากการบล็อก CORS ของเว็บข่าว เราจึงใช้ Google Search API + Gemini เพื่อดึงและสรุปเทรนด์โลกล่าสุดให้คุณ</p>
+             <p className="text-slate-500 mb-8">วิเคราะห์และสรุปเทรนด์โลกล่าสุดด้วย Claude 3.5 Sonnet</p>
 
              <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm flex gap-2 mb-8">
                <input type="text" value={newsQuery} onChange={e=>setNewsQuery(e.target.value)} 
-                 onKeyDown={e => e.key === 'Enter' && callGemini(`ค้นหาและสรุปข่าวล่าสุดเกี่ยวกับ: ${newsQuery || 'เทคโนโลยีเปิดตัวใหม่ สัปดาห์นี้'}`, "ค้นหาข้อมูลจริงจากเน็ต สรุปเป็นภาษาไทย 3 bullet points เข้าใจง่าย")}
+                 onKeyDown={e => e.key === 'Enter' && callClaude(`ค้นหาและสรุปข่าวล่าสุดเกี่ยวกับ: ${newsQuery || 'เทคโนโลยีเปิดตัวใหม่ สัปดาห์นี้'}`, "สรุปเป็นภาษาไทย 3 bullet points เข้าใจง่าย")}
                  className="flex-1 bg-transparent px-4 outline-none font-medium" placeholder="พิมพ์สิ่งที่อยากรู้... เช่น รถ EV เปิดตัวใหม่, สินค้า IT" />
-               <button onClick={() => callGemini(`ค้นหาและสรุปข่าวล่าสุดเกี่ยวกับ: ${newsQuery || 'เทคโนโลยีเปิดตัวใหม่ สัปดาห์นี้'}`, "ค้นหาข้อมูลจริงจากเน็ต สรุปเป็นภาษาไทย 3 bullet points เข้าใจง่าย")} 
-                 disabled={aiLoading} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700">
+               <button onClick={() => callClaude(`ค้นหาและสรุปข่าวล่าสุดเกี่ยวกับ: ${newsQuery || 'เทคโนโลยีเปิดตัวใหม่ สัปดาห์นี้'}`, "สรุปเป็นภาษาไทย 3 bullet points เข้าใจง่าย")} 
+                 disabled={aiLoading} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md">
                  {aiLoading ? "กำลังค้นหา..." : "ถาม AI"}
                </button>
              </div>
 
              {aiResponse && (
                <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-                 <div className="flex items-center gap-2 text-blue-600 font-bold mb-4"><Bot size={20}/> บทสรุปจาก AI:</div>
+                 <div className="flex items-center gap-2 text-blue-600 font-bold mb-4"><Bot size={20}/> บทสรุปจาก Claude:</div>
                  <div className="text-slate-700 leading-loose whitespace-pre-wrap">{aiResponse}</div>
                </div>
              )}
+          </div>
+        )}
+
+        {/* SETTINGS TAB */}
+        {activeTab === 'settings' && (
+          <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-3xl font-bold mb-2">ตั้งค่าระบบ ⚙️</h2>
+            <p className="text-slate-500 mb-8">จัดการการเชื่อมต่อ API ของระบบ</p>
+            
+            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Settings size={18}/> Claude AI (Anthropic)</h3>
+              <label className="block text-xs font-bold text-slate-500 mb-2">API Key</label>
+              <input 
+                type="password" 
+                value={claudeKey} 
+                onChange={(e) => setClaudeKey(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-mono" 
+                placeholder="sk-ant-api03-..." 
+              />
+              <button 
+                onClick={() => {
+                  localStorage.setItem('claude_api_key', claudeKey);
+                  alert('บันทึก Claude API Key เรียบร้อย ✅');
+                }}
+                className="mt-4 px-6 py-3 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-all shadow-md">
+                💾 บันทึก API Key
+              </button>
+              <p className="text-xs text-slate-400 mt-4">* Key จะถูกบันทึกไว้ใน Browser (Local Storage) ของคุณเท่านั้น ไม่มีการส่งไปเซิร์ฟเวอร์อื่นเพื่อความปลอดภัย</p>
+            </div>
           </div>
         )}
 
