@@ -513,8 +513,8 @@ onAuthStateChanged(auth, user => {
             <div class="form-group"><label>รอบขาเฉลี่ย (spm)</label><input type="number" id="r-cad" placeholder="170"></div>
           </div>
           <div class="grid grid-2" style="gap:10px">
-           <div class="form-group"><label>ความยาวก้าว (m.)</label><input type="number" id="r-cad" placeholder="1.2m"></div>
-            <div class="form-group"><label>เพซเฉลี่ย (min/km.)</label><input type="number" id="r-cad" placeholder="5:55"></div>
+           <div class="form-group"><label>ความยาวก้าว (m.)</label><input type="number" id="r-stride" placeholder="1.2m"></div>
+            <div class="form-group"><label>เพซเฉลี่ย (min/km.)</label><input type="number" id="r-avgpace" placeholder="5:55"></div>
           </div> 
 
           <div class="splits-wrap">
@@ -1210,7 +1210,7 @@ function renderRecentWorkouts() {
     <div class="workout-item">
       <div class="workout-icon">${em[w.type] || '🏅'}</div>
       <div style="flex:1">
-        <div class="workout-main">${w.dist} กม. · ${w.time} น.${w.hr ? ' · HR ' + w.hr : ''}${w.cad ? ' · ' + w.cad + ' spm' : ''}</div>
+        <div class="workout-main">${w.dist} กม. · ${w.time} น.${w.hr ? ' · HR ' + w.hr : ''}${w.cad ? ' · ' + w.cad + ' spm' : ''}${w.stride ? ' · ' + w.stride + ' m.' : ''}</div>
         <div class="workout-sub">${w.date}${w.avgPace ? ' · ' + formatPace(w.avgPace) + '/กม.' : ''}${w.note ? ' — ' + w.note : ''}</div>
       </div>
       <button onclick="deleteWorkout('${w._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;border-radius:4px" title="ลบ">✕</button>
