@@ -346,7 +346,7 @@ let _workouts = [];
 let _docs = [];
 const STRAVA_API = 'https://www.strava.com/api/v3';
 
-// ===== INITIALIZATION & ERROR HANDLING =====
+// ===== INITIALIZATION =====
 window._appReady = async (user) => {
   showLoading('กำลังโหลดข้อมูล...');
   try {
@@ -376,7 +376,7 @@ function showLoading(msg='กำลังโหลด...') { document.getElement
 function hideLoading() { document.getElementById('loading-overlay').classList.remove('show'); }
 function showToast(msg, type='success') { const t=document.getElementById('toast'); t.textContent=msg; t.className=`toast toast-${type}`; t.style.display='block'; setTimeout(()=>t.style.display='none',3200); }
 
-// ===== CLAUDE AI PROXY (PORBBOYZA WORKER) =====
+// ===== CLAUDE AI PROXY =====
 async function askClaude(userPrompt, systemMsg='', btnId='') {
   const apiKey = window._claudeKey;
   if (!apiKey) { showToast('กรุณาตั้งค่า API Key','error'); return null; }
@@ -387,9 +387,21 @@ async function askClaude(userPrompt, systemMsg='', btnId='') {
     const res = await fetch('https://claude-proxy2.porbboyza.workers.dev/', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
-      body: JSON.stringify({ model:'claude-3-5-sonnet-20241022', max_tokens: 2048, system: systemMsg, messages:[{role:'user', content: userPrompt}] })
+      body: JSON.stringify({ model:'claude-3-5-sonnet-20240620', max_tokens: 2048, system: systemMsg, messages:[{role:'user', content: userPrompt}] })
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    // ดัก Error แบบเจาะลึก เพื่อแสดงข้อความที่แท้จริงจาก Anthropic
+    if (!res.ok) {
+        let errMsg = `HTTP ${res.status}`;
+        try {
+            const errData = await res.json();
+            if (errData.error && errData.error.message) {
+                errMsg = errData.error.message; // ดึงข้อความเช่น "Credit balance too low"
+            }
+        } catch(e) {}
+        throw new Error(errMsg);
+    }
+    
     const data = await res.json();
     return data?.content?.[0]?.text || null;
   } catch(e) { showToast('Error: '+e.message,'error'); return null; }
@@ -474,7 +486,7 @@ async function handleDocUpload(event) {
   } catch(e) { showToast('อ่าน PDF ล้มเหลว','error'); } finally { hideLoading(); event.target.value = ''; }
 }
 
-// ===== DOC PREVIEW (CORRECT 7.5cm LAYOUT / NO HR) =====
+// ===== DOC PREVIEW (NO HR & 7.5cm INDENTATION) =====
 let currentDocType='out';
 function esc(s){return(s||'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function v(id){return esc(document.getElementById(id)?.value||'');}
