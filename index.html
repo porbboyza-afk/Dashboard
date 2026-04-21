@@ -387,7 +387,7 @@ async function askClaude(userPrompt, systemMsg='', btnId='') {
     const res = await fetch('https://claude-proxy2.porbboyza.workers.dev/', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
-      body: JSON.stringify({ model:'claude-3-5-sonnet-20240620', max_tokens: 2048, system: systemMsg, messages:[{role:'user', content: userPrompt}] })
+      body: JSON.stringify({ model:'claude-3-5-sonnet-latest', max_tokens: 2048, system: systemMsg, messages:[{role:'user', content: userPrompt}] })
     });
     
     // ดัก Error แบบเจาะลึก เพื่อแสดงข้อความที่แท้จริงจาก Anthropic
@@ -396,7 +396,7 @@ async function askClaude(userPrompt, systemMsg='', btnId='') {
         try {
             const errData = await res.json();
             if (errData.error && errData.error.message) {
-                errMsg = errData.error.message; // ดึงข้อความเช่น "Credit balance too low"
+                errMsg = errData.error.message; // ดึงข้อความเช่น "Credit balance too low" หรือ "Model not found"
             }
         } catch(e) {}
         throw new Error(errMsg);
@@ -484,6 +484,39 @@ async function handleDocUpload(event) {
       showToast('ดึงข้อความจาก PDF สำเร็จ');
     }
   } catch(e) { showToast('อ่าน PDF ล้มเหลว','error'); } finally { hideLoading(); event.target.value = ''; }
+}
+
+// ===== IMAGE EXTRACTION (WITH CORRECT MODEL ALIAS) =====
+async function processImageWithAI(event) {
+  const files=Array.from(event.target.files);
+  if(!files.length) return;
+  const apiKey=window._claudeKey;
+  if(!apiKey){showToast('กรุณาตั้งค่า API Key ก่อน','error');showPage('settings');return;}
+  showLoading('AI กำลังสกัดข้อมูลจากรูป...');
+  try {
+    const toB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});
+    const images=await Promise.all(files.slice(0,2).map(async f=>({type:'image',source:{type:'base64',media_type:f.type,data:await toB64(f)}})));
+    const response=await fetch('https://claude-proxy2.porbboyza.workers.dev/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-3-5-sonnet-latest',max_tokens:256,system:'Extract fitness data. Return ONLY JSON: {distance:number,time:number,hr:number|null,type:"run"|"bike"|"swim"|"walk"}',messages:[{role:'user',content:[...images,{type:'text',text:'Extract fitness data.'}]}]})
+    });
+    
+    if (!response.ok) {
+        let errMsg = `HTTP ${response.status}`;
+        try { const errData = await response.json(); if (errData.error && errData.error.message) errMsg = errData.error.message; } catch(e) {}
+        throw new Error(errMsg);
+    }
+    
+    const data=await response.json();
+    const parsed=JSON.parse(data.content[0].text.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim());
+    if(parsed.distance) document.getElementById('r-distance').value=parsed.distance;
+    if(parsed.time) document.getElementById('r-time').value=parsed.time;
+    if(parsed.hr) document.getElementById('r-hr').value=parsed.hr;
+    if(parsed.type) document.getElementById('f-type').value=parsed.type;
+    showToast('✅ สกัดข้อมูลสำเร็จ');
+  } catch(e){showToast('Error: '+e.message,'error');}
+  finally{hideLoading();}
 }
 
 // ===== DOC PREVIEW (NO HR & 7.5cm INDENTATION) =====
