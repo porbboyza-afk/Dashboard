@@ -887,7 +887,7 @@ async function askClaude(userPrompt, systemMsg = '', btnId = '', outId = '') {
         'anthropic-dangerous-allow-browser': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2048,
         system: systemMsg || 'คุณคือผู้ช่วยอัจฉริยะ ตอบเป็นภาษาไทย กระชับ ตรงประเด็น',
         messages: [{ role: 'user', content: userPrompt }]
@@ -933,7 +933,7 @@ async function askClaudeVision(imageBase64, mimeType, promptText) {
       'anthropic-dangerous-allow-browser': 'true'
     },
     body: JSON.stringify({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-6',
       max_tokens: 512,
       system: 'Extract fitness data from image. Return ONLY valid JSON: {distance:number,time:number,hr:number|null,cadence:number|null,splits:[{km:number,pace:string,hr:number}]|null,type:"run"|"bike"|"swim"|"walk"}',
       messages: [{
@@ -1447,7 +1447,7 @@ async function summarizeDocAI() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': window._claudeKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-6',
           max_tokens: 2048,
           system: sys[format],
           messages: [{
