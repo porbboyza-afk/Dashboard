@@ -449,4 +449,1388 @@ onAuthStateChanged(auth, user => {
   <main class="main">
 
     <!-- ─── TODAY ─── -->
-    <div class="page active" id="page-today
+    <div class="page active" id="page-today">
+      <h1>สวัสดีครับ 👋</h1>
+      <div class="subtitle" id="today-date-label"></div>
+
+      <div class="grid grid-3 mb-16">
+        <div class="card stat-card">
+          <div class="card-title">ระยะวิ่ง 7 วัน</div>
+          <span class="stat-num" id="t-distance">—</span><span class="stat-unit">กม.</span>
+        </div>
+        <div class="card stat-card">
+          <div class="card-title">กิจกรรม 7 วัน</div>
+          <span class="stat-num" id="t-workouts">—</span><span class="stat-unit">ครั้ง</span>
+        </div>
+        <div class="card stat-card">
+          <div class="card-title">เอกสารทั้งหมด</div>
+          <span class="stat-num" id="t-docs">—</span><span class="stat-unit">ฉบับ</span>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="card-title">กิจกรรมล่าสุด</div>
+          <div id="today-recent-workouts"><p class="text2 text-sm">กำลังโหลด...</p></div>
+          <button class="btn btn-primary btn-sm mt-12" onclick="showPage('fitness-log')">+ บันทึกใหม่</button>
+        </div>
+        <div class="card ai-box">
+          <div class="card-title">สถานะระบบ</div>
+          <div id="today-status" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FITNESS LOG ─── -->
+    <div class="page" id="page-fitness-log">
+      <div class="flex justify-between items-center mb-16">
+        <div>
+          <h1>บันทึกออกกำลังกาย</h1>
+          <div class="subtitle" style="margin:0">บันทึก Realtime → Firebase</div>
+        </div>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+          📸 สกัดจากรูป (AI)
+          <input type="file" accept="image/*" multiple style="display:none" onchange="processImageWithAI(event)">
+        </label>
+      </div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="form-group"><label>วันที่</label><input type="date" id="f-date"></div>
+          <div class="form-group"><label>ประเภท</label>
+            <select id="f-type">
+              <option value="run">🏃 วิ่ง</option>
+              <option value="bike">🚴 ปั่น</option>
+              <option value="swim">🏊 ว่ายน้ำ</option>
+              <option value="walk">🚶 เดิน</option>
+            </select>
+          </div>
+          <div class="grid grid-2" style="gap:10px">
+            <div class="form-group"><label>ระยะทาง (กม.)</label><input type="number" id="r-distance" step="0.01" placeholder="0.00" oninput="buildSplits()"></div>
+            <div class="form-group"><label>เวลา (นาที)</label><input type="number" id="r-time" step="0.1" placeholder="0"></div>
+          </div>
+          <div class="grid grid-2" style="gap:10px">
+            <div class="form-group"><label>HR เฉลี่ย (bpm)</label><input type="number" id="r-hr" placeholder="—"></div>
+            <div class="form-group"><label>รอบขา (spm)</label><input type="number" id="r-cad" placeholder="170"></div>
+          </div>
+
+          <div class="splits-wrap">
+            <div class="splits-header">
+              <span style="font-size:12px;font-weight:700;color:var(--accent)">⚡ Splits รายกิโล</span>
+              <span id="avg-pace-disp" class="text-xs mono" style="color:var(--accent2)">Pace เฉลี่ย: —</span>
+            </div>
+            <div id="splits-area"><p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p></div>
+          </div>
+
+          <div class="form-group"><label>หมายเหตุ</label><textarea id="r-note" rows="2" placeholder="เส้นทาง, ความรู้สึก..."></textarea></div>
+          <button class="btn btn-primary" onclick="saveWorkout()" style="width:100%">☁️ บันทึกขึ้น Cloud</button>
+        </div>
+        <div class="card">
+          <div class="flex justify-between items-center mb-12">
+            <div class="card-title" style="margin:0">รายการล่าสุด</div>
+            <span style="color:var(--accent2);font-size:10px;font-weight:700">● LIVE</span>
+          </div>
+          <div id="recent-workouts-list"><p class="text2 text-sm">กำลังโหลด...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── STATS ─── -->
+    <div class="page" id="page-fitness-stats">
+      <h1>สถิติ & วิเคราะห์ 📊</h1>
+      <div class="subtitle">ข้อมูล Realtime จาก Firebase + วิเคราะห์โดย Claude AI</div>
+      <div class="tabs">
+        <div class="tab active" onclick="switchStatsTab('week',this)">สัปดาห์นี้</div>
+        <div class="tab" onclick="switchStatsTab('month',this)">เดือนนี้</div>
+      </div>
+
+      <div id="stats-week-view">
+        <div class="grid grid-2 mb-16">
+          <div class="card">
+            <div class="card-title">ระยะทาง 7 วัน</div>
+            <div class="chart-wrap"><canvas id="chart-week-trend"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">สรุปสัปดาห์</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+              <div style="background:var(--surface2);padding:13px;border-radius:10px">
+                <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">ระยะรวม</div>
+                <div class="mono bold" style="font-size:20px" id="stat-wk-dist">—</div>
+              </div>
+              <div style="background:var(--surface2);padding:13px;border-radius:10px">
+                <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">จำนวนวัน</div>
+                <div class="mono bold" style="font-size:20px" id="stat-wk-count">—</div>
+              </div>
+              <div style="background:var(--surface2);padding:13px;border-radius:10px">
+                <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">เวลารวม</div>
+                <div class="mono bold" style="font-size:20px" id="stat-wk-time">—</div>
+              </div>
+              <div style="background:var(--surface2);padding:13px;border-radius:10px">
+                <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">Pace เฉลี่ย</div>
+                <div class="mono bold" style="font-size:20px" id="stat-wk-pace">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card ai-box">
+          <div class="flex justify-between items-center mb-12">
+            <div class="card-title" style="margin:0">🤖 วิเคราะห์โดย Claude AI</div>
+            <button class="btn btn-primary btn-sm" id="btn-analyze-wk" onclick="analyzeFitnessAI()">✨ วิเคราะห์</button>
+          </div>
+          <div id="ai-stats-output" class="ai-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <div id="stats-month-view" style="display:none">
+        <div class="card mb-16">
+          <div class="card-title">ระยะสะสมรายสัปดาห์เดือนนี้</div>
+          <div class="chart-wrap"><canvas id="chart-month-trend"></canvas></div>
+        </div>
+        <div class="card ai-box">
+          <div class="flex justify-between items-center mb-12">
+            <div class="card-title" style="margin:0">🤖 วิเคราะห์รายเดือน</div>
+            <button class="btn btn-primary btn-sm" id="btn-analyze-mo" onclick="analyzeFitnessAI('month')">✨ วิเคราะห์</button>
+          </div>
+          <div id="ai-month-output" class="ai-result" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── COACH ─── -->
+    <div class="page" id="page-coach">
+      <h1>AI โค้ชวิ่ง 🤖</h1>
+      <div class="subtitle">แผนการซ้อมส่วนตัวจาก Claude AI + ข้อมูลจริงของคุณ</div>
+      <div class="grid grid-2">
+        <div class="card">
+          <div class="form-group"><label>เป้าหมาย</label><input type="text" id="coach-goal" placeholder="เช่น วิ่ง Half Marathon ใน 4 เดือน"></div>
+          <div class="form-group"><label>ระดับปัจจุบัน</label>
+            <select id="coach-level">
+              <option value="beginner">มือใหม่ — วิ่งได้น้อยกว่า 5 กม.</option>
+              <option value="intermediate" selected>กลาง — 5 ถึง 15 กม.</option>
+              <option value="advanced">สูง — มากกว่า 15 กม.</option>
+            </select>
+          </div>
+          <div class="form-group"><label>วันซ้อมต่อสัปดาห์</label>
+            <select id="coach-days">
+              <option value="3">3 วัน</option>
+              <option value="4" selected>4 วัน</option>
+              <option value="5">5 วัน</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btn-coach" onclick="generateTrainingPlan()" style="width:100%">✨ สร้างแผนการซ้อม</button>
+        </div>
+        <div class="card ai-box" style="overflow-y:auto;max-height:70vh">
+          <div class="card-title">แผนการซ้อม</div>
+          <div id="coach-output" class="text-sm text2" style="line-height:1.9">กดปุ่มเพื่อสร้างแผน...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── STRAVA ─── -->
+    <div class="page" id="page-strava">
+      <h1>Strava 🚴</h1>
+      <div class="subtitle">เชื่อมต่อ Strava เพื่อ sync กิจกรรมอัตโนมัติ</div>
+      <div class="grid grid-2 mb-16">
+        <div class="card">
+          <div class="card-title">สถานะการเชื่อมต่อ</div>
+          <div id="strava-status-box" style="background:var(--surface2);border-radius:9px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--text3)"></div>
+            <span class="text-sm text2">ยังไม่ได้เชื่อมต่อ</span>
+          </div>
+          <button id="btn-strava-connect" class="btn btn-strava" onclick="stravaConnect()" style="width:100%">🔗 เชื่อมต่อ Strava</button>
+          <button id="btn-strava-disconnect" class="btn btn-ghost mt-8" onclick="stravaDisconnect()" style="width:100%;display:none">✕ ยกเลิกการเชื่อมต่อ</button>
+          <div class="mt-16" style="background:var(--surface2);border-radius:10px;padding:14px">
+            <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">วิธีรับ Access Token</div>
+            <ol style="padding-left:16px;font-size:13px;color:var(--text2);line-height:2.2">
+              <li>ไปที่ <a href="https://www.strava.com/settings/api" target="_blank" style="color:var(--accent)">strava.com/settings/api</a></li>
+              <li>คัดลอก <strong style="color:var(--text)">โทเค็นการเข้าถึงของคุณ</strong></li>
+              <li>กดปุ่มเชื่อมต่อแล้ววางได้เลย</li>
+              <li style="color:var(--accent3)">⚠️ Token มีอายุ 6 ชั่วโมง ต้อง Sync ก่อนหมด</li>
+            </ol>
+          </div>
+        </div>
+        <div class="card">
+          <div class="flex justify-between items-center mb-12">
+            <div class="card-title" style="margin:0">กิจกรรมล่าสุด</div>
+            <button id="btn-strava-sync" class="btn btn-ghost btn-sm" onclick="stravaSync()" style="display:none">🔄 Sync</button>
+          </div>
+          <div id="strava-activities-list"><p class="text2 text-sm">ยังไม่ได้เชื่อมต่อ</p></div>
+        </div>
+      </div>
+      <div class="card ai-box">
+        <div class="flex justify-between items-center mb-12">
+          <div class="card-title" style="margin:0">🤖 วิเคราะห์ Training Load จาก Strava</div>
+          <button class="btn btn-primary btn-sm" id="btn-strava-analyze" onclick="stravaAnalyze()">✨ วิเคราะห์</button>
+        </div>
+        <div id="strava-ai-output" class="ai-result" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ─── DOC SUMMARY ─── -->
+    <div class="page" id="page-doc-summary">
+      <h1>AI สรุปหนังสือเข้า 📑</h1>
+      <div class="subtitle">อัปโหลดรูปภาพ หรือวางข้อความ — Claude AI สรุปและแนะนำ Action Items</div>
+      <div class="grid grid-2">
+        <!-- INPUT PANEL -->
+        <div class="card">
+          <!-- IMAGE DROP ZONE -->
+          <div class="drop-zone" id="doc-drop-zone"
+            onclick="document.getElementById('doc-file-input').click()"
+            ondragover="event.preventDefault();this.classList.add('drag-over')"
+            ondragleave="this.classList.remove('drag-over')"
+            ondrop="handleDocDrop(event)">
+            <div class="drop-zone-icon">📄</div>
+            <div class="drop-zone-title">คลิกหรือลากไฟล์มาวาง</div>
+            <div class="drop-zone-sub">รองรับ รูปภาพ JPG/PNG (สแกนหนังสือ)</div>
+          </div>
+          <input type="file" id="doc-file-input" accept="image/*" style="display:none" onchange="onDocFileSelected(this)">
+
+          <div id="doc-file-chip" style="display:none" class="file-chip">
+            <span>📎</span>
+            <span id="doc-file-name">ไฟล์</span>
+            <button onclick="clearDocFile()">✕</button>
+          </div>
+
+          <div style="text-align:center;color:var(--text3);font-size:12px;font-weight:700;margin:12px 0;letter-spacing:1px">— หรือวางข้อความด้านล่าง —</div>
+
+          <div class="form-group">
+            <label>เนื้อหาหนังสือ</label>
+            <textarea id="ai-doc-input" rows="8" placeholder="วางเนื้อหาหนังสือราชการที่ต้องการสรุป..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>รูปแบบสรุป</label>
+            <select id="doc-summary-format">
+              <option value="brief">สั้น 3 ข้อ — เสนอผู้บริหาร</option>
+              <option value="detailed">ละเอียด พร้อมสาระสำคัญครบถ้วน</option>
+              <option value="action">Action Items — ต้องดำเนินการอะไรบ้าง</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btn-doc-ai" onclick="summarizeDocAI()" style="width:100%">✨ สรุปด้วย Claude AI</button>
+        </div>
+
+        <!-- OUTPUT PANEL -->
+        <div class="card">
+          <div class="card-title">ผลการสรุป</div>
+          <div id="ai-doc-output-page" style="line-height:1.85;font-size:14px">
+            <p class="text2 text-sm">ผลลัพธ์จะแสดงที่นี่...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── DOC CREATE ─── -->
+    <div class="page" id="page-doc-create">
+      <div class="flex justify-between items-center mb-16">
+        <div>
+          <h1>สร้างหนังสือราชการ</h1>
+          <div class="subtitle" style="margin:0">ตามระเบียบสำนักนายกรัฐมนตรีว่าด้วยงานสารบรรณ พ.ศ. 2548</div>
+        </div>
+        <button class="btn btn-ghost" onclick="printDoc()">🖨️ พิมพ์</button>
+      </div>
+
+      <div class="card mb-16">
+        <div class="flex items-center gap-12">
+          <div id="garuda-preview-thumb" style="width:46px;height:46px;border:1px dashed var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:15px;color:var(--text3);font-weight:700">ครุฑ</div>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+            📁 อัปโหลดตราครุฑ
+            <input type="file" accept="image/*" style="display:none" onchange="loadGaruda(event)">
+          </label>
+          <button class="btn btn-ghost btn-sm" onclick="clearGaruda()">✕ ลบ</button>
+          <span class="text-xs text2">ภายนอก: กึ่งกลาง สูง 3ซม. | บันทึก: ซ้าย สูง 1.5ซม.</span>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card" style="max-height:85vh;overflow-y:auto">
+          <div class="tabs">
+            <div class="tab active" onclick="switchDocTab('out',this)">หนังสือภายนอก</div>
+            <div class="tab" onclick="switchDocTab('memo',this)">บันทึกข้อความ</div>
+          </div>
+          <div class="form-group"><label>ส่วนราชการ / ชื่อหน่วยงาน</label><textarea id="do-dept" rows="2" oninput="updateDocPreview()" placeholder="ชื่อโรงเรียน / กรม / กอง และที่อยู่"></textarea></div>
+          <div class="grid grid-2" style="gap:10px">
+            <div class="form-group"><label>ที่</label><input type="text" id="do-num" oninput="updateDocPreview()" placeholder="ศธ 0000/0000"></div>
+            <div class="form-group"><label>วันที่</label><input type="text" id="do-date" oninput="updateDocPreview()" placeholder="1 มกราคม 2568"></div>
+          </div>
+          <div class="form-group"><label>เรื่อง</label><input type="text" id="do-subject" oninput="updateDocPreview()"></div>
+          <div class="form-group"><label>เรียน</label><input type="text" id="do-to" oninput="updateDocPreview()"></div>
+          <div class="form-group" id="do-attach-group">
+            <label>สิ่งที่ส่งมาด้วย</label>
+            <input type="text" id="do-attach" oninput="updateDocPreview()" placeholder="(ถ้ามี)">
+          </div>
+          <div class="form-group"><label>เนื้อหา</label><textarea id="do-body" rows="5" oninput="updateDocPreview()" placeholder="ด้วย..."></textarea></div>
+          <div class="form-group"><label>จึงเรียนมาเพื่อ...</label><textarea id="do-conclusion" rows="2" oninput="updateDocPreview()" placeholder="จึงเรียนมาเพื่อโปรดพิจารณา"></textarea></div>
+          <div class="grid grid-2" style="gap:10px">
+            <div class="form-group"><label>ผู้ลงนาม</label><input type="text" id="do-signer" oninput="updateDocPreview()"></div>
+            <div class="form-group"><label>ตำแหน่ง</label><input type="text" id="do-pos" oninput="updateDocPreview()"></div>
+          </div>
+          <div id="do-bottom-section">
+            <div class="form-group"><label>กลุ่มงาน / ผู้จัดทำ</label><input type="text" id="do-contact-name" oninput="updateDocPreview()"></div>
+            <div class="form-group"><label>โทรศัพท์</label><input type="text" id="do-contact-phone" oninput="updateDocPreview()"></div>
+            <div class="form-group"><label>คำขวัญ / สโลแกน</label><textarea id="do-slogan" rows="2" oninput="updateDocPreview()" placeholder="คำขวัญจังหวัด..."></textarea></div>
+          </div>
+          <button class="btn btn-success mt-8" onclick="saveDocDb()" style="width:100%">☁️ บันทึกทะเบียน</button>
+        </div>
+        <div class="doc-preview-bg">
+          <div id="doc-render-area" class="a4-sim"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── DOC LIST ─── -->
+    <div class="page" id="page-doc-list">
+      <div class="flex justify-between items-center mb-16">
+        <div>
+          <h1>ทะเบียนหนังสือ 📁</h1>
+          <div class="subtitle" style="margin:0">Realtime sync จาก Firebase</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="exportDocList()">📥 Export CSV</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>#</th><th>เลขที่</th><th>วันที่</th><th>เรื่อง</th><th>ประเภท</th><th></th></tr>
+          </thead>
+          <tbody id="doc-table-body">
+            <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">กำลังโหลด...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── NEWS / Q&A ─── -->
+    <div class="page" id="page-news">
+      <h1>AI ถาม-ตอบ 📰</h1>
+      <div class="subtitle">ถามเรื่องข่าวสาร IT เศรษฐกิจ สินค้า เทรนด์โลก — Claude AI ตอบเป็นภาษาไทย</div>
+      <div class="card ai-box">
+        <div class="flex gap-12 mb-12">
+          <input type="text" id="news-query" placeholder="พิมพ์คำถาม..." style="flex:1" onkeydown="if(event.key==='Enter')askNewsAI()">
+          <button class="btn btn-primary" id="btn-news" onclick="askNewsAI()">ถาม AI</button>
+        </div>
+        <div class="flex gap-8 mb-12" style="flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="setNewsQ('ข่าว AI และเทคโนโลยีที่น่าสนใจในปี 2025')">AI & Tech</button>
+          <button class="btn btn-ghost btn-sm" onclick="setNewsQ('เศรษฐกิจไทยและตลาดหุ้นล่าสุด')">เศรษฐกิจ</button>
+          <button class="btn btn-ghost btn-sm" onclick="setNewsQ('รถยนต์ไฟฟ้าและสินค้าเทคโนโลยีใหม่ที่น่าสนใจ')">สินค้าใหม่</button>
+          <button class="btn btn-ghost btn-sm" onclick="setNewsQ('เทรนด์การวิ่งมาราธอนและอุปกรณ์กีฬา')">วิ่ง & ฟิตเนส</button>
+        </div>
+        <div id="news-output" class="ai-result" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- ─── SETTINGS ─── -->
+    <div class="page" id="page-settings">
+      <h1>ตั้งค่า ⚙️</h1>
+      <div class="grid grid-2 mt-16">
+        <div class="card">
+          <div class="card-title">Claude AI — ผ่าน Cloudflare Worker</div>
+          <div style="background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.8;color:var(--text2)">
+            🔒 API Key ส่งผ่าน Cloudflare Worker<br>
+            ไม่มี Key โชว์ใน Browser — ปลอดภัยกว่าเรียกตรง<br>
+            Worker URL: <code style="color:var(--accent2);font-size:12px">claude-proxy2.porbboyza.workers.dev</code>
+          </div>
+          <div class="form-group">
+            <label>Claude API Key</label>
+            <input type="password" id="set-claude-key" placeholder="sk-ant-api03-...">
+            <div class="text-xs text2 mt-8">
+              ได้จาก <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent)">console.anthropic.com</a>
+              — เก็บเข้ารหัสใน Firebase
+            </div>
+          </div>
+          <button class="btn btn-success" onclick="saveClaudeKey()" style="width:100%">☁️ บันทึก API Key</button>
+          <div id="claude-key-status" class="text-sm mt-8"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Strava API</div>
+          <div class="form-group"><label>Client ID</label><input type="text" id="set-strava-id" placeholder="12345"></div>
+          <div class="form-group"><label>Client Secret</label><input type="password" id="set-strava-secret" placeholder="abc123..."></div>
+          <div class="form-group"><label>Redirect URI</label><input type="text" id="set-strava-redirect" placeholder="http://localhost"></div>
+          <button class="btn btn-strava" onclick="saveStravaSettings()" style="width:100%">☁️ บันทึก Strava Settings</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div><!-- /app-shell -->
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════
+// CLOUDFLARE WORKER PROXY — API Key ไม่โชว์ใน browser
+// ═══════════════════════════════════════════════════
+const CF_WORKER = 'https://claude-proxy2.porbboyza.workers.dev';
+window._claudeKey = '';
+
+async function askClaude(userPrompt, systemMsg = '', btnId = '', outId = '') {
+  if (!window._claudeKey) {
+    showToast('กรุณาตั้งค่า Claude API Key ในหน้าตั้งค่าก่อน', 'error');
+    showPage('settings');
+    return null;
+  }
+
+  const btn = btnId ? document.getElementById(btnId) : null;
+  const out = outId ? document.getElementById(outId) : null;
+  const oldHTML = btn?.innerHTML;
+
+  if (btn) { btn.innerHTML = '⏳ กำลังคิด...'; btn.disabled = true; }
+  if (out) {
+    out.style.display = 'block';
+    out.innerHTML = '<span style="opacity:.45;font-style:italic;font-size:13px">⏳ Claude กำลังประมวลผล...</span>';
+  }
+
+  try {
+    // ส่งผ่าน Cloudflare Worker — Worker จะ forward ไป Anthropic แบบ server-to-server
+    const res = await fetch(CF_WORKER, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': window._claudeKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-allow-browser': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 2048,
+        system: systemMsg || 'คุณคือผู้ช่วยอัจฉริยะ ตอบเป็นภาษาไทย กระชับ ตรงประเด็น',
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const reply = data?.content?.[0]?.text || '';
+    const html = reply
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\n/g, '<br>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^### (.*)/gm, '<div style="font-weight:700;font-size:15px;margin:12px 0 4px;color:var(--accent)">$1</div>')
+      .replace(/^## (.*)/gm, '<div style="font-weight:700;font-size:16px;margin:14px 0 6px;color:var(--text)">$1</div>');
+
+    if (out) out.innerHTML = html;
+    return reply;
+
+  } catch (e) {
+    const msg = `<span style="color:var(--accent4)">⚠️ ${e.message}</span>`;
+    if (out) out.innerHTML = msg;
+    else showToast('Claude Error: ' + e.message, 'error');
+    return null;
+  } finally {
+    if (btn) { btn.innerHTML = oldHTML; btn.disabled = false; }
+  }
+}
+
+// สำหรับ Image (ต้องส่งเป็น vision request)
+async function askClaudeVision(imageBase64, mimeType, promptText) {
+  if (!window._claudeKey) { showToast('กรุณาตั้งค่า API Key ก่อน','error'); return null; }
+  const res = await fetch(CF_WORKER, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': window._claudeKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-allow-browser': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 512,
+      system: 'Extract fitness data from image. Return ONLY valid JSON: {distance:number,time:number,hr:number|null,cadence:number|null,splits:[{km:number,pace:string,hr:number}]|null,type:"run"|"bike"|"swim"|"walk"}',
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
+          { type: 'text', text: promptText }
+        ]
+      }]
+    })
+  });
+  const data = await res.json();
+  return data?.content?.[0]?.text || null;
+}
+
+// ═══════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════
+window._workouts = [];
+window._docs = [];
+
+// ═══════════════════════════════════════════════════
+// APP READY
+// ═══════════════════════════════════════════════════
+window._appReady = async (user) => {
+  // แสดงหน้าก่อนเลย ไม่รอ Firebase
+  hideLoading();
+  showPage('today');
+
+  // โหลด settings แยกต่างหาก ไม่บล็อก UI
+  try {
+    const cfg = await window._fb.getData('settings') || {};
+    if (cfg.claudeKey) {
+      window._claudeKey = cfg.claudeKey;
+      const keyEl = document.getElementById('set-claude-key');
+      if (keyEl) keyEl.value = cfg.claudeKey;
+      const statusEl = document.getElementById('claude-key-status');
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--accent2)">✓ พร้อมใช้งาน</span>';
+    }
+    const safe = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+    safe('set-strava-id', cfg.stravaId);
+    safe('set-strava-secret', cfg.stravaSecret);
+    safe('set-strava-redirect', cfg.stravaRedirect);
+    if (cfg.garudaImg) {
+      window._garudaB64 = cfg.garudaImg;
+      const thumb = document.getElementById('garuda-preview-thumb');
+      if (thumb) thumb.innerHTML = `<img src="${cfg.garudaImg}" style="width:100%;height:100%;object-fit:contain">`;
+    }
+  } catch(e) {
+    // settings โหลดไม่ได้ไม่เป็นไร — Firebase Rules อาจยังไม่ set
+    console.warn('Settings load failed:', e.message);
+  }
+
+  // เริ่ม realtime listener แยก
+  try {
+    startRealtimeListeners();
+  } catch(e) {
+    console.warn('Realtime listener failed:', e.message);
+    showToast('Firebase: ' + e.message, 'error');
+  }
+};
+
+// ═══════════════════════════════════════════════════
+// REALTIME LISTENERS
+// ═══════════════════════════════════════════════════
+function startRealtimeListeners() {
+  window._fb.listen('workouts', data => {
+    window._workouts = data
+      ? Object.entries(data)
+          .map(([k, v]) => ({ _key: k, ...v }))
+          .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      : [];
+    renderRecentWorkouts();
+    renderTodayStats();
+    // อัปเดตกราฟถ้าหน้าสถิติเปิดอยู่
+    if (document.getElementById('page-fitness-stats').classList.contains('active')) {
+      renderWeekStats();
+    }
+  });
+
+  window._fb.listen('docs', data => {
+    window._docs = data
+      ? Object.entries(data)
+          .map(([k, v]) => ({ _key: k, ...v }))
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      : [];
+    renderDocList();
+    const el = document.getElementById('t-docs');
+    if (el) el.textContent = window._docs.length;
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════
+function showLoading(msg = 'กำลังโหลด...') {
+  document.getElementById('loading-msg').textContent = msg;
+  document.getElementById('loading-overlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.remove('show');
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type}`;
+  t.style.display = 'block';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.style.display = 'none', 3500);
+}
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id)?.classList.add('active');
+  document.querySelector(`.nav-item[data-page="${id}"]`)?.classList.add('active');
+
+  if (id === 'today') renderTodayStats();
+  if (id === 'fitness-log') {
+    document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+  }
+  if (id === 'fitness-stats') renderWeekStats();
+  if (id === 'doc-create') updateDocPreview();
+  if (id === 'strava') renderStravaPage();
+}
+
+// ═══════════════════════════════════════════════════
+// TODAY
+// ═══════════════════════════════════════════════════
+function renderTodayStats() {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 7);
+  cutoff.setHours(0, 0, 0, 0);
+
+  const recent = window._workouts.filter(w => new Date(w.date) >= cutoff);
+  const totalDist = recent.reduce((s, w) => s + parseFloat(w.dist || 0), 0);
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('t-distance', totalDist.toFixed(1));
+  set('t-workouts', recent.length);
+
+  // recent workouts on today page
+  const el = document.getElementById('today-recent-workouts');
+  const em = { run: '🏃', bike: '🚴', swim: '🏊', walk: '🚶' };
+  if (el) {
+    el.innerHTML = window._workouts.length
+      ? window._workouts.slice(0, 3).map(w => `
+          <div class="workout-item">
+            <div class="workout-icon">${em[w.type] || '🏅'}</div>
+            <div style="flex:1">
+              <div class="workout-main">${w.dist} กม. · ${w.time} นาที${w.hr ? ' · HR ' + w.hr : ''}</div>
+              <div class="workout-sub">${w.date}${w.avgPace ? ' · Pace ' + formatPace(w.avgPace) : ''}</div>
+            </div>
+          </div>`).join('')
+      : '<p class="text2 text-sm">ยังไม่มีข้อมูล — เริ่มบันทึกได้เลย!</p>';
+  }
+
+  // status
+  const hasKey = !!window._claudeKey;
+  const statusEl = document.getElementById('today-status');
+  if (statusEl) {
+    statusEl.innerHTML = `
+      <div class="status-pill ok"><div class="status-dot"></div>Firebase: Realtime sync</div>
+      <div class="status-pill ${hasKey ? 'ok' : 'warn'}"><div class="status-dot"></div>Claude AI (Worker): ${hasKey ? 'พร้อมใช้งาน' : 'ยังไม่ตั้งค่า API Key'}</div>
+      <div class="status-pill ok"><div class="status-dot"></div>${document.getElementById('user-name').textContent}</div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// SPLITS
+// ═══════════════════════════════════════════════════
+function buildSplits() {
+  const dist = parseFloat(document.getElementById('r-distance')?.value) || 0;
+  const area = document.getElementById('splits-area');
+  if (!area) return;
+  if (!dist || dist <= 0) {
+    area.innerHTML = '<p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p>';
+    calcAvgPace(); return;
+  }
+  const n = Math.ceil(dist);
+  let html = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <thead><tr>
+      <th style="padding:4px 6px;color:var(--text3);text-align:center;font-size:10px">กม.</th>
+      <th style="padding:4px 6px;color:var(--text3);text-align:center;font-size:10px">Pace (น:ว)</th>
+      <th style="padding:4px 6px;color:var(--text3);text-align:center;font-size:10px">HR</th>
+    </tr></thead><tbody>`;
+  for (let i = 1; i <= n; i++) {
+    html += `<tr>
+      <td style="padding:3px 6px;text-align:center;font-weight:700;color:var(--accent);font-size:12px">${i}</td>
+      <td style="padding:3px 4px"><input type="text" class="sp-pace" placeholder="5:30" oninput="calcAvgPace()" style="padding:4px 8px;font-size:12px;text-align:center;width:75px;border-radius:6px"></td>
+      <td style="padding:3px 4px"><input type="number" class="sp-hr" placeholder="150" style="padding:4px 8px;font-size:12px;text-align:center;width:70px;border-radius:6px"></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  area.innerHTML = html;
+  calcAvgPace();
+}
+
+window.calcAvgPace = function () {
+  const paces = [...document.querySelectorAll('.sp-pace')];
+  let total = 0, cnt = 0;
+  paces.forEach(p => {
+    if (!p.value) return;
+    const parts = p.value.split(/[:.]/).map(Number);
+    if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      total += parts[0] + parts[1] / 60; cnt++;
+    }
+  });
+  const disp = document.getElementById('avg-pace-disp');
+  if (!disp) return cnt > 0 ? total / cnt : 0;
+  if (!cnt) { disp.textContent = 'Pace เฉลี่ย: —'; return 0; }
+  const avg = total / cnt;
+  disp.textContent = `Pace เฉลี่ย: ${Math.floor(avg)}:${String(Math.round((avg % 1) * 60)).padStart(2, '0')}`;
+  return avg;
+};
+
+// ═══════════════════════════════════════════════════
+// WORKOUT CRUD
+// ═══════════════════════════════════════════════════
+async function saveWorkout() {
+  const dist = parseFloat(document.getElementById('r-distance').value) || 0;
+  if (!dist) { showToast('กรุณาใส่ระยะทาง', 'error'); return; }
+
+  const splits = [...document.querySelectorAll('#splits-area tbody tr')].map((row, i) => ({
+    km: i + 1,
+    pace: row.querySelector('.sp-pace')?.value || '',
+    hr: parseInt(row.querySelector('.sp-hr')?.value) || 0,
+  })).filter(s => s.pace || s.hr);
+
+  const avgPace = calcAvgPace();
+  showLoading('กำลังบันทึก...');
+  try {
+    await window._fb.pushData('workouts', {
+      date: document.getElementById('f-date').value || new Date().toISOString().slice(0, 10),
+      dist,
+      time: parseFloat(document.getElementById('r-time').value) || 0,
+      hr: parseInt(document.getElementById('r-hr').value) || 0,
+      cad: parseInt(document.getElementById('r-cad').value) || 0,
+      note: document.getElementById('r-note').value || '',
+      type: document.getElementById('f-type').value || 'run',
+      avgPace, splits,
+      createdAt: Date.now()
+    });
+    ['r-distance', 'r-time', 'r-hr', 'r-cad', 'r-note'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    const sa = document.getElementById('splits-area');
+    if (sa) sa.innerHTML = '<p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p>';
+    showToast('✅ บันทึกขึ้น Cloud แล้ว');
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderRecentWorkouts() {
+  const c = document.getElementById('recent-workouts-list');
+  if (!c) return;
+  const em = { run: '🏃', bike: '🚴', swim: '🏊', walk: '🚶' };
+  if (!window._workouts.length) {
+    c.innerHTML = '<p class="text2 text-sm">ไม่มีข้อมูล — เริ่มบันทึกได้เลย</p>';
+    return;
+  }
+  c.innerHTML = window._workouts.slice(0, 10).map(w => `
+    <div class="workout-item">
+      <div class="workout-icon">${em[w.type] || '🏅'}</div>
+      <div style="flex:1">
+        <div class="workout-main">${w.dist} กม. · ${w.time} น.${w.hr ? ' · HR ' + w.hr : ''}${w.cad ? ' · ' + w.cad + ' spm' : ''}</div>
+        <div class="workout-sub">${w.date}${w.avgPace ? ' · ' + formatPace(w.avgPace) + '/กม.' : ''}${w.note ? ' — ' + w.note : ''}</div>
+      </div>
+      <button onclick="deleteWorkout('${w._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;border-radius:4px" title="ลบ">✕</button>
+    </div>`).join('');
+}
+
+async function deleteWorkout(key) {
+  if (!confirm('ลบรายการนี้?')) return;
+  try {
+    await window._fb.removeData(`workouts/${key}`);
+    showToast('ลบแล้ว');
+  } catch (e) { showToast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
+}
+
+function formatPace(p) {
+  if (!p) return '—';
+  return `${Math.floor(p)}:${String(Math.round((p % 1) * 60)).padStart(2, '0')}`;
+}
+
+// ═══════════════════════════════════════════════════
+// STATS & CHARTS
+// ═══════════════════════════════════════════════════
+const charts = {};
+
+function switchStatsTab(tab, el) {
+  document.querySelectorAll('#page-fitness-stats .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('stats-week-view').style.display = tab === 'week' ? 'block' : 'none';
+  document.getElementById('stats-month-view').style.display = tab === 'month' ? 'block' : 'none';
+  if (tab === 'week') renderWeekStats();
+  if (tab === 'month') renderMonthStats();
+}
+
+function renderWeekStats() {
+  const labels = [], data = [];
+  let totalDist = 0, totalTime = 0, days = 0;
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0, 10);
+    labels.push(d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }));
+    const dayWks = window._workouts.filter(w => w.date === ds);
+    const dist = dayWks.reduce((s, w) => s + parseFloat(w.dist || 0), 0);
+    const time = dayWks.reduce((s, w) => s + parseFloat(w.time || 0), 0);
+    data.push(+dist.toFixed(2));
+    totalDist += dist; totalTime += time;
+    if (dayWks.length) days++;
+  }
+  const pace = totalDist > 0 ? totalTime / totalDist : 0;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('stat-wk-dist', totalDist.toFixed(1) + ' กม.');
+  set('stat-wk-count', days + ' วัน');
+  set('stat-wk-time', Math.round(totalTime) + ' น.');
+  set('stat-wk-pace', pace > 0 ? formatPace(pace) : '—');
+
+  if (charts.week) charts.week.destroy();
+  const ctx = document.getElementById('chart-week-trend')?.getContext('2d');
+  if (!ctx) return;
+  charts.week = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'กม.', data,
+        backgroundColor: data.map(v => v > 0 ? 'rgba(79,142,247,.7)' : 'rgba(79,142,247,.15)'),
+        borderRadius: 7, borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#7b9cc4' }, beginAtZero: true },
+        x: { grid: { display: false }, ticks: { color: '#7b9cc4' } }
+      }
+    }
+  });
+}
+
+function renderMonthStats() {
+  const labels = ['W1', 'W2', 'W3', 'W4'], data = [0, 0, 0, 0];
+  const now = new Date();
+  window._workouts.forEach(w => {
+    const d = new Date(w.date);
+    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
+      data[Math.min(3, Math.floor((d.getDate() - 1) / 7))] += parseFloat(w.dist || 0);
+    }
+  });
+  if (charts.month) charts.month.destroy();
+  const ctx = document.getElementById('chart-month-trend')?.getContext('2d');
+  if (!ctx) return;
+  charts.month = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'กม.', data: data.map(v => +v.toFixed(2)),
+        borderColor: '#22d3a0', tension: .4, fill: true,
+        backgroundColor: 'rgba(34,211,160,.08)',
+        pointBackgroundColor: '#22d3a0', pointRadius: 5
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+}
+
+async function analyzeFitnessAI(period = 'week') {
+  const summary = window._workouts.slice(0, 14)
+    .map(w => `${w.date}: ${w.dist}กม. ${w.time}น.${w.hr ? ' HR' + w.hr : ''}${w.avgPace ? ' Pace' + formatPace(w.avgPace) : ''}`)
+    .join('\n');
+  const outId = period === 'week' ? 'ai-stats-output' : 'ai-month-output';
+  const btnId = period === 'week' ? 'btn-analyze-wk' : 'btn-analyze-mo';
+  await askClaude(
+    `ข้อมูลการออกกำลังกาย:\n${summary || 'ยังไม่มีข้อมูล'}\n\nวิเคราะห์ Training Load, ความสม่ำเสมอ, ความเสี่ยง Overtraining และให้คำแนะนำ 3 ข้อที่ชัดเจน`,
+    'คุณคือนักสรีรวิทยาการออกกำลังกาย วิเคราะห์เป็นภาษาไทย ตรงประเด็น ไม่เยิ่นเย้อ',
+    btnId, outId
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// AI COACH
+// ═══════════════════════════════════════════════════
+async function generateTrainingPlan() {
+  const goal = document.getElementById('coach-goal')?.value?.trim();
+  if (!goal) { showToast('กรุณาใส่เป้าหมาย', 'error'); return; }
+  const level = document.getElementById('coach-level')?.value;
+  const days = document.getElementById('coach-days')?.value;
+  const history = window._workouts.slice(0, 7).map(w => `${w.date}:${w.dist}กม.`).join(', ');
+  const out = document.getElementById('coach-output');
+  if (out) { out.style.color = 'var(--text2)'; out.innerHTML = '⏳ กำลังสร้างแผน...'; }
+  const res = await askClaude(
+    `เป้าหมาย: ${goal}\nระดับ: ${level}\nวันซ้อม: ${days} วัน/สัปดาห์\nประวัติล่าสุด: ${history || 'ยังไม่มี'}\n\nสร้างตารางซ้อม 4 สัปดาห์ รายวัน พร้อม Pace target และ Type (Easy/Tempo/Long/Rest)`,
+    'คุณคือโค้ชวิ่งที่มีใบรับรอง IAAF วางแผนโดยใช้หลัก Periodization ตอบเป็นภาษาไทย',
+    'btn-coach'
+  );
+  if (out && res) { out.style.color = 'var(--text)'; out.innerHTML = res.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>'); }
+}
+
+// ═══════════════════════════════════════════════════
+// IMAGE AI EXTRACTION
+// ═══════════════════════════════════════════════════
+async function processImageWithAI(event) {
+  const files = Array.from(event.target.files || []);
+  if (!files.length) return;
+  if (!window._claudeKey) { showToast('กรุณาตั้งค่า API Key ก่อน', 'error'); showPage('settings'); return; }
+  showLoading('AI กำลังสกัดข้อมูลจากรูป...');
+  try {
+    const f = files[0];
+    const b64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = e => res(e.target.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(f);
+    });
+    const text = await askClaudeVision(b64, f.type, 'Extract running data from this fitness screenshot.');
+    if (!text) throw new Error('ไม่ได้รับข้อมูลจาก AI');
+    const d = JSON.parse(text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim());
+    if (d.distance) { document.getElementById('r-distance').value = d.distance; buildSplits(); }
+    if (d.time) document.getElementById('r-time').value = d.time;
+    if (d.hr) document.getElementById('r-hr').value = d.hr;
+    if (d.cadence) document.getElementById('r-cad').value = d.cadence;
+    if (d.splits?.length) {
+      setTimeout(() => {
+        document.querySelectorAll('.sp-pace').forEach((el, i) => { if (d.splits[i]?.pace) el.value = d.splits[i].pace; });
+        document.querySelectorAll('.sp-hr').forEach((el, i) => { if (d.splits[i]?.hr) el.value = d.splits[i].hr; });
+        calcAvgPace();
+      }, 300);
+    }
+    showToast('✅ สกัดข้อมูลสำเร็จ');
+  } catch (e) {
+    showToast('Error: ' + e.message, 'error');
+  } finally {
+    hideLoading();
+    event.target.value = '';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// DOC SUMMARY (image upload)
+// ═══════════════════════════════════════════════════
+let _docFile = null;
+
+function onDocFileSelected(input) {
+  _docFile = input.files?.[0] || null;
+  const chip = document.getElementById('doc-file-chip');
+  const name = document.getElementById('doc-file-name');
+  if (_docFile) {
+    chip.style.display = 'inline-flex';
+    name.textContent = `${_docFile.name} (${(_docFile.size / 1024 / 1024).toFixed(1)} MB)`;
+  } else {
+    chip.style.display = 'none';
+  }
+}
+
+function clearDocFile() {
+  _docFile = null;
+  document.getElementById('doc-file-input').value = '';
+  document.getElementById('doc-file-chip').style.display = 'none';
+}
+
+function handleDocDrop(e) {
+  e.preventDefault();
+  document.getElementById('doc-drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files?.[0];
+  if (!file) return;
+  _docFile = file;
+  document.getElementById('doc-file-chip').style.display = 'inline-flex';
+  document.getElementById('doc-file-name').textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+}
+
+async function summarizeDocAI() {
+  const text = document.getElementById('ai-doc-input')?.value?.trim();
+  const format = document.getElementById('doc-summary-format')?.value || 'brief';
+  const out = document.getElementById('ai-doc-output-page');
+  const btn = document.getElementById('btn-doc-ai');
+
+  if (!_docFile && !text) { showToast('กรุณาอัปโหลดรูปหรือวางข้อความก่อน', 'error'); return; }
+
+  if (out) out.innerHTML = '<span style="opacity:.45;font-style:italic;font-size:13px">⏳ Claude กำลังอ่านและสรุป...</span>';
+  if (btn) { btn.innerHTML = '⏳ กำลังสรุป...'; btn.disabled = true; }
+
+  const sys = {
+    brief: 'สรุปหนังสือราชการ 3 ข้อสั้นๆ กระชับ เพื่อเสนอผู้บริหาร',
+    detailed: 'สรุปหนังสือราชการอย่างละเอียด แบ่งเป็น: บริบท สาระสำคัญ ข้อสังเกต',
+    action: 'อ่านหนังสือราชการและระบุ Action Items ที่ต้องดำเนินการ พร้อมผู้รับผิดชอบและกำหนดเวลา'
+  };
+
+  try {
+    let reply = null;
+    if (_docFile) {
+      // ส่งเป็น vision request
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = e => res(e.target.result.split(',')[1]);
+        r.onerror = rej;
+        r.readAsDataURL(_docFile);
+      });
+      const res = await fetch(CF_WORKER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': window._claudeKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 2048,
+          system: sys[format],
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: _docFile.type, data: b64 } },
+              { type: 'text', text: 'สรุปหนังสือราชการในภาพนี้' }
+            ]
+          }]
+        })
+      });
+      const data = await res.json();
+      reply = data?.content?.[0]?.text || '';
+    } else {
+      reply = await askClaude(text, sys[format]);
+    }
+    if (out && reply) {
+      out.innerHTML = reply
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+  } catch (e) {
+    if (out) out.innerHTML = `<span style="color:var(--accent4)">⚠️ ${e.message}</span>`;
+  } finally {
+    if (btn) { btn.innerHTML = '✨ สรุปด้วย Claude AI'; btn.disabled = false; }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// NEWS / Q&A
+// ═══════════════════════════════════════════════════
+async function askNewsAI() {
+  const q = document.getElementById('news-query')?.value?.trim();
+  if (!q) { showToast('กรุณาพิมพ์คำถาม', 'error'); return; }
+  await askClaude(
+    q,
+    'คุณคือผู้เชี่ยวชาญรอบด้าน ตอบเป็นภาษาไทย ชัดเจน กระชับ พร้อมยกตัวอย่าง',
+    'btn-news', 'news-output'
+  );
+}
+function setNewsQ(q) { document.getElementById('news-query').value = q; }
+
+// ═══════════════════════════════════════════════════
+// STRAVA
+// ═══════════════════════════════════════════════════
+const STRAVA_API = 'https://www.strava.com/api/v3';
+
+function stravaConnect() {
+  const sb = document.getElementById('strava-status-box');
+  sb.innerHTML = `
+    <div style="width:100%">
+      <p style="font-weight:700;font-size:13px;margin-bottom:6px">วาง Access Token จาก strava.com/settings/api</p>
+      <p class="text-xs text2 mb-8">ดูที่หัวข้อ "โทเค็นการเข้าถึงของคุณ"</p>
+      <div class="flex gap-8">
+        <input type="text" id="strava-token-input" placeholder="ab1bd0adb..." style="flex:1;font-size:12px">
+        <button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ เชื่อมต่อ</button>
+      </div>
+    </div>`;
+}
+
+async function stravaConnectDirect() {
+  const token = (document.getElementById('strava-token-input')?.value || '').trim();
+  if (!token) { showToast('กรุณาวาง Token', 'error'); return; }
+  showLoading('กำลังตรวจสอบ Token...');
+  try {
+    const res = await fetch(`${STRAVA_API}/athlete`, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`Token ไม่ถูกต้อง (HTTP ${res.status})`);
+    const athlete = await res.json();
+    await window._fb.setData('strava_token', { access_token: token, expires_at: 9999999999, athlete });
+    showToast(`✅ ยินดีต้อนรับ ${athlete.firstname} ${athlete.lastname}!`);
+    renderStravaPage();
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  finally { hideLoading(); }
+}
+
+async function stravaSync() {
+  const tokenData = await window._fb.getData('strava_token');
+  if (!tokenData?.access_token) { showToast('Token หมดอายุ กรุณา Connect ใหม่', 'error'); return; }
+  const btn = document.getElementById('btn-strava-sync');
+  const old = btn?.innerHTML;
+  if (btn) { btn.innerHTML = '⏳...'; btn.disabled = true; }
+  try {
+    const res = await fetch(`${STRAVA_API}/athlete/activities?per_page=30`, {
+      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+    });
+    if (res.status === 401) { showToast('Token หมดอายุ กรุณา Connect ใหม่', 'error'); return; }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const acts = await res.json();
+    await window._fb.setData('strava_activities', acts);
+    renderStravaActivities(acts);
+    showToast(`✅ Sync ${acts.length} กิจกรรมสำเร็จ`);
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  finally { if (btn) { btn.innerHTML = old; btn.disabled = false; } }
+}
+
+async function stravaDisconnect() {
+  if (!confirm('ยืนยันยกเลิกการเชื่อมต่อ Strava?')) return;
+  await window._fb.removeData('strava_token');
+  await window._fb.removeData('strava_activities');
+  renderStravaPage();
+  showToast('ยกเลิกการเชื่อมต่อแล้ว');
+}
+
+async function renderStravaPage() {
+  const tokenData = await window._fb.getData('strava_token');
+  const sb = document.getElementById('strava-status-box');
+  const cb = document.getElementById('btn-strava-connect');
+  const db = document.getElementById('btn-strava-disconnect');
+  const sync = document.getElementById('btn-strava-sync');
+  if (tokenData?.access_token) {
+    const a = tokenData.athlete || {};
+    sb.style.cssText = 'background:rgba(252,76,2,.1);border:1px solid rgba(252,76,2,.3);border-radius:9px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px';
+    sb.innerHTML = `
+      <div style="width:9px;height:9px;border-radius:50%;background:var(--strava)"></div>
+      <div>
+        <div style="font-weight:700;color:var(--strava);font-size:14px">${a.firstname || ''} ${a.lastname || ''}</div>
+        <div style="font-size:11px;color:var(--text2)">${a.city || ''} · Connected ✓</div>
+      </div>`;
+    cb.style.display = 'none'; db.style.display = 'block'; sync.style.display = 'inline-flex';
+    const cached = await window._fb.getData('strava_activities');
+    if (cached) renderStravaActivities(Array.isArray(cached) ? cached : Object.values(cached));
+    else document.getElementById('strava-activities-list').innerHTML = '<p class="text-sm text2">กด Sync เพื่อดึงข้อมูล</p>';
+  } else {
+    sb.style.cssText = 'background:var(--surface2);border-radius:9px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:8px';
+    sb.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:var(--text3)"></div><span class="text-sm text2">ยังไม่ได้เชื่อมต่อ</span>';
+    cb.style.display = 'block'; db.style.display = 'none'; sync.style.display = 'none';
+  }
+}
+
+function renderStravaActivities(acts) {
+  const c = document.getElementById('strava-activities-list');
+  if (!acts?.length) { c.innerHTML = '<p class="text-sm text2">ไม่มีข้อมูล — กด Sync ก่อน</p>'; return; }
+  const em = { Run: '🏃', Ride: '🚴', Swim: '🏊', Walk: '🚶', Hike: '🥾' };
+  c.innerHTML = acts.slice(0, 12).map(a => {
+    const dist = (a.distance / 1000).toFixed(2);
+    const mins = Math.floor(a.moving_time / 60);
+    const pace = a.type === 'Run' && a.distance > 0
+      ? `${Math.floor(a.moving_time / a.distance * 1000 / 60)}'${String(Math.round(a.moving_time / a.distance * 1000 % 60)).padStart(2, '0')}"`
+      : '';
+    return `
+      <div class="workout-item">
+        <div class="workout-icon">${em[a.type] || '🏅'}</div>
+        <div style="flex:1">
+          <div class="workout-main">${a.name}</div>
+          <div class="workout-sub">${new Date(a.start_date_local).toLocaleDateString('th-TH')} · ${dist} กม. · ${mins} น.${pace ? ' · ' + pace : ''}${a.average_heartrate ? ' · HR' + Math.round(a.average_heartrate) : ''}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function stravaAnalyze() {
+  const cached = await window._fb.getData('strava_activities');
+  const acts = cached ? (Array.isArray(cached) ? cached : Object.values(cached)) : [];
+  if (!acts.length) { showToast('กรุณา Sync ก่อน', 'error'); return; }
+  const summary = acts.slice(0, 15).map(a =>
+    `[${new Date(a.start_date_local).toLocaleDateString('th-TH')}] ${a.type} ${(a.distance / 1000).toFixed(2)}กม. ${Math.floor(a.moving_time / 60)}น.${a.average_heartrate ? ' HR' + Math.round(a.average_heartrate) : ''}`
+  ).join('\n');
+  await askClaude(
+    `Strava data (${acts.length} กิจกรรม):\n${summary}\n\nวิเคราะห์ Training Load, จุดแข็ง, และคำแนะนำ 3 ข้อ`,
+    'คุณคือโค้ชวิ่งผู้เชี่ยวชาญ วิเคราะห์เป็นภาษาไทย ตรงประเด็น',
+    'btn-strava-analyze', 'strava-ai-output'
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// DOC CREATE
+// ═══════════════════════════════════════════════════
+let currentDocType = 'out';
+let _garudaB64 = null;
+
+function esc(s) {
+  return (s || '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+}
+function v(id) { return esc(document.getElementById(id)?.value || ''); }
+
+function garudaHtml(size) {
+  const h = size === 'lg' ? '3cm' : '1.5cm';
+  if (!_garudaB64)
+    return `<div style="width:${h};height:${h};border:1px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:${size === 'lg' ? '10pt' : '7pt'};font-weight:bold;font-family:serif">ครุฑ</div>`;
+  return `<img src="${_garudaB64}" style="height:${h};width:auto;object-fit:contain;display:block">`;
+}
+
+async function loadGaruda(e) {
+  const f = e.target.files?.[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = async ev => {
+    _garudaB64 = ev.target.result;
+    window._garudaB64 = _garudaB64;
+    document.getElementById('garuda-preview-thumb').innerHTML = `<img src="${_garudaB64}" style="width:100%;height:100%;object-fit:contain">`;
+    try { await window._fb.setData('settings/garudaImg', _garudaB64); } catch { }
+    updateDocPreview();
+  };
+  r.readAsDataURL(f);
+}
+
+async function clearGaruda() {
+  _garudaB64 = null; window._garudaB64 = null;
+  document.getElementById('garuda-preview-thumb').innerHTML = 'ครุฑ';
+  try { await window._fb.removeData('settings/garudaImg'); } catch { }
+  updateDocPreview();
+}
+
+function switchDocTab(type, el) {
+  currentDocType = type;
+  document.querySelectorAll('#page-doc-create .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('do-attach-group').style.display = type === 'out' ? 'block' : 'none';
+  document.getElementById('do-bottom-section').style.display = type === 'out' ? 'block' : 'none';
+  updateDocPreview();
+}
+
+function updateDocPreview() {
+  let html = '';
+  if (currentDocType === 'out') {
+    html = `
+      <div style="text-align:center;margin-bottom:4pt">${garudaHtml('lg')}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4pt">
+        <div>ที่&nbsp;&nbsp;${v('do-num') || '......................'}</div>
+        <div style="text-align:right;white-space:pre-wrap">${v('do-dept') || 'ชื่อหน่วยงาน'}</div>
+      </div>
+      <div style="text-align:right;margin-bottom:10pt">${v('do-date') || 'วันที่'}</div>
+      ${v('do-attach') ? `<div style="margin-bottom:4pt">สิ่งที่ส่งมาด้วย&nbsp;&nbsp;${v('do-attach')}</div>` : ''}
+      <div style="margin-bottom:4pt">เรื่อง&nbsp;&nbsp;${v('do-subject') || '...............................................'}</div>
+      <div style="margin-bottom:12pt">เรียน&nbsp;&nbsp;${v('do-to') || '...............................................'}</div>
+      <hr style="border:none;border-top:.5pt solid #000;margin-bottom:12pt">
+      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body') || 'ด้วย ...'}</div>
+      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion') || 'จึงเรียนมาเพื่อโปรดพิจารณา'}</div>
+      <div style="margin-left:9cm;text-align:center;line-height:2">
+        <div style="margin-bottom:3cm">ขอแสดงความนับถือ</div>
+        <div>(${v('do-signer') || '...........................'})</div>
+        <div>${v('do-pos') || 'ตำแหน่ง'}</div>
+      </div>
+      <div style="margin-top:auto;padding-top:10pt;font-size:14pt;border-top:.5pt solid #ccc;line-height:1.8">
+        ${v('do-contact-name') ? `<div>${v('do-contact-name')}</div>` : ''}
+        ${v('do-contact-phone') ? `<div>โทร. ${v('do-contact-phone')}</div>` : ''}
+        ${v('do-slogan') ? `<div style="text-align:center;margin-top:8pt;font-weight:bold">${v('do-slogan')}</div>` : ''}
+      </div>`;
+  } else {
+    html = `
+      <div style="display:flex;align-items:flex-end;gap:12pt;margin-bottom:8pt">
+        ${garudaHtml('sm')}
+        <div style="font-size:22pt;font-weight:bold;padding-bottom:2pt">บันทึกข้อความ</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:16pt;margin-bottom:8pt">
+        <tr>
+          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:3cm">ส่วนราชการ</td>
+          <td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-dept')}</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">ที่</td>
+          <td style="border:1px solid #000;padding:3pt 6pt;width:5cm">${v('do-num') || '&nbsp;'}</td>
+          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:1.5cm">วันที่</td>
+          <td style="border:1px solid #000;padding:3pt 6pt">${v('do-date')}</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรื่อง</td>
+          <td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-subject')}</td>
+        </tr>
+        <tr>
+          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรียน</td>
+          <td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-to')}</td>
+        </tr>
+      </table>
+      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body') || 'ด้วย ...'}</div>
+      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion') || 'จึงเรียนมาเพื่อโปรดทราบ'}</div>
+      <div style="margin-left:9cm;text-align:center;line-height:2">
+        <div style="margin-bottom:2.5cm"></div>
+        <div>(${v('do-signer') || '...........................'})</div>
+        <div>${v('do-pos') || 'ตำแหน่ง'}</div>
+      </div>`;
+  }
+  const area = document.getElementById('doc-render-area');
+  if (area) area.innerHTML = html;
+}
+
+function printDoc() {
+  const content = document.getElementById('doc-render-area')?.innerHTML || '';
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <style>
+      @font-face{font-family:'TH Sarabun New';src:local('TH Sarabun New');}
+      @page{size:A4;margin:0;}
+      body{margin:0;}
+      .p{width:210mm;min-height:297mm;padding:2.5cm 2cm 2cm 3cm;font-family:'TH Sarabun New',serif;font-size:16pt;color:#000;display:flex;flex-direction:column;box-sizing:border-box;}
+    </style>
+  </head><body><div class="p">${content}</div>
+  <script>window.onload=()=>{window.print();window.onafterprint=()=>window.close();};<\/script></body></html>`);
+  win.document.close();
+}
+
+async function saveDocDb() {
+  showLoading('กำลังบันทึก...');
+  try {
+    await window._fb.pushData('docs', {
+      num: document.getElementById('do-num')?.value || '',
+      sub: document.getElementById('do-subject')?.value || '',
+      date: document.getElementById('do-date')?.value || '',
+      type: currentDocType,
+      createdAt: Date.now()
+    });
+    showToast('✅ บันทึกทะเบียนแล้ว');
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  finally { hideLoading(); }
+}
+
+function renderDocList() {
+  const body = document.getElementById('doc-table-body');
+  if (!body) return;
+  if (!window._docs.length) {
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">ยังไม่มีข้อมูล</td></tr>';
+    return;
+  }
+  const typeLabel = { out: 'หนังสือภายนอก', memo: 'บันทึกข้อความ' };
+  body.innerHTML = window._docs.map((d, i) => `
+    <tr>
+      <td style="color:var(--text3);font-size:11px">${i + 1}</td>
+      <td>${d.num || '-'}</td>
+      <td>${d.date || '-'}</td>
+      <td>${d.sub || '-'}</td>
+      <td style="font-size:12px;color:var(--text2)">${typeLabel[d.type] || '-'}</td>
+      <td>
+        <button onclick="deleteDoc('${d._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px" title="ลบ">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function deleteDoc(key) {
+  if (!confirm('ลบรายการนี้?')) return;
+  try {
+    await window._fb.removeData(`docs/${key}`);
+    showToast('ลบแล้ว');
+  } catch (e) { showToast('ลบไม่สำเร็จ', 'error'); }
+}
+
+function exportDocList() {
+  if (!window._docs.length) { showToast('ไม่มีข้อมูล', 'error'); return; }
+  const csv = [
+    '\uFEFF#,เลขที่,วันที่,เรื่อง,ประเภท',
+    ...window._docs.map((d, i) => `${i + 1},"${d.num || ''}","${d.date || ''}","${d.sub || ''}","${d.type || ''}"`)
+  ].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'ทะเบียนหนังสือ.csv';
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════
+// SETTINGS SAVE
+// ═══════════════════════════════════════════════════
+async function saveClaudeKey() {
+  const key = document.getElementById('set-claude-key').value.trim();
+  if (!key) { showToast('กรุณาใส่ API Key', 'error'); return; }
+  showLoading('กำลังบันทึก...');
+  try {
+    window._claudeKey = key;
+    const cfg = await window._fb.getData('settings') || {};
+    cfg.claudeKey = key;
+    await window._fb.setData('settings', cfg);
+    document.getElementById('claude-key-status').innerHTML =
+      '<span style="color:var(--accent2)">✓ บันทึกขึ้น Firebase แล้ว — พร้อมใช้งาน</span>';
+    showToast('✅ บันทึก API Key แล้ว');
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  finally { hideLoading(); }
+}
+
+async function saveStravaSettings() {
+  showLoading('กำลังบันทึก...');
+  try {
+    const cfg = await window._fb.getData('settings') || {};
+    cfg.stravaId = document.getElementById('set-strava-id').value;
+    cfg.stravaSecret = document.getElementById('set-strava-secret').value;
+    cfg.stravaRedirect = document.getElementById('set-strava-redirect').value;
+    await window._fb.setData('settings', cfg);
+    showToast('✅ บันทึก Strava Settings แล้ว');
+  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  finally { hideLoading(); }
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+document.getElementById('today-date-label').textContent =
+  new Date().toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+</script>
+</body>
+</html>
