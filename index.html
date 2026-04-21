@@ -7,6 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
+<!-- PDF.js สำหรับอ่านไฟล์ PDF ภายในเบราว์เซอร์ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -240,6 +243,13 @@ onAuthStateChanged(auth, user => {
   /* DOC */
   .doc-preview-bg{background:#525659;padding:16px;border-radius:14px;overflow:auto;max-height:880px;display:flex;justify-content:center;}
   .a4-sim{width:210mm;min-height:297mm;height:auto;margin:0 auto;padding:2.5cm 2cm 2cm 3cm;background:#fff;color:#000;box-shadow:0 0 20px rgba(0,0,0,.5);font-family:'TH Sarabun New','Sarabun',serif;font-size:16pt;line-height:1.15;display:flex;flex-direction:column;box-sizing:border-box;}
+
+  /* PDF DROP ZONE */
+  .pdf-drop-zone{border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;}
+  .pdf-drop-zone:hover{border-color:var(--accent);background:rgba(59,130,246,.04);}
+  .pdf-drop-zone .drop-icon{font-size:40px;margin-bottom:10px;}
+  .pdf-drop-zone .drop-title{font-weight:700;margin-bottom:4px;}
+  .pdf-drop-zone .drop-sub{font-size:12px;color:var(--text2);}
 
   /* TOAST */
   .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;display:none;animation:slideUp .25s ease;}
@@ -487,17 +497,27 @@ onAuthStateChanged(auth, user => {
     <!-- DOC SUMMARY -->
     <div class="page" id="page-doc-summary">
       <h1>AI สรุปหนังสือเข้า 📑</h1>
+      <div class="subtitle">Claude AI จะดึงข้อความจาก PDF/รูปภาพ และสรุปเนื้อหาอัตโนมัติ</div>
       <div class="card">
-        <div class="form-group"><label>เนื้อหาหนังสือ</label><textarea id="ai-doc-input" rows="10" placeholder="วางเนื้อหา..."></textarea></div>
-        <div class="form-group"><label>รูปแบบสรุป</label>
+        
+        <div class="pdf-drop-zone" id="pdf-drop-zone" onclick="document.getElementById('doc-upload-input').click()">
+          <div class="drop-icon">📄</div>
+          <div class="drop-title">อัปโหลดไฟล์ PDF หรือรูปภาพ</div>
+          <div class="drop-sub">คลิกเพื่อเลือกไฟล์ (สกัดข้อความอัตโนมัติ)</div>
+          <input type="file" id="doc-upload-input" accept=".pdf,image/*" style="display:none" onchange="handleDocUpload(event)">
+        </div>
+
+        <div class="form-group"><label>ข้อความที่สกัดได้ (สามารถแก้ไขก่อนให้ AI สรุป)</label><textarea id="ai-doc-input" rows="8" placeholder="เนื้อหาจะปรากฏที่นี่..."></textarea></div>
+        
+        <div class="form-group mt-12"><label>รูปแบบสรุป</label>
           <select id="doc-summary-format">
             <option value="brief">สั้น 3 ข้อ (เสนอผู้บริหาร)</option>
             <option value="detailed">ละเอียดพร้อมสาระสำคัญ</option>
             <option value="action">Action Items — ต้องดำเนินการอะไร</option>
           </select>
         </div>
-        <button class="btn btn-primary" id="btn-doc-ai" onclick="summarizeDoc()">✨ สรุป</button>
-        <div id="ai-doc-output-page" class="ai-bubble" style="display:none"></div>
+        <button class="btn btn-primary" id="btn-doc-ai" onclick="summarizeDoc()">✨ สรุปเนื้อหาด้วย AI</button>
+        <div id="ai-doc-output-page" class="ai-bubble mt-12" style="display:none"></div>
       </div>
     </div>
 
@@ -609,6 +629,8 @@ onAuthStateChanged(auth, user => {
 <script>
 'use strict';
 
+let _garudaCache = null; // ประกาศไว้ใน Global Scope เพื่อป้องกัน ReferenceError
+
 // ===== WAIT FOR FIREBASE =====
 window._appReady = async (user) => {
   showLoading('กำลังโหลดข้อมูล...');
@@ -619,7 +641,8 @@ window._appReady = async (user) => {
     if (cfg?.stravaId) document.getElementById('set-strava-id').value = cfg.stravaId;
     if (cfg?.stravaSecret) document.getElementById('set-strava-secret').value = cfg.stravaSecret;
     if (cfg?.stravaRedirect) document.getElementById('set-strava-redirect').value = cfg.stravaRedirect;
-    // โหลด garuda เข้า memory cache — ทำให้ updateDocPreview() ไม่ต้อง async
+    
+    // โหลด garuda เข้า memory cache
     if (cfg?.garudaImg) {
       _garudaCache = cfg.garudaImg;
       document.getElementById('garuda-preview-thumb').innerHTML = `<img src="${cfg.garudaImg}" style="width:100%;height:100%;object-fit:contain">`;
@@ -628,8 +651,9 @@ window._appReady = async (user) => {
     startRealtimeListeners();
   } catch (error) {
     console.error(error);
-    showToast('โหลดข้อมูลล้มเหลว: ' + error.message, 'error');
+    showToast('โหลดข้อมูลการตั้งค่าล้มเหลว: ' + error.message, 'error');
   } finally {
+    // บังคับให้ปิด Loading เสมอ ไม่ว่า Firebase จะโหลดผ่านหรือไม่
     hideLoading();
     showPage('today');
   }
@@ -1058,7 +1082,56 @@ async function summarizeDoc() {
   if(res) out.innerHTML=res.replace(/\n/g,'<br>'); else out.style.display='none';
 }
 
-// ===== IMAGE AI =====
+// ===== IMAGE AI & PDF =====
+async function handleDocUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  showLoading('กำลังอ่านไฟล์...');
+  try {
+    if (file.type === 'application/pdf') {
+      const pdfjsLib = window['pdfjs-dist/build/pdf'];
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+      }
+      document.getElementById('ai-doc-input').value = fullText.trim();
+      showToast('ดึงข้อความจาก PDF สำเร็จ');
+    } else if (file.type.startsWith('image/')) {
+      const apiKey = window._claudeKey;
+      if (!apiKey) throw new Error('ตั้งค่า API Key ก่อนใช้ AI สกัดข้อความจากรูปภาพ');
+      const base64 = await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.readAsDataURL(file);});
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-allow-browser': 'true'},
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 1024,
+          messages: [{role: 'user', content: [
+            {type: 'image', source: {type: 'base64', media_type: file.type, data: base64}},
+            {type: 'text', text: 'Extract all readable text from this image. Output only the extracted text in the original language.'}
+          ]}]
+        })
+      });
+      const data = await response.json();
+      if(!response.ok) throw new Error(data.error?.message||'API Error');
+      document.getElementById('ai-doc-input').value = data.content[0].text;
+      showToast('ดึงข้อความจากรูปภาพสำเร็จ');
+    } else {
+      throw new Error('ระบบรองรับเฉพาะไฟล์ PDF และ รูปภาพ');
+    }
+  } catch(e) {
+    showToast('อ่านไฟล์ล้มเหลว: ' + e.message, 'error');
+  } finally {
+    hideLoading();
+    event.target.value = '';
+  }
+}
+
 async function processImageWithAI(event) {
   const files=Array.from(event.target.files);
   if(!files.length) return;
@@ -1131,6 +1204,30 @@ function updateDocPreview() {
   }
   const area=document.getElementById('doc-render-area');
   if(area) area.innerHTML=html;
+}
+
+function loadGaruda(e) {
+  const r=new FileReader(); r.onload=async ev=>{
+    _garudaCache=ev.target.result;
+    await window._fb.setData('settings/garudaImg',ev.target.result);
+    document.getElementById('garuda-preview-thumb').innerHTML=`<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:contain">`;
+    updateDocPreview();
+  }; r.readAsDataURL(e.target.files[0]);
+}
+
+async function clearGaruda() {
+  _garudaCache=null;
+  await window._fb.removeData('settings/garudaImg');
+  document.getElementById('garuda-preview-thumb').innerHTML='ครุฑ';
+  updateDocPreview();
+}
+
+function switchDocTab(type,el) {
+  currentDocType=type;
+  document.querySelectorAll('#page-doc-create .tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
+  document.getElementById('do-attach-group').style.display=type==='out'?'block':'none';
+  document.getElementById('do-bottom-contact').style.display=type==='out'?'block':'none';
+  updateDocPreview();
 }
 </script>
 </body>
