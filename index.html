@@ -702,12 +702,17 @@ onAuthStateChanged(auth, user => {
           <button id="btn-strava-connect" class="btn btn-strava" onclick="stravaConnect()" style="width:100%">🔗 เชื่อมต่อ Strava</button>
           <button id="btn-strava-disconnect" class="btn btn-ghost mt-8" onclick="stravaDisconnect()" style="width:100%;display:none">✕ ยกเลิกการเชื่อมต่อ</button>
           <div class="mt-16" style="background:var(--surface2);border-radius:10px;padding:14px">
-            <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">วิธีรับ Access Token</div>
+            <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">วิธีรับ Refresh Token (ใช้ครั้งเดียว — ไม่หมดอายุ)</div>
             <ol style="padding-left:16px;font-size:13px;color:var(--text2);line-height:2.2">
-              <li>ไปที่ <a href="https://www.strava.com/settings/api" target="_blank" style="color:var(--accent)">strava.com/settings/api</a></li>
-              <li>คัดลอก <strong style="color:var(--text)">โทเค็นการเข้าถึงของคุณ</strong></li>
-              <li>กดปุ่มเชื่อมต่อแล้ววางได้เลย</li>
-              <li style="color:var(--accent3)">⚠️ Token มีอายุ 6 ชั่วโมง ต้อง Sync ก่อนหมด</li>
+              <li>ไปที่ <a href="https://www.strava.com/settings/api" target="_blank" style="color:var(--accent)">strava.com/settings/api</a> — ดู <strong style="color:var(--text)">Client ID</strong> และ <strong style="color:var(--text)">Client Secret</strong> แล้วบันทึกในหน้าตั้งค่าก่อน</li>
+              <li>เปิด URL นี้ใน browser (แทน CLIENT_ID ด้วยเลขของคุณ):<br>
+                <code style="font-size:11px;color:var(--accent2);word-break:break-all">https://www.strava.com/oauth/authorize?client_id=CLIENT_ID&redirect_uri=http://localhost&response_type=code&scope=activity:read_all</code>
+              </li>
+              <li>กด <strong style="color:var(--text)">Authorize</strong> — browser จะ redirect ไป localhost (error ไม่เป็นไร) — คัดลอก <strong style="color:var(--accent3)">code=xxxx</strong> จาก URL</li>
+              <li>แลก code เป็น refresh_token โดย run คำสั่งนี้ใน terminal:<br>
+                <code style="font-size:11px;color:var(--accent2);word-break:break-all">curl -X POST https://www.strava.com/oauth/token -d "client_id=ID&client_secret=SECRET&code=CODE&grant_type=authorization_code"</code>
+              </li>
+              <li>คัดลอก <strong style="color:var(--accent2)">refresh_token</strong> จาก response แล้ววางด้านล่าง — ระบบจะ refresh อัตโนมัติตลอด ✅</li>
             </ol>
           </div>
         </div>
@@ -1601,39 +1606,121 @@ function stravaConnect() {
   const sb = document.getElementById('strava-status-box');
   sb.innerHTML = `
     <div style="width:100%">
-      <p style="font-weight:700;font-size:13px;margin-bottom:6px">วาง Access Token จาก strava.com/settings/api</p>
-      <p class="text-xs text2 mb-8" style="color:var(--accent3)">⚠️ Token มีอายุ ~6 ชั่วโมง ต้อง Paste ใหม่เมื่อหมดอายุ</p>
+      <p style="font-weight:700;font-size:13px;margin-bottom:4px">วาง Refresh Token <span style="color:var(--accent2);font-weight:400;font-size:12px">— ไม่หมดอายุ ใช้ครั้งเดียวตลอดไป</span></p>
+      <p class="text-xs text2 mb-8">ดูวิธีรับ Refresh Token จากคำแนะนำด้านล่าง (ต้องตั้งค่า Client ID / Secret ในหน้าตั้งค่าก่อน)</p>
       <div class="flex gap-8">
-        <input type="text" id="strava-token-input" placeholder="ab1bd0adb..." style="flex:1;font-size:12px">
+        <input type="text" id="strava-token-input" placeholder="วาง refresh_token ที่นี่..." style="flex:1;font-size:12px">
         <button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ เชื่อมต่อ</button>
       </div>
     </div>`;
 }
 
 async function stravaConnectDirect() {
-  const token = (document.getElementById('strava-token-input')?.value || '').trim();
-  if (!token) { showToast('กรุณาวาง Token', 'error'); return; }
-  showLoading('กำลังตรวจสอบ Token...');
+  const refreshToken = (document.getElementById('strava-token-input')?.value || '').trim();
+  if (!refreshToken) { showToast('กรุณาวาง Refresh Token', 'error'); return; }
+  showLoading('กำลังตรวจสอบ Refresh Token...');
   try {
-    const res = await fetch(`${STRAVA_API}/athlete`, { headers: { 'Authorization': `Bearer ${token}` } });
-    if (!res.ok) throw new Error(`Token ไม่ถูกต้อง (HTTP ${res.status})`);
+    const cfg = await window._fb.getData('settings') || {};
+    if (!cfg.stravaId || !cfg.stravaSecret) {
+      throw new Error('กรุณาบันทึก Client ID และ Client Secret ในหน้าตั้งค่าก่อน');
+    }
+    // แลก refresh_token เพื่อรับ access_token ใหม่
+    const exchanged = await stravaRefreshTokenCall(refreshToken, cfg.stravaId, cfg.stravaSecret);
+    // ดึงข้อมูล athlete
+    const res = await fetch(`${STRAVA_API}/athlete`, {
+      headers: { 'Authorization': `Bearer ${exchanged.access_token}` }
+    });
+    if (!res.ok) throw new Error(`ไม่สามารถดึงข้อมูล Athlete (HTTP ${res.status})`);
     const athlete = await res.json();
-    await window._fb.setData('strava_token', { access_token: token, expires_at: 9999999999, athlete });
-    showToast(`✅ ยินดีต้อนรับ ${athlete.firstname} ${athlete.lastname}!`);
+    await window._fb.setData('strava_token', {
+      access_token: exchanged.access_token,
+      refresh_token: refreshToken,           // เก็บ refresh_token ถาวร
+      expires_at: exchanged.expires_at,      // unix timestamp จริงจาก Strava
+      athlete
+    });
+    showToast(`✅ ยินดีต้อนรับ ${athlete.firstname} ${athlete.lastname}! (Auto-refresh พร้อมแล้ว)`);
     renderStravaPage();
   } catch (e) { showToast('Error: ' + e.message, 'error'); }
   finally { hideLoading(); }
 }
 
-async function stravaSync() {
+// ═══════════════════════════════════════════════════
+// STRAVA TOKEN HELPERS
+// ═══════════════════════════════════════════════════
+
+// เรียก Strava /oauth/token เพื่อ exchange refresh_token → access_token ใหม่
+async function stravaRefreshTokenCall(refreshToken, clientId, clientSecret) {
+  const res = await fetch('https://www.strava.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token'
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.message || `Refresh ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return await res.json(); // { access_token, refresh_token, expires_at, ... }
+}
+
+// ดึง access_token ที่ใช้ได้ — refresh อัตโนมัติถ้าหมดอายุหรือใกล้หมด (ภายใน 5 นาที)
+async function stravaGetValidToken() {
   const tokenData = await window._fb.getData('strava_token');
-  if (!tokenData?.access_token) { stravaTokenExpired(); return; }
+  if (!tokenData?.access_token) return null;
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const expiresAt = tokenData.expires_at || 0;
+  const BUFFER = 5 * 60; // 5 นาที buffer
+
+  if (expiresAt - nowSec > BUFFER) {
+    // ยังไม่หมด — ใช้ได้เลย
+    return tokenData.access_token;
+  }
+
+  // หมดหรือใกล้หมด — ต้อง refresh
+  if (!tokenData.refresh_token) {
+    // ยังเป็น token เก่าแบบ manual paste — บอกให้ connect ใหม่
+    stravaTokenExpired();
+    return null;
+  }
+
+  try {
+    const cfg = await window._fb.getData('settings') || {};
+    if (!cfg.stravaId || !cfg.stravaSecret) {
+      showToast('⚠️ ไม่พบ Client ID/Secret — กรุณาตั้งค่าใหม่', 'error');
+      return null;
+    }
+    showToast('🔄 กำลัง Refresh Strava Token...', 'info');
+    const refreshed = await stravaRefreshTokenCall(
+      tokenData.refresh_token, cfg.stravaId, cfg.stravaSecret
+    );
+    // Strava อาจส่ง refresh_token ใหม่มาด้วย — บันทึกทับ
+    await window._fb.setData('strava_token', {
+      ...tokenData,
+      access_token: refreshed.access_token,
+      refresh_token: refreshed.refresh_token || tokenData.refresh_token,
+      expires_at: refreshed.expires_at
+    });
+    return refreshed.access_token;
+  } catch (e) {
+    showToast('⚠️ Refresh Token ไม่สำเร็จ: ' + e.message, 'error');
+    return null;
+  }
+}
+
+async function stravaSync() {
   const btn = document.getElementById('btn-strava-sync');
   const oldHTML = btn?.innerHTML;
   if (btn) { btn.innerHTML = '⏳ กำลัง Sync...'; btn.disabled = true; }
   try {
+    const accessToken = await stravaGetValidToken();
+    if (!accessToken) return; // stravaGetValidToken จัดการ error แล้ว
     const res = await fetch(`${STRAVA_API}/athlete/activities?per_page=30`, {
-      headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+      headers: { 'Authorization': `Bearer ${accessToken}` }
     });
     if (res.status === 401) { stravaTokenExpired(); return; }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1674,7 +1761,7 @@ async function renderStravaPage() {
       <div style="width:9px;height:9px;border-radius:50%;background:var(--strava)"></div>
       <div>
         <div style="font-weight:700;color:var(--strava);font-size:14px">${a.firstname || ''} ${a.lastname || ''}</div>
-        <div style="font-size:11px;color:var(--text2)">${a.city || ''} · Connected ✓</div>
+        <div style="font-size:11px;color:var(--text2)">${a.city || ''} · Connected ✓ · ${tokenData.refresh_token ? '🔄 Auto-refresh พร้อม' : '⚠️ ใช้ Manual Token (หมดอายุ 6 ชม.)'}</div>
       </div>`;
     cb.style.display = 'none'; db.style.display = 'block'; sync.style.display = 'inline-flex';
     const cached = await window._fb.getData('strava_activities');
