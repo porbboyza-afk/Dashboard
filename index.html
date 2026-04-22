@@ -102,7 +102,7 @@ onAuthStateChanged(auth, user => {
   ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:10px;}
 
-  /* ── LOGIN ── */
+  /* LOGIN */
   #login-screen{
     position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
     background:var(--bg);z-index:999;
@@ -110,69 +110,29 @@ onAuthStateChanged(auth, user => {
       radial-gradient(ellipse 60% 50% at 15% 50%, rgba(79,142,247,.07) 0%, transparent 70%),
       radial-gradient(ellipse 50% 40% at 85% 20%, rgba(34,211,160,.05) 0%, transparent 60%);
   }
-  .login-box{
-    text-align:center;padding:52px 48px;
-    background:var(--surface);
-    border:1px solid var(--border2);
-    border-radius:24px;width:420px;
-    box-shadow:0 32px 64px rgba(0,0,0,.6), var(--glow);
-  }
-  .login-logo{
-    font-family:'Space Mono',monospace;font-size:36px;font-weight:700;
-    color:var(--accent);letter-spacing:-1px;margin-bottom:6px;
-    text-shadow:0 0 30px rgba(79,142,247,.4);
-  }
+  .login-box{text-align:center;padding:52px 48px;background:var(--surface);border:1px solid var(--border2);border-radius:24px;width:420px;box-shadow:0 32px 64px rgba(0,0,0,.6), var(--glow);}
+  .login-logo{font-family:'Space Mono',monospace;font-size:36px;font-weight:700;color:var(--accent);letter-spacing:-1px;margin-bottom:6px;text-shadow:0 0 30px rgba(79,142,247,.4);}
   .login-sub{color:var(--text2);font-size:14px;margin-bottom:36px;line-height:1.8;}
-  .btn-google{
-    display:flex;align-items:center;justify-content:center;gap:12px;
-    width:100%;padding:15px;border-radius:14px;
-    border:1px solid var(--border2);
-    background:var(--surface2);color:var(--text);
-    font-family:'Sarabun',sans-serif;font-size:16px;font-weight:600;
-    cursor:pointer;transition:all .25s;
-  }
+  .btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:15px;border-radius:14px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:'Sarabun',sans-serif;font-size:16px;font-weight:600;cursor:pointer;transition:all .25s;}
   .btn-google:hover{background:var(--surface3);border-color:var(--accent);box-shadow:var(--glow);transform:translateY(-2px);}
   .login-note{margin-top:20px;font-size:12px;color:var(--text3);line-height:1.7;}
-  .login-warn{
-    margin-top:14px;font-size:11px;color:var(--accent3);
-    background:rgba(246,166,35,.07);border:1px solid rgba(246,166,35,.2);
-    border-radius:10px;padding:12px;line-height:1.7;
-  }
+  .login-warn{margin-top:14px;font-size:11px;color:var(--accent3);background:rgba(246,166,35,.07);border:1px solid rgba(246,166,35,.2);border-radius:10px;padding:12px;line-height:1.7;}
 
-  /* ── APP SHELL ── */
+  /* APP SHELL */
   #app-shell{display:none;min-height:100vh;}
 
-  /* ── SIDEBAR ── */
-  .sidebar{
-    position:fixed;left:0;top:0;bottom:0;width:248px;
-    background:var(--surface);
-    border-right:1px solid var(--border);
-    display:flex;flex-direction:column;z-index:100;overflow-y:auto;
-  }
-  .logo-area{
-    padding:22px 20px 18px;border-bottom:1px solid var(--border);
-    display:flex;align-items:center;gap:10px;
-  }
+  /* SIDEBAR */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:248px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;overflow-y:auto;}
+  .logo-area{padding:22px 20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
   .logo-text{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--accent);}
   .logo-text span{color:var(--text3);font-size:10px;display:block;font-weight:400;margin-top:2px;letter-spacing:.5px;}
   .nav{flex:1;padding:10px 0;}
-  .nav-section{
-    padding:14px 20px 5px;font-size:9px;letter-spacing:2px;
-    color:var(--text3);text-transform:uppercase;font-weight:700;
-  }
-  .nav-item{
-    display:flex;align-items:center;gap:12px;padding:10px 20px;
-    cursor:pointer;color:var(--text2);font-size:13.5px;
-    border-left:2px solid transparent;transition:all .18s;
-    border-radius:0 8px 8px 0;margin:1px 8px 1px 0;
-  }
+  .nav-section{padding:14px 20px 5px;font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;font-weight:700;}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;color:var(--text2);font-size:13.5px;border-left:2px solid transparent;transition:all .18s;border-radius:0 8px 8px 0;margin:1px 8px 1px 0;}
   .nav-item:hover{color:var(--text);background:var(--surface2);border-left-color:var(--border2);}
   .nav-item.active{color:var(--accent);background:rgba(79,142,247,.08);border-left-color:var(--accent);font-weight:600;}
   .nav-item .icon{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
-  .user-area{
-    padding:14px 16px;border-top:1px solid var(--border);
-    display:flex;align-items:center;gap:10px;
-  }
+  .user-area{padding:14px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
   .user-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;}
   .user-info{flex:1;min-width:0;}
   .user-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -180,7 +140,7 @@ onAuthStateChanged(auth, user => {
   .btn-logout{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px;transition:color .2s;}
   .btn-logout:hover{color:var(--accent4);}
 
-  /* ── MAIN ── */
+  /* MAIN */
   .main{margin-left:248px;padding:28px 32px;min-height:100vh;flex:1;}
   .page{display:none;animation:fadeIn .22s ease;}
   .page.active{display:block;}
@@ -188,26 +148,19 @@ onAuthStateChanged(auth, user => {
   h1{font-size:23px;font-weight:700;margin-bottom:3px;letter-spacing:-.3px;}
   .subtitle{color:var(--text2);font-size:13px;margin-bottom:22px;}
 
-  /* ── GRID & CARDS ── */
+  /* GRID & CARDS */
   .grid{display:grid;gap:16px;}
   .grid-2{grid-template-columns:1fr 1fr;}
   .grid-3{grid-template-columns:1fr 1fr 1fr;}
-  .card{
-    background:var(--surface);border:1px solid var(--border);
-    border-radius:14px;padding:20px;
-    transition:border-color .2s;
-  }
+  .grid-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:border-color .2s;}
   .card:hover{border-color:var(--border2);}
   .card-title{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px;}
   .stat-num{font-family:'Space Mono',monospace;font-size:30px;font-weight:700;color:var(--text);}
   .stat-unit{font-size:13px;color:var(--text2);margin-left:5px;}
 
-  /* ── BUTTONS ── */
-  .btn{
-    padding:9px 16px;border-radius:9px;border:none;cursor:pointer;
-    font-family:'Sarabun',sans-serif;font-size:14px;font-weight:600;
-    transition:all .18s;display:inline-flex;align-items:center;gap:6px;
-  }
+  /* BUTTONS */
+  .btn{padding:9px 16px;border-radius:9px;border:none;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:600;transition:all .18s;display:inline-flex;align-items:center;gap:6px;}
   .btn:disabled{opacity:.45;cursor:not-allowed;}
   .btn-primary{background:var(--accent);color:#fff;}
   .btn-primary:hover:not(:disabled){background:#3b7ee8;box-shadow:0 4px 16px rgba(79,142,247,.35);}
@@ -221,151 +174,107 @@ onAuthStateChanged(auth, user => {
   .btn-sm{padding:6px 12px;font-size:13px;}
   .btn-xs{padding:4px 9px;font-size:12px;}
 
-  /* ── FORM ── */
+  /* FORM */
   .form-group{margin-bottom:13px;}
   label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;}
-  input,select,textarea{
-    width:100%;background:var(--bg);border:1px solid var(--border);
-    border-radius:9px;padding:9px 13px;color:var(--text);
-    font-family:'Sarabun',sans-serif;font-size:14px;
-    transition:border-color .2s,background .2s;outline:none;
-  }
+  input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:9px 13px;color:var(--text);font-family:'Sarabun',sans-serif;font-size:14px;transition:border-color .2s,background .2s;outline:none;}
   input:focus,select:focus,textarea:focus{border-color:var(--accent);background:var(--surface2);}
   textarea{resize:vertical;}
   select option{background:var(--surface2);}
 
-  /* ── TABS ── */
+  /* TABS */
   .tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);}
-  .tab{
-    padding:9px 18px;cursor:pointer;font-size:13px;font-weight:600;
-    color:var(--text2);border-bottom:2px solid transparent;
-    transition:all .18s;margin-bottom:-1px;
-  }
+  .tab{padding:9px 18px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);border-bottom:2px solid transparent;transition:all .18s;margin-bottom:-1px;}
   .tab:hover{color:var(--text);}
   .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
 
-  /* ── TABLE ── */
+  /* TABLE */
   table{width:100%;border-collapse:collapse;}
   th{text-align:left;font-size:10px;color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.8px;font-weight:700;}
   td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle;}
   tr:last-child td{border-bottom:none;}
   tbody tr:hover td{background:rgba(255,255,255,.012);}
 
-  /* ── AI BOX ── */
-  .ai-box{
-    background:linear-gradient(135deg,rgba(79,142,247,.06),rgba(34,211,160,.03));
-    border:1px solid rgba(79,142,247,.22);border-radius:14px;padding:20px;
-  }
-  .ai-result{
-    background:var(--surface2);border:1px solid var(--border);
-    padding:16px;border-radius:10px;margin-top:12px;
-    line-height:1.85;font-size:14px;color:var(--text);
-  }
+  /* AI BOX */
+  .ai-box{background:linear-gradient(135deg,rgba(79,142,247,.06),rgba(34,211,160,.03));border:1px solid rgba(79,142,247,.22);border-radius:14px;padding:20px;}
+  .ai-result{background:var(--surface2);border:1px solid var(--border);padding:16px;border-radius:10px;margin-top:12px;line-height:1.85;font-size:14px;color:var(--text);}
   .ai-result:empty{display:none;}
 
-  /* ── CHART ── */
+  /* CHART */
   .chart-wrap{position:relative;height:220px;}
 
-  /* ── DOC PREVIEW ── */
-  .doc-preview-bg{
-    background:#3a3d42;padding:16px;border-radius:14px;
-    overflow:auto;max-height:900px;display:flex;justify-content:center;
-  }
-  .a4-sim{
-    width:210mm;min-height:297mm;height:auto;margin:0 auto;
-    padding:2.5cm 2cm 2cm 3cm;background:#fff;color:#000;
-    box-shadow:0 4px 32px rgba(0,0,0,.6);
-    font-family:'TH Sarabun New','Sarabun',serif;
-    font-size:16pt;line-height:1.15;
-    display:flex;flex-direction:column;box-sizing:border-box;
-  }
+  /* DOC PREVIEW */
+  .doc-preview-bg{background:#3a3d42;padding:16px;border-radius:14px;overflow:auto;max-height:900px;display:flex;justify-content:center;}
+  .a4-sim{width:210mm;min-height:297mm;height:auto;margin:0 auto;padding:2.5cm 2cm 2cm 3cm;background:#fff;color:#000;box-shadow:0 4px 32px rgba(0,0,0,.6);font-family:'TH Sarabun New','Sarabun',serif;font-size:16pt;line-height:1.15;display:flex;flex-direction:column;box-sizing:border-box;}
 
-  /* ── PDF DROP ZONE ── */
-  .drop-zone{
-    border:2px dashed var(--border2);border-radius:12px;padding:28px 20px;
-    text-align:center;cursor:pointer;transition:all .2s;
-    background:rgba(79,142,247,.02);
-  }
-  .drop-zone:hover,.drop-zone.drag-over{
-    border-color:var(--accent);background:rgba(79,142,247,.06);
-  }
+  /* PDF DROP ZONE */
+  .drop-zone{border:2px dashed var(--border2);border-radius:12px;padding:28px 20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(79,142,247,.02);}
+  .drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(79,142,247,.06);}
   .drop-zone-icon{font-size:36px;margin-bottom:8px;}
   .drop-zone-title{font-weight:700;font-size:15px;margin-bottom:4px;}
   .drop-zone-sub{font-size:12px;color:var(--text2);}
-  .file-chip{
-    display:inline-flex;align-items:center;gap:8px;
-    background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);
-    color:#93c5fd;border-radius:20px;padding:6px 14px;
-    font-size:13px;font-weight:600;margin-bottom:12px;
-  }
+  .file-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);color:#93c5fd;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;margin-bottom:12px;}
   .file-chip button{background:none;border:none;color:#93c5fd;cursor:pointer;font-size:15px;line-height:1;padding:0 2px;}
 
-  /* ── STAT CARD ACCENT ── */
+  /* STAT CARD ACCENT */
   .stat-card{position:relative;overflow:hidden;}
-  .stat-card::before{
-    content:'';position:absolute;top:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg,var(--accent),var(--accent2));
-    opacity:.6;
-  }
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:.6;}
 
-  /* ── STATUS PILL ── */
-  .status-pill{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;
-  }
+  /* STATUS PILL */
+  .status-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;}
   .status-pill.ok{background:rgba(34,211,160,.1);color:var(--accent2);border:1px solid rgba(34,211,160,.25);}
   .status-pill.warn{background:rgba(246,166,35,.1);color:var(--accent3);border:1px solid rgba(246,166,35,.25);}
   .status-pill.err{background:rgba(242,95,92,.1);color:var(--accent4);border:1px solid rgba(242,95,92,.25);}
   .status-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
 
-  /* ── TOAST ── */
-  .toast{
-    position:fixed;bottom:24px;right:24px;
-    padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;
-    z-index:9999;display:none;
-    animation:toastIn .25s cubic-bezier(.34,1.56,.64,1);
-    max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.4);
-  }
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:9999;display:none;animation:toastIn .25s cubic-bezier(.34,1.56,.64,1);max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.4);}
   .toast-success{background:var(--accent2);color:#000;}
   .toast-error{background:var(--accent4);color:#fff;}
   .toast-info{background:var(--accent);color:#fff;}
   @keyframes toastIn{from{opacity:0;transform:translateY(12px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
 
-  /* ── LOADING ── */
-  .loading-overlay{
-    display:none;position:fixed;inset:0;
-    background:rgba(7,9,15,.82);backdrop-filter:blur(4px);
-    z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px;
-  }
+  /* LOADING */
+  .loading-overlay{display:none;position:fixed;inset:0;background:rgba(7,9,15,.82);backdrop-filter:blur(4px);z-index:500;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
   .loading-overlay.show{display:flex;}
-  .spinner{
-    width:40px;height:40px;
-    border:3px solid var(--border2);
-    border-top-color:var(--accent);
-    border-radius:50%;animation:spin .65s linear infinite;
-  }
+  .spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .65s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .loading-text{color:var(--text2);font-size:14px;}
 
-  /* ── WORKOUT ITEM ── */
-  .workout-item{
-    display:flex;align-items:center;gap:10px;
-    padding:10px 0;border-bottom:1px solid var(--border);
-    transition:background .15s;
-  }
+  /* WORKOUT ITEM */
+  .workout-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);transition:background .15s;}
   .workout-item:last-child{border-bottom:none;}
   .workout-icon{font-size:20px;width:28px;text-align:center;flex-shrink:0;}
   .workout-main{font-weight:700;font-size:14px;}
   .workout-sub{font-size:12px;color:var(--text2);margin-top:2px;}
 
-  /* ── SPLITS TABLE ── */
-  .splits-wrap{
-    background:var(--bg);border:1px solid var(--border);
-    border-radius:10px;padding:14px;margin-bottom:14px;
-  }
+  /* SPLITS TABLE */
+  .splits-wrap{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;}
   .splits-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 
-  /* ── UTILS ── */
+  /* ── STATS PAGE WEEK NAV ── */
+  .week-nav{display:flex;align-items:center;gap:12px;}
+  .week-nav-btn{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;padding:6px 12px;font-size:13px;font-weight:700;transition:all .18s;}
+  .week-nav-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .week-nav-label{font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);min-width:180px;text-align:center;}
+
+  /* ── COACH PLAN ── */
+  .plan-day{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:8px;transition:border-color .2s;}
+  .plan-day.done{border-color:var(--accent2);background:rgba(34,211,160,.05);}
+  .plan-day.missed{border-color:var(--accent4);background:rgba(242,95,92,.04);}
+  .plan-day.today-row{border-color:var(--accent);background:rgba(79,142,247,.06);}
+  .plan-day-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .plan-day-date{font-size:12px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+  .plan-day-badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;}
+  .badge-done{background:rgba(34,211,160,.15);color:var(--accent2);}
+  .badge-missed{background:rgba(242,95,92,.12);color:var(--accent4);}
+  .badge-today{background:rgba(79,142,247,.15);color:var(--accent);}
+  .badge-upcoming{background:rgba(123,156,196,.1);color:var(--text3);}
+  .plan-day-desc{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px;}
+  .plan-day-target{font-size:12px;color:var(--text2);}
+  .plan-day-actual{font-size:12px;color:var(--accent2);margin-top:4px;font-weight:600;}
+
+  /* UTILS */
   .flex{display:flex;}.items-center{align-items:center;}.justify-between{justify-content:space-between;}
   .gap-8{gap:8px;}.gap-12{gap:12px;}.gap-16{gap:16px;}
   .mt-8{margin-top:8px;}.mt-12{margin-top:12px;}.mt-16{margin-top:16px;}.mt-20{margin-top:20px;}
@@ -377,10 +286,10 @@ onAuthStateChanged(auth, user => {
     .sidebar{width:56px;}
     .logo-text span,.nav-item span,.nav-section,.user-info{display:none;}
     .main{margin-left:56px;padding:16px;}
-    .grid-2,.grid-3{grid-template-columns:1fr;}
+    .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}
     h1{font-size:20px;}
     .stat-num{font-size:24px;}
-    .doc-preview-bg{display:none;} /* hide doc preview on mobile */
+    .doc-preview-bg{display:none;}
     .a4-sim{display:none;}
   }
   @media(max-width:480px){
@@ -402,7 +311,7 @@ onAuthStateChanged(auth, user => {
 </div>
 <div id="toast" class="toast"></div>
 
-<!-- ═══════════════ LOGIN ═══════════════ -->
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">MyDash</div>
@@ -421,7 +330,7 @@ onAuthStateChanged(auth, user => {
   </div>
 </div>
 
-<!-- ═══════════════ APP SHELL ═══════════════ -->
+<!-- APP SHELL -->
 <div id="app-shell" style="display:none">
 
   <!-- SIDEBAR -->
@@ -461,11 +370,10 @@ onAuthStateChanged(auth, user => {
   <!-- MAIN -->
   <main class="main">
 
-    <!-- ─── TODAY ─── -->
+    <!-- TODAY -->
     <div class="page active" id="page-today">
       <h1>สวัสดีครับ 👋</h1>
       <div class="subtitle" id="today-date-label"></div>
-
       <div class="grid grid-3 mb-16">
         <div class="card stat-card">
           <div class="card-title">ระยะวิ่ง 7 วัน</div>
@@ -480,7 +388,6 @@ onAuthStateChanged(auth, user => {
           <span class="stat-num" id="t-docs">—</span><span class="stat-unit">ฉบับ</span>
         </div>
       </div>
-
       <div class="grid grid-2">
         <div class="card">
           <div class="card-title">กิจกรรมล่าสุด</div>
@@ -494,7 +401,7 @@ onAuthStateChanged(auth, user => {
       </div>
     </div>
 
-    <!-- ─── FITNESS LOG ─── -->
+    <!-- FITNESS LOG -->
     <div class="page" id="page-fitness-log">
       <div class="flex justify-between items-center mb-16">
         <div>
@@ -519,7 +426,7 @@ onAuthStateChanged(auth, user => {
             </select>
           </div>
 
-          <!-- ─ NORMAL RUN FIELDS ─ -->
+          <!-- NORMAL RUN FIELDS -->
           <div id="fields-normal">
             <div class="grid grid-2" style="gap:10px">
               <div class="form-group"><label>ระยะทาง (กม.)</label><input type="number" id="r-distance" step="0.01" placeholder="0.00" oninput="buildSplits()"></div>
@@ -536,7 +443,6 @@ onAuthStateChanged(auth, user => {
               </div>
               <div class="form-group"><label>ความยาวก้าว (ม.)</label><input type="number" id="r-stride" step="0.01" placeholder="1.20"></div>
             </div>
-
             <div class="splits-wrap">
               <div class="splits-header">
                 <span style="font-size:12px;font-weight:700;color:var(--accent)">⚡ Splits รายกิโล</span>
@@ -546,7 +452,7 @@ onAuthStateChanged(auth, user => {
             </div>
           </div>
 
-          <!-- ─ INTERVAL FIELDS ─ -->
+          <!-- INTERVAL FIELDS -->
           <div id="fields-interval" style="display:none">
             <div style="background:rgba(246,166,35,.07);border:1px solid rgba(246,166,35,.2);border-radius:10px;padding:12px;margin-bottom:14px">
               <div style="font-size:12px;font-weight:700;color:var(--accent3);margin-bottom:10px">🔥 WARM UP</div>
@@ -556,7 +462,6 @@ onAuthStateChanged(auth, user => {
               </div>
               <div class="form-group"><label>เพซ (น:ว/กม.)</label><input type="text" id="iv-wu-pace" placeholder="6:30" style="font-family:'Space Mono',monospace;width:120px"></div>
             </div>
-
             <div style="background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:12px;margin-bottom:14px">
               <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px">⚡ MAIN SET</div>
               <div class="grid grid-2" style="gap:10px">
@@ -573,7 +478,6 @@ onAuthStateChanged(auth, user => {
                 <div class="form-group"><label>HR ช่วงพัก (bpm)</label><input type="number" id="iv-rest-hr" placeholder="120"></div>
               </div>
             </div>
-
             <div style="background:rgba(34,211,160,.07);border:1px solid rgba(34,211,160,.2);border-radius:10px;padding:12px;margin-bottom:14px">
               <div style="font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:10px">🧊 COOL DOWN</div>
               <div class="grid grid-2" style="gap:10px">
@@ -597,100 +501,266 @@ onAuthStateChanged(auth, user => {
       </div>
     </div>
 
-    <!-- ─── STATS ─── -->
+    <!-- ═══════════════════════════════════════════
+         STATS PAGE — REBUILT
+         ═══════════════════════════════════════════ -->
     <div class="page" id="page-fitness-stats">
-      <h1>สถิติ & วิเคราะห์ 📊</h1>
-      <div class="subtitle">ข้อมูล Realtime จาก Firebase + วิเคราะห์โดย Claude AI</div>
-      <div class="tabs">
-        <div class="tab active" onclick="switchStatsTab('week',this)">สัปดาห์นี้</div>
-        <div class="tab" onclick="switchStatsTab('month',this)">เดือนนี้</div>
+      <div class="flex justify-between items-center mb-16" style="flex-wrap:wrap;gap:12px">
+        <div>
+          <h1>สถิติ & วิเคราะห์ 📊</h1>
+          <div class="subtitle" style="margin:0">ข้อมูล Realtime จาก Firebase + Strava · วิเคราะห์โดย Claude AI</div>
+        </div>
       </div>
 
+      <!-- TABS -->
+      <div class="tabs">
+        <div class="tab active" onclick="switchStatsTab('week',this)">📅 รายสัปดาห์</div>
+        <div class="tab" onclick="switchStatsTab('month',this)">📆 รายเดือน</div>
+      </div>
+
+      <!-- ── WEEK VIEW ── -->
       <div id="stats-week-view">
+
+        <!-- Week navigation -->
+        <div class="flex items-center justify-between mb-16" style="flex-wrap:wrap;gap:10px">
+          <div class="week-nav">
+            <button class="week-nav-btn" onclick="navWeek(-1)">‹ สัปดาห์ก่อน</button>
+            <div class="week-nav-label" id="week-nav-label">สัปดาห์นี้</div>
+            <button class="week-nav-btn" id="btn-week-next" onclick="navWeek(1)">สัปดาห์ถัดไป ›</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="goToCurrentWeek()">📍 สัปดาห์นี้</button>
+        </div>
+
+        <!-- KPI strip -->
+        <div class="grid grid-4 mb-16">
+          <div class="card stat-card" style="padding:16px">
+            <div class="card-title">ระยะรวม</div>
+            <span class="stat-num" id="stat-wk-dist" style="font-size:26px">—</span><span class="stat-unit">กม.</span>
+          </div>
+          <div class="card stat-card" style="padding:16px">
+            <div class="card-title">จำนวนวัน</div>
+            <span class="stat-num" id="stat-wk-count" style="font-size:26px">—</span><span class="stat-unit">วัน</span>
+          </div>
+          <div class="card stat-card" style="padding:16px">
+            <div class="card-title">เวลารวม</div>
+            <span class="stat-num" id="stat-wk-time" style="font-size:26px">—</span><span class="stat-unit">น.</span>
+          </div>
+          <div class="card stat-card" style="padding:16px">
+            <div class="card-title">Pace เฉลี่ย</div>
+            <span class="stat-num" id="stat-wk-pace" style="font-size:26px">—</span>
+          </div>
+        </div>
+
+        <!-- Chart + day breakdown -->
         <div class="grid grid-2 mb-16">
           <div class="card">
-            <div class="card-title">ระยะทาง 7 วัน</div>
+            <div class="card-title">ระยะทางรายวัน (กม.)</div>
             <div class="chart-wrap"><canvas id="chart-week-trend"></canvas></div>
           </div>
           <div class="card">
-            <div class="card-title">สรุปสัปดาห์</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
-              <div style="background:var(--surface2);padding:13px;border-radius:10px">
-                <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">ระยะรวม</div>
-                <div class="mono bold" style="font-size:20px" id="stat-wk-dist">—</div>
-              </div>
-              <div style="background:var(--surface2);padding:13px;border-radius:10px">
-                <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">จำนวนวัน</div>
-                <div class="mono bold" style="font-size:20px" id="stat-wk-count">—</div>
-              </div>
-              <div style="background:var(--surface2);padding:13px;border-radius:10px">
-                <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">เวลารวม</div>
-                <div class="mono bold" style="font-size:20px" id="stat-wk-time">—</div>
-              </div>
-              <div style="background:var(--surface2);padding:13px;border-radius:10px">
-                <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">Pace เฉลี่ย</div>
-                <div class="mono bold" style="font-size:20px" id="stat-wk-pace">—</div>
-              </div>
-            </div>
+            <div class="card-title">กิจกรรมแต่ละวัน</div>
+            <div id="week-day-breakdown" style="display:flex;flex-direction:column;gap:4px;margin-top:4px"></div>
           </div>
         </div>
+
+        <!-- Training Load + extra KPIs -->
+        <div class="grid grid-3 mb-16">
+          <div class="card">
+            <div class="card-title">Training Load (ATL)</div>
+            <div id="stat-atl" style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--accent3)">—</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:4px">ความล้าสะสม 7 วัน</div>
+            <div id="atl-bar" style="height:6px;background:var(--surface3);border-radius:3px;margin-top:10px;overflow:hidden">
+              <div id="atl-bar-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent2),var(--accent3));border-radius:3px;transition:width .6s"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">HR เฉลี่ย</div>
+            <div id="stat-wk-hr" style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--accent4)">—</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:4px">bpm เฉลี่ยทุก session</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Cadence เฉลี่ย</div>
+            <div id="stat-wk-cad" style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--accent2)">—</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:4px">spm (เป้า ≥ 170)</div>
+          </div>
+        </div>
+
+        <!-- AI Analyze -->
         <div class="card ai-box">
           <div class="flex justify-between items-center mb-12">
-            <div class="card-title" style="margin:0">🤖 วิเคราะห์โดย Claude AI</div>
-            <button class="btn btn-primary btn-sm" id="btn-analyze-wk" onclick="analyzeFitnessAI()">✨ วิเคราะห์</button>
+            <div>
+              <div class="card-title" style="margin:0">🤖 วิเคราะห์โดย Claude AI</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:4px">รวมข้อมูลจาก Firebase + Strava · วิเคราะห์ตามสัปดาห์ที่เลือก</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btn-analyze-wk" onclick="analyzeFitnessAI('week')">✨ วิเคราะห์สัปดาห์นี้</button>
           </div>
           <div id="ai-stats-output" class="ai-result" style="display:none"></div>
         </div>
       </div>
 
+      <!-- ── MONTH VIEW ── -->
       <div id="stats-month-view" style="display:none">
-        <div class="card mb-16">
-          <div class="card-title">ระยะสะสมรายสัปดาห์เดือนนี้</div>
-          <div class="chart-wrap"><canvas id="chart-month-trend"></canvas></div>
+
+        <!-- Month navigation -->
+        <div class="flex items-center justify-between mb-16" style="flex-wrap:wrap;gap:10px">
+          <div class="week-nav">
+            <button class="week-nav-btn" onclick="navMonth(-1)">‹ เดือนก่อน</button>
+            <div class="week-nav-label" id="month-nav-label">เดือนนี้</div>
+            <button class="week-nav-btn" id="btn-month-next" onclick="navMonth(1)">เดือนถัดไป ›</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="goToCurrentMonth()">📍 เดือนนี้</button>
         </div>
+
+        <!-- Monthly KPI strip -->
+        <div class="grid grid-4 mb-16">
+          <div class="card stat-card" style="padding:16px">
+            <div class="card-title">ระยะรวมเดือน</div>
+            <span class="stat-num" id="stat-mo-dist" style="font-size:26px">—</span><span class="stat-unit">กม.</span>
+          </div>
+          <div class="card stat-card" style="padding:16px">
+            <div class="card-title">จำนวนกิจกรรม</div>
+            <span class="stat-num" id="stat-mo-count" style="font-size:26px">—</span><span class="stat-unit">ครั้ง</span>
+          </div>
+          <div class="card stat-card" style="padding:16px">
+            <div class="card-title">เวลารวม</div>
+            <span class="stat-num" id="stat-mo-time" style="font-size:26px">—</span><span class="stat-unit">น.</span>
+          </div>
+          <div class="card stat-card" style="padding:16px">
+            <div class="card-title">Pace เฉลี่ย</div>
+            <span class="stat-num" id="stat-mo-pace" style="font-size:26px">—</span>
+          </div>
+        </div>
+
+        <div class="grid grid-2 mb-16">
+          <div class="card">
+            <div class="card-title">ระยะสะสมรายสัปดาห์</div>
+            <div class="chart-wrap"><canvas id="chart-month-trend"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">กิจกรรมตลอดเดือน</div>
+            <div id="month-activity-list" style="overflow-y:auto;max-height:220px;display:flex;flex-direction:column;gap:4px"></div>
+          </div>
+        </div>
+
+        <!-- AI analyze month -->
         <div class="card ai-box">
           <div class="flex justify-between items-center mb-12">
-            <div class="card-title" style="margin:0">🤖 วิเคราะห์รายเดือน</div>
-            <button class="btn btn-primary btn-sm" id="btn-analyze-mo" onclick="analyzeFitnessAI('month')">✨ วิเคราะห์</button>
+            <div>
+              <div class="card-title" style="margin:0">🤖 วิเคราะห์รายเดือน</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:4px">รวมข้อมูลทุก session ในเดือนที่เลือก</div>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btn-analyze-mo" onclick="analyzeFitnessAI('month')">✨ วิเคราะห์เดือนนี้</button>
           </div>
           <div id="ai-month-output" class="ai-result" style="display:none"></div>
         </div>
       </div>
     </div>
 
-    <!-- ─── COACH ─── -->
+    <!-- ═══════════════════════════════════════════
+         AI COACH — REBUILT WITH TRACKING
+         ═══════════════════════════════════════════ -->
     <div class="page" id="page-coach">
       <h1>AI โค้ชวิ่ง 🤖</h1>
-      <div class="subtitle">แผนการซ้อมส่วนตัวจาก Claude AI + ข้อมูลจริงของคุณ</div>
-      <div class="grid grid-2">
-        <div class="card">
-          <div class="form-group"><label>เป้าหมาย</label><input type="text" id="coach-goal" placeholder="เช่น วิ่ง Half Marathon ใน 4 เดือน"></div>
-          <div class="form-group"><label>ระดับปัจจุบัน</label>
-            <select id="coach-level">
-              <option value="beginner">มือใหม่ — วิ่งได้น้อยกว่า 5 กม.</option>
-              <option value="intermediate" selected>กลาง — 5 ถึง 15 กม.</option>
-              <option value="advanced">สูง — มากกว่า 15 กม.</option>
-            </select>
+      <div class="subtitle">แผนการซ้อมส่วนตัวจาก Claude AI + ติดตามผลจริงอัตโนมัติ</div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchCoachTab('create',this)">✨ สร้างแผน</div>
+        <div class="tab" onclick="switchCoachTab('track',this)">📋 ติดตามแผน</div>
+      </div>
+
+      <!-- CREATE PLAN TAB -->
+      <div id="coach-create-tab">
+        <div class="grid grid-2">
+          <div class="card">
+            <div class="form-group"><label>เป้าหมาย</label><input type="text" id="coach-goal" placeholder="เช่น วิ่ง 10 กม. Sub 48 นาที ใน 8 สัปดาห์"></div>
+            <div class="form-group"><label>ระดับปัจจุบัน</label>
+              <select id="coach-level">
+                <option value="beginner">มือใหม่ — วิ่งได้น้อยกว่า 5 กม.</option>
+                <option value="intermediate" selected>กลาง — 5 ถึง 15 กม.</option>
+                <option value="advanced">สูง — มากกว่า 15 กม.</option>
+              </select>
+            </div>
+            <div class="form-group"><label>วันซ้อมต่อสัปดาห์</label>
+              <select id="coach-days">
+                <option value="3">3 วัน</option>
+                <option value="4" selected>4 วัน</option>
+                <option value="5">5 วัน</option>
+              </select>
+            </div>
+            <div class="form-group"><label>วันเริ่มต้นแผน</label><input type="date" id="coach-start-date"></div>
+            <button class="btn btn-primary" id="btn-coach" onclick="generateTrainingPlan()" style="width:100%">✨ สร้างแผนการซ้อม + บันทึก Firebase</button>
+            <div style="background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:12px;margin-top:12px;font-size:12px;color:var(--text2);line-height:1.8">
+              💡 หลังสร้างแผนแล้ว ระบบจะ <strong style="color:var(--text)">จับคู่อัตโนมัติ</strong> กับกิจกรรมที่คุณบันทึก/sync จาก Strava ทุกวัน — เช็กได้ที่แท็บ "ติดตามแผน"
+            </div>
           </div>
-          <div class="form-group"><label>วันซ้อมต่อสัปดาห์</label>
-            <select id="coach-days">
-              <option value="3">3 วัน</option>
-              <option value="4" selected>4 วัน</option>
-              <option value="5">5 วัน</option>
-            </select>
+          <div class="card ai-box" style="overflow-y:auto;max-height:70vh">
+            <div class="card-title">ตัวอย่างแผนที่จะสร้าง</div>
+            <div id="coach-output" class="text-sm text2" style="line-height:1.9">กดปุ่มเพื่อสร้างแผน...</div>
           </div>
-          <button class="btn btn-primary" id="btn-coach" onclick="generateTrainingPlan()" style="width:100%">✨ สร้างแผนการซ้อม</button>
         </div>
-        <div class="card ai-box" style="overflow-y:auto;max-height:70vh">
-          <div class="card-title">แผนการซ้อม</div>
-          <div id="coach-output" class="text-sm text2" style="line-height:1.9">กดปุ่มเพื่อสร้างแผน...</div>
+      </div>
+
+      <!-- TRACK PLAN TAB -->
+      <div id="coach-track-tab" style="display:none">
+        <div id="coach-no-plan" style="display:none;text-align:center;padding:40px;color:var(--text2)">
+          <div style="font-size:40px;margin-bottom:12px">📋</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:8px">ยังไม่มีแผนการซ้อม</div>
+          <div style="font-size:13px;margin-bottom:16px">ไปแท็บ "สร้างแผน" เพื่อให้ AI สร้างตารางซ้อม</div>
+          <button class="btn btn-primary" onclick="switchCoachTab('create', document.querySelector('#page-coach .tab'))">สร้างแผนเลย</button>
+        </div>
+
+        <div id="coach-plan-view">
+          <!-- Plan header -->
+          <div class="card mb-16" id="coach-plan-header" style="display:none">
+            <div class="flex justify-between items-center" style="flex-wrap:wrap;gap:12px">
+              <div>
+                <div style="font-size:18px;font-weight:700;color:var(--accent)" id="coach-plan-goal-disp">—</div>
+                <div style="font-size:12px;color:var(--text2);margin-top:4px" id="coach-plan-meta-disp">—</div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center">
+                <div style="text-align:center">
+                  <div class="mono" style="font-size:24px;font-weight:700;color:var(--accent2)" id="coach-done-count">0</div>
+                  <div style="font-size:10px;color:var(--text3);text-transform:uppercase">ทำแล้ว</div>
+                </div>
+                <div style="text-align:center">
+                  <div class="mono" style="font-size:24px;font-weight:700;color:var(--accent4)" id="coach-miss-count">0</div>
+                  <div style="font-size:10px;color:var(--text3);text-transform:uppercase">พลาด</div>
+                </div>
+                <div style="text-align:center">
+                  <div class="mono" style="font-size:24px;font-weight:700;color:var(--text2)" id="coach-remain-count">0</div>
+                  <div style="font-size:10px;color:var(--text3);text-transform:uppercase">เหลือ</div>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="clearCoachPlan()">🗑️ ล้างแผน</button>
+              </div>
+            </div>
+            <!-- Progress bar -->
+            <div style="margin-top:14px">
+              <div class="flex justify-between mb-8" style="font-size:12px;color:var(--text2)">
+                <span>ความคืบหน้า</span>
+                <span id="coach-progress-pct">0%</span>
+              </div>
+              <div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden">
+                <div id="coach-progress-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .6s"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sync button + AI review -->
+          <div class="flex gap-8 mb-16" style="flex-wrap:wrap">
+            <button class="btn btn-success btn-sm" onclick="matchWorkoutsToPlan()">🔄 จับคู่กิจกรรมกับแผน</button>
+            <button class="btn btn-primary btn-sm" id="btn-coach-review" onclick="reviewPlanAI()">🤖 AI ทบทวนความก้าวหน้า</button>
+          </div>
+
+          <div id="coach-review-output" class="ai-result mb-16" style="display:none"></div>
+
+          <!-- Plan days list -->
+          <div id="coach-plan-days"></div>
         </div>
       </div>
     </div>
 
-    <!-- ─── STRAVA ─── -->
+    <!-- STRAVA -->
     <div class="page" id="page-strava">
-      <!-- TOP BAR -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
         <div>
           <h1 style="margin-bottom:2px">Strava <span style="color:var(--strava)">●</span></h1>
@@ -707,32 +777,17 @@ onAuthStateChanged(auth, user => {
         </div>
       </div>
 
-      <!-- WEEKLY SUMMARY STRIP -->
       <div id="strava-week-strip" style="display:none;gap:12px;margin-bottom:20px;grid-template-columns:repeat(4,1fr)" class="grid">
-        <div class="card stat-card" style="padding:14px">
-          <div class="card-title">สัปดาห์นี้</div>
-          <span class="stat-num" id="sv-dist" style="font-size:24px">—</span><span class="stat-unit">กม.</span>
-        </div>
-        <div class="card stat-card" style="padding:14px">
-          <div class="card-title">กิจกรรม</div>
-          <span class="stat-num" id="sv-count" style="font-size:24px">—</span><span class="stat-unit">ครั้ง</span>
-        </div>
-        <div class="card stat-card" style="padding:14px">
-          <div class="card-title">Pace เฉลี่ย</div>
-          <span class="stat-num" id="sv-pace" style="font-size:24px">—</span><span class="stat-unit">/กม.</span>
-        </div>
-        <div class="card stat-card" style="padding:14px">
-          <div class="card-title">HR เฉลี่ย</div>
-          <span class="stat-num" id="sv-hr" style="font-size:24px">—</span><span class="stat-unit">bpm</span>
-        </div>
+        <div class="card stat-card" style="padding:14px"><div class="card-title">สัปดาห์นี้</div><span class="stat-num" id="sv-dist" style="font-size:24px">—</span><span class="stat-unit">กม.</span></div>
+        <div class="card stat-card" style="padding:14px"><div class="card-title">กิจกรรม</div><span class="stat-num" id="sv-count" style="font-size:24px">—</span><span class="stat-unit">ครั้ง</span></div>
+        <div class="card stat-card" style="padding:14px"><div class="card-title">Pace เฉลี่ย</div><span class="stat-num" id="sv-pace" style="font-size:24px">—</span><span class="stat-unit">/กม.</span></div>
+        <div class="card stat-card" style="padding:14px"><div class="card-title">HR เฉลี่ย</div><span class="stat-num" id="sv-hr" style="font-size:24px">—</span><span class="stat-unit">bpm</span></div>
       </div>
 
-      <!-- ACTIVITY CARDS FEED -->
       <div id="strava-activities-list" style="display:flex;flex-direction:column;gap:14px">
         <p class="text2 text-sm">ยังไม่ได้เชื่อมต่อ — กดเชื่อมต่อด้านบน</p>
       </div>
 
-      <!-- AI ANALYZE -->
       <div class="card ai-box mt-16">
         <div class="flex justify-between items-center mb-12">
           <div class="card-title" style="margin:0">🤖 วิเคราะห์ Training Load จาก Strava</div>
@@ -741,7 +796,6 @@ onAuthStateChanged(auth, user => {
         <div id="strava-ai-output" class="ai-result" style="display:none"></div>
       </div>
 
-      <!-- CONNECT GUIDE (hidden by default, shown when disconnected) -->
       <div id="strava-guide-box" class="card mt-16" style="display:none">
         <div class="card-title">วิธีรับ Refresh Token (ใช้ครั้งเดียว — ไม่หมดอายุ)</div>
         <ol style="padding-left:16px;font-size:13px;color:var(--text2);line-height:2.4">
@@ -756,14 +810,12 @@ onAuthStateChanged(auth, user => {
       </div>
     </div>
 
-    <!-- ─── DOC SUMMARY ─── -->
+    <!-- DOC SUMMARY -->
     <div class="page" id="page-doc-summary">
       <h1>AI สรุปหนังสือเข้า 📑</h1>
       <div class="subtitle">อัปโหลดรูปภาพ หรือวางข้อความ — Claude AI สรุปและแนะนำ Action Items</div>
       <div class="grid grid-2">
-        <!-- INPUT PANEL -->
         <div class="card">
-          <!-- IMAGE DROP ZONE -->
           <div class="drop-zone" id="doc-drop-zone"
             onclick="document.getElementById('doc-file-input').click()"
             ondragover="event.preventDefault();this.classList.add('drag-over')"
@@ -774,21 +826,13 @@ onAuthStateChanged(auth, user => {
             <div class="drop-zone-sub">รองรับ รูปภาพ JPG/PNG (สแกนหนังสือ)</div>
           </div>
           <input type="file" id="doc-file-input" accept="image/*" style="display:none" onchange="onDocFileSelected(this)">
-
           <div id="doc-file-chip" style="display:none" class="file-chip">
-            <span>📎</span>
-            <span id="doc-file-name">ไฟล์</span>
+            <span>📎</span><span id="doc-file-name">ไฟล์</span>
             <button onclick="clearDocFile()">✕</button>
           </div>
-
           <div style="text-align:center;color:var(--text3);font-size:12px;font-weight:700;margin:12px 0;letter-spacing:1px">— หรือวางข้อความด้านล่าง —</div>
-
-          <div class="form-group">
-            <label>เนื้อหาหนังสือ</label>
-            <textarea id="ai-doc-input" rows="8" placeholder="วางเนื้อหาหนังสือราชการที่ต้องการสรุป..."></textarea>
-          </div>
-          <div class="form-group">
-            <label>รูปแบบสรุป</label>
+          <div class="form-group"><label>เนื้อหาหนังสือ</label><textarea id="ai-doc-input" rows="8" placeholder="วางเนื้อหาหนังสือราชการที่ต้องการสรุป..."></textarea></div>
+          <div class="form-group"><label>รูปแบบสรุป</label>
             <select id="doc-summary-format">
               <option value="brief">สั้น 3 ข้อ — เสนอผู้บริหาร</option>
               <option value="detailed">ละเอียด พร้อมสาระสำคัญครบถ้วน</option>
@@ -797,18 +841,14 @@ onAuthStateChanged(auth, user => {
           </div>
           <button class="btn btn-primary" id="btn-doc-ai" onclick="summarizeDocAI()" style="width:100%">✨ สรุปด้วย Claude AI</button>
         </div>
-
-        <!-- OUTPUT PANEL -->
         <div class="card">
           <div class="card-title">ผลการสรุป</div>
-          <div id="ai-doc-output-page" style="line-height:1.85;font-size:14px">
-            <p class="text2 text-sm">ผลลัพธ์จะแสดงที่นี่...</p>
-          </div>
+          <div id="ai-doc-output-page" style="line-height:1.85;font-size:14px"><p class="text2 text-sm">ผลลัพธ์จะแสดงที่นี่...</p></div>
         </div>
       </div>
     </div>
 
-    <!-- ─── DOC CREATE ─── -->
+    <!-- DOC CREATE -->
     <div class="page" id="page-doc-create">
       <div class="flex justify-between items-center mb-16">
         <div>
@@ -817,19 +857,14 @@ onAuthStateChanged(auth, user => {
         </div>
         <button class="btn btn-ghost" onclick="printDoc()">🖨️ พิมพ์</button>
       </div>
-
       <div class="card mb-16">
         <div class="flex items-center gap-12">
           <div id="garuda-preview-thumb" style="width:46px;height:46px;border:1px dashed var(--border2);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:15px;color:var(--text3);font-weight:700">ครุฑ</div>
-          <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-            📁 อัปโหลดตราครุฑ
-            <input type="file" accept="image/*" style="display:none" onchange="loadGaruda(event)">
-          </label>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">📁 อัปโหลดตราครุฑ<input type="file" accept="image/*" style="display:none" onchange="loadGaruda(event)"></label>
           <button class="btn btn-ghost btn-sm" onclick="clearGaruda()">✕ ลบ</button>
           <span class="text-xs text2">ภายนอก: กึ่งกลาง สูง 3ซม. | บันทึก: ซ้าย สูง 1.5ซม.</span>
         </div>
       </div>
-
       <div class="grid grid-2">
         <div class="card" style="max-height:85vh;overflow-y:auto">
           <div class="tabs">
@@ -843,10 +878,7 @@ onAuthStateChanged(auth, user => {
           </div>
           <div class="form-group"><label>เรื่อง</label><input type="text" id="do-subject" oninput="updateDocPreview()"></div>
           <div class="form-group"><label>เรียน</label><input type="text" id="do-to" oninput="updateDocPreview()"></div>
-          <div class="form-group" id="do-attach-group">
-            <label>สิ่งที่ส่งมาด้วย</label>
-            <input type="text" id="do-attach" oninput="updateDocPreview()" placeholder="(ถ้ามี)">
-          </div>
+          <div class="form-group" id="do-attach-group"><label>สิ่งที่ส่งมาด้วย</label><input type="text" id="do-attach" oninput="updateDocPreview()" placeholder="(ถ้ามี)"></div>
           <div class="form-group"><label>เนื้อหา</label><textarea id="do-body" rows="5" oninput="updateDocPreview()" placeholder="ด้วย..."></textarea></div>
           <div class="form-group"><label>จึงเรียนมาเพื่อ...</label><textarea id="do-conclusion" rows="2" oninput="updateDocPreview()" placeholder="จึงเรียนมาเพื่อโปรดพิจารณา"></textarea></div>
           <div class="grid grid-2" style="gap:10px">
@@ -860,34 +892,25 @@ onAuthStateChanged(auth, user => {
           </div>
           <button class="btn btn-success mt-8" onclick="saveDocDb()" style="width:100%">☁️ บันทึกทะเบียน</button>
         </div>
-        <div class="doc-preview-bg">
-          <div id="doc-render-area" class="a4-sim"></div>
-        </div>
+        <div class="doc-preview-bg"><div id="doc-render-area" class="a4-sim"></div></div>
       </div>
     </div>
 
-    <!-- ─── DOC LIST ─── -->
+    <!-- DOC LIST -->
     <div class="page" id="page-doc-list">
       <div class="flex justify-between items-center mb-16">
-        <div>
-          <h1>ทะเบียนหนังสือ 📁</h1>
-          <div class="subtitle" style="margin:0">Realtime sync จาก Firebase</div>
-        </div>
+        <div><h1>ทะเบียนหนังสือ 📁</h1><div class="subtitle" style="margin:0">Realtime sync จาก Firebase</div></div>
         <button class="btn btn-ghost btn-sm" onclick="exportDocList()">📥 Export CSV</button>
       </div>
       <div class="card">
         <table>
-          <thead>
-            <tr><th>#</th><th>เลขที่</th><th>วันที่</th><th>เรื่อง</th><th>ประเภท</th><th></th></tr>
-          </thead>
-          <tbody id="doc-table-body">
-            <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">กำลังโหลด...</td></tr>
-          </tbody>
+          <thead><tr><th>#</th><th>เลขที่</th><th>วันที่</th><th>เรื่อง</th><th>ประเภท</th><th></th></tr></thead>
+          <tbody id="doc-table-body"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">กำลังโหลด...</td></tr></tbody>
         </table>
       </div>
     </div>
 
-    <!-- ─── NEWS / Q&A ─── -->
+    <!-- NEWS / Q&A -->
     <div class="page" id="page-news">
       <h1>AI ถาม-ตอบ 📰</h1>
       <div class="subtitle">ถามเรื่องข่าวสาร IT เศรษฐกิจ สินค้า เทรนด์โลก — Claude AI ตอบเป็นภาษาไทย</div>
@@ -906,24 +929,19 @@ onAuthStateChanged(auth, user => {
       </div>
     </div>
 
-    <!-- ─── SETTINGS ─── -->
+    <!-- SETTINGS -->
     <div class="page" id="page-settings">
       <h1>ตั้งค่า ⚙️</h1>
       <div class="grid grid-2 mt-16">
         <div class="card">
           <div class="card-title">Claude AI — ผ่าน Cloudflare Worker</div>
           <div style="background:rgba(79,142,247,.06);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.8;color:var(--text2)">
-            🔒 API Key ส่งผ่าน Cloudflare Worker<br>
-            ไม่มี Key โชว์ใน Browser — ปลอดภัยกว่าเรียกตรง<br>
-            Worker URL: <code style="color:var(--accent2);font-size:12px">claude-proxy2.porbboyza.workers.dev</code>
+            🔒 API Key ส่งผ่าน Cloudflare Worker<br>Worker URL: <code style="color:var(--accent2);font-size:12px">claude-proxy2.porbboyza.workers.dev</code>
           </div>
           <div class="form-group">
             <label>Claude API Key</label>
             <input type="password" id="set-claude-key" placeholder="sk-ant-api03-...">
-            <div class="text-xs text2 mt-8">
-              ได้จาก <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent)">console.anthropic.com</a>
-              — เก็บเข้ารหัสใน Firebase
-            </div>
+            <div class="text-xs text2 mt-8">ได้จาก <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent)">console.anthropic.com</a></div>
           </div>
           <button class="btn btn-success" onclick="saveClaudeKey()" style="width:100%">☁️ บันทึก API Key</button>
           <div id="claude-key-status" class="text-sm mt-8"></div>
@@ -939,14 +957,14 @@ onAuthStateChanged(auth, user => {
     </div>
 
   </main>
-</div><!-- /app-shell -->
+</div>
 
 <script>
 'use strict';
 
-// ═══════════════════════════════════════════════════
-// CLOUDFLARE WORKER PROXY — API Key ไม่โชว์ใน browser
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// CLOUDFLARE WORKER PROXY
+// ═══════════════════════════════════════
 const CF_WORKER = 'https://claude-proxy2.porbboyza.workers.dev';
 window._claudeKey = '';
 
@@ -956,7 +974,6 @@ async function askClaude(userPrompt, systemMsg = '', btnId = '', outId = '') {
     showPage('settings');
     return null;
   }
-
   const btn = btnId ? document.getElementById(btnId) : null;
   const out = outId ? document.getElementById(outId) : null;
   const oldHTML = btn?.innerHTML;
@@ -968,7 +985,6 @@ async function askClaude(userPrompt, systemMsg = '', btnId = '', outId = '') {
   }
 
   try {
-    // ส่งผ่าน Cloudflare Worker — Worker จะ forward ไป Anthropic แบบ server-to-server
     const res = await fetch(CF_WORKER, {
       method: 'POST',
       headers: {
@@ -984,24 +1000,15 @@ async function askClaude(userPrompt, systemMsg = '', btnId = '', outId = '') {
         messages: [{ role: 'user', content: userPrompt }]
       })
     });
-
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err?.error?.message || `HTTP ${res.status}`);
     }
-
     const data = await res.json();
     const reply = data?.content?.[0]?.text || '';
-    const html = reply
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/\n/g, '<br>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/^### (.*)/gm, '<div style="font-weight:700;font-size:15px;margin:12px 0 4px;color:var(--accent)">$1</div>')
-      .replace(/^## (.*)/gm, '<div style="font-weight:700;font-size:16px;margin:14px 0 6px;color:var(--text)">$1</div>');
-
+    const html = mdToHtml(reply);
     if (out) out.innerHTML = html;
     return reply;
-
   } catch (e) {
     const msg = `<span style="color:var(--accent4)">⚠️ ${e.message}</span>`;
     if (out) out.innerHTML = msg;
@@ -1012,51 +1019,47 @@ async function askClaude(userPrompt, systemMsg = '', btnId = '', outId = '') {
   }
 }
 
-// สำหรับ Image (ต้องส่งเป็น vision request)
+function mdToHtml(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n/g,'<br>')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^### (.*)/gm,'<div style="font-weight:700;font-size:15px;margin:12px 0 4px;color:var(--accent)">$1</div>')
+    .replace(/^## (.*)/gm,'<div style="font-weight:700;font-size:16px;margin:14px 0 6px;color:var(--text)">$1</div>');
+}
+
 async function askClaudeVision(imageBase64, mimeType, promptText) {
   if (!window._claudeKey) { showToast('กรุณาตั้งค่า API Key ก่อน','error'); return null; }
   const res = await fetch(CF_WORKER, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': window._claudeKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-allow-browser': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 512,
-      system: 'Extract fitness data from image. Return ONLY valid JSON: {distance:number,time:number,hr:number|null,cadence:number|null,splits:[{km:number,pace:string,hr:number}]|null,type:"run"|"bike"|"swim"|"walk"}',
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
-          { type: 'text', text: promptText }
-        ]
-      }]
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':window._claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-6', max_tokens:512,
+      system:'Extract fitness data from image. Return ONLY valid JSON: {distance:number,time:number,hr:number|null,cadence:number|null,splits:[{km:number,pace:string,hr:number}]|null,type:"run"|"bike"|"swim"|"walk"}',
+      messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:mimeType,data:imageBase64}},
+        {type:'text',text:promptText}
+      ]}]
     })
   });
   const data = await res.json();
   return data?.content?.[0]?.text || null;
 }
 
-// ═══════════════════════════════════════════════════
-// DATA
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// DATA STORES
+// ═══════════════════════════════════════
 window._workouts = [];
 window._docs = [];
 window._stravaWorkouts = [];
 window._stravaActs = [];
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // APP READY
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 window._appReady = async (user) => {
-  // แสดงหน้าก่อนเลย ไม่รอ Firebase
   hideLoading();
   showPage('today');
-
-  // โหลด settings แยกต่างหาก ไม่บล็อก UI
   try {
     const cfg = await window._fb.getData('settings') || {};
     if (cfg.claudeKey) {
@@ -1075,161 +1078,142 @@ window._appReady = async (user) => {
       const thumb = document.getElementById('garuda-preview-thumb');
       if (thumb) thumb.innerHTML = `<img src="${cfg.garudaImg}" style="width:100%;height:100%;object-fit:contain">`;
     }
-  } catch(e) {
-    // settings โหลดไม่ได้ไม่เป็นไร — Firebase Rules อาจยังไม่ set
-    console.warn('Settings load failed:', e.message);
-  }
-
-  // เริ่ม realtime listener แยก
-  try {
-    startRealtimeListeners();
-  } catch(e) {
-    console.warn('Realtime listener failed:', e.message);
-    showToast('Firebase: ' + e.message, 'error');
-  }
+  } catch(e) { console.warn('Settings load failed:', e.message); }
+  try { startRealtimeListeners(); } catch(e) { showToast('Firebase: ' + e.message, 'error'); }
 };
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // REALTIME LISTENERS
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 function startRealtimeListeners() {
   window._fb.listen('workouts', data => {
     window._workouts = data
-      ? Object.entries(data)
-          .map(([k, v]) => ({ _key: k, ...v }))
-          .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      ? Object.entries(data).map(([k,v]) => ({_key:k,...v})).sort((a,b) => (b.date||'').localeCompare(a.date||''))
       : [];
     renderRecentWorkouts();
     renderTodayStats();
-    // อัปเดตกราฟถ้าหน้าสถิติเปิดอยู่
-    if (document.getElementById('page-fitness-stats').classList.contains('active')) {
-      renderWeekStats();
-    }
+    if (document.getElementById('page-fitness-stats').classList.contains('active')) renderCurrentStatsView();
+    // auto match whenever workouts update
+    matchWorkoutsToPlan(true);
   });
 
   window._fb.listen('docs', data => {
     window._docs = data
-      ? Object.entries(data)
-          .map(([k, v]) => ({ _key: k, ...v }))
-          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
+      ? Object.entries(data).map(([k,v]) => ({_key:k,...v})).sort((a,b) => (b.createdAt||0)-(a.createdAt||0))
       : [];
     renderDocList();
     const el = document.getElementById('t-docs');
     if (el) el.textContent = window._docs.length;
   });
+
+  window._fb.listen('coach_plan', data => {
+    window._coachPlan = data || null;
+    if (document.getElementById('page-coach').classList.contains('active')) {
+      renderCoachTracking();
+    }
+  });
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // UI HELPERS
-// ═══════════════════════════════════════════════════
-function showLoading(msg = 'กำลังโหลด...') {
+// ═══════════════════════════════════════
+function showLoading(msg='กำลังโหลด...') {
   document.getElementById('loading-msg').textContent = msg;
   document.getElementById('loading-overlay').classList.add('show');
 }
-function hideLoading() {
-  document.getElementById('loading-overlay').classList.remove('show');
-}
+function hideLoading() { document.getElementById('loading-overlay').classList.remove('show'); }
 
-function showToast(msg, type = 'success') {
+function showToast(msg, type='success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = `toast toast-${type}`;
   t.style.display = 'block';
   clearTimeout(t._to);
-  t._to = setTimeout(() => t.style.display = 'none', 3500);
+  t._to = setTimeout(() => t.style.display='none', 3500);
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // NAVIGATION
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + id)?.classList.add('active');
+  document.getElementById('page-'+id)?.classList.add('active');
   document.querySelector(`.nav-item[data-page="${id}"]`)?.classList.add('active');
 
   if (id === 'today') renderTodayStats();
-  if (id === 'fitness-log') {
-    document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
-  }
-  if (id === 'fitness-stats') renderWeekStats();
+  if (id === 'fitness-log') document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  if (id === 'fitness-stats') { initStatsNav(); renderCurrentStatsView(); }
   if (id === 'doc-create') updateDocPreview();
   if (id === 'strava') renderStravaPage();
+  if (id === 'coach') {
+    document.getElementById('coach-start-date').value = new Date().toISOString().slice(0,10);
+    renderCoachTracking();
+  }
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // TODAY
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 function renderTodayStats() {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 7);
-  cutoff.setHours(0, 0, 0, 0);
-
-  const allWorkouts = [...window._workouts, ...(window._stravaWorkouts || [])];
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7); cutoff.setHours(0,0,0,0);
+  const allWorkouts = [...window._workouts, ...(window._stravaWorkouts||[])];
   const recent = allWorkouts.filter(w => new Date(w.date) >= cutoff);
-  const totalDist = recent.reduce((s, w) => s + parseFloat(w.dist || 0), 0);
-
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const totalDist = recent.reduce((s,w) => s + parseFloat(w.dist||0), 0);
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
   set('t-distance', totalDist.toFixed(1));
   set('t-workouts', recent.length);
-
-  // recent workouts on today page
   const el = document.getElementById('today-recent-workouts');
-  const em = { run: '🏃', interval: '⚡', bike: '🚴', swim: '🏊', walk: '🚶' };
+  const em = {run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
   if (el) {
     el.innerHTML = window._workouts.length
-      ? window._workouts.slice(0, 3).map(w => `
-          <div class="workout-item">
-            <div class="workout-icon">${em[w.type] || '🏅'}</div>
-            <div style="flex:1">
-              <div class="workout-main">${w.dist} กม. · ${w.time} นาที${w.hr ? ' · HR ' + w.hr : ''}</div>
-              <div class="workout-sub">${w.date}${w.avgPace ? ' · Pace ' + formatPace(w.avgPace) : ''}</div>
-            </div>
-          </div>`).join('')
+      ? window._workouts.slice(0,3).map(w => `
+        <div class="workout-item">
+          <div class="workout-icon">${em[w.type]||'🏅'}</div>
+          <div style="flex:1"><div class="workout-main">${w.dist} กม. · ${w.time} น.${w.hr?' · HR '+w.hr:''}</div>
+          <div class="workout-sub">${w.date}${w.avgPace?' · Pace '+formatPace(w.avgPace):''}</div></div>
+        </div>`).join('')
       : '<p class="text2 text-sm">ยังไม่มีข้อมูล — เริ่มบันทึกได้เลย!</p>';
   }
-
-  // status
   const hasKey = !!window._claudeKey;
   const statusEl = document.getElementById('today-status');
   if (statusEl) {
     statusEl.innerHTML = `
       <div class="status-pill ok"><div class="status-dot"></div>Firebase: Realtime sync</div>
-      <div class="status-pill ${hasKey ? 'ok' : 'warn'}"><div class="status-dot"></div>Claude AI (Worker): ${hasKey ? 'พร้อมใช้งาน' : 'ยังไม่ตั้งค่า API Key'}</div>
+      <div class="status-pill ${hasKey?'ok':'warn'}"><div class="status-dot"></div>Claude AI: ${hasKey?'พร้อมใช้งาน':'ยังไม่ตั้งค่า API Key'}</div>
       <div class="status-pill ok"><div class="status-dot"></div>${document.getElementById('user-name').textContent}</div>`;
   }
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // SPLITS
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
+function onTypeChange() {
+  const t = document.getElementById('f-type').value;
+  document.getElementById('fields-normal').style.display = t==='interval' ? 'none' : 'block';
+  document.getElementById('fields-interval').style.display = t==='interval' ? 'block' : 'none';
+}
+
 function buildSplits() {
   const dist = parseFloat(document.getElementById('r-distance')?.value) || 0;
   const area = document.getElementById('splits-area');
   if (!area) return;
-  if (!dist || dist <= 0) {
-    area.innerHTML = '<p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p>';
-    calcAvgPace(); return;
-  }
+  if (!dist || dist <= 0) { area.innerHTML='<p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p>'; calcAvgPace(); return; }
   const fullKms = Math.floor(dist);
-  const remainder = +(dist - fullKms).toFixed(2); // เศษกิโลที่เหลือ
-  const total = remainder > 0 ? fullKms + 1 : fullKms;
-
+  const remainder = +(dist-fullKms).toFixed(2);
+  const total = remainder > 0 ? fullKms+1 : fullKms;
   let html = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
     <thead><tr>
       <th style="padding:4px 6px;color:var(--text3);text-align:center;font-size:10px">กม.</th>
       <th style="padding:4px 6px;color:var(--text3);text-align:center;font-size:10px">Pace (น:ว)</th>
       <th style="padding:4px 6px;color:var(--text3);text-align:center;font-size:10px">HR</th>
     </tr></thead><tbody>`;
-
-  for (let i = 1; i <= total; i++) {
-    const isLast = i === total && remainder > 0;
-    const kmLabel = isLast
-      ? `<span style="font-size:10px;color:var(--accent3)">${i}<br>(${remainder}กม.)</span>`
-      : `${i}`;
+  for (let i=1; i<=total; i++) {
+    const isLast = i===total && remainder>0;
+    const kmLabel = isLast ? `<span style="font-size:10px;color:var(--accent3)">${i}<br>(${remainder}กม.)</span>` : `${i}`;
     html += `<tr>
       <td style="padding:3px 6px;text-align:center;font-weight:700;color:var(--accent);font-size:12px">${kmLabel}</td>
-      <td style="padding:3px 4px"><input type="text" class="sp-pace" data-km="${isLast ? remainder : 1}" placeholder="5:30" oninput="calcAvgPace()" style="padding:4px 8px;font-size:12px;text-align:center;width:75px;border-radius:6px${isLast ? ';border-color:var(--accent3)' : ''}"></td>
+      <td style="padding:3px 4px"><input type="text" class="sp-pace" data-km="${isLast?remainder:1}" placeholder="5:30" oninput="calcAvgPace()" style="padding:4px 8px;font-size:12px;text-align:center;width:75px;border-radius:6px${isLast?';border-color:var(--accent3)':''}"></td>
       <td style="padding:3px 4px"><input type="number" class="sp-hr" placeholder="150" style="padding:4px 8px;font-size:12px;text-align:center;width:70px;border-radius:6px"></td>
     </tr>`;
   }
@@ -1238,8 +1222,7 @@ function buildSplits() {
   calcAvgPace();
 }
 
-window.calcAvgPace = function () {
-  // ถ้ากรอก avg pace เองให้ใช้ค่านั้น
+window.calcAvgPace = function() {
   const manualPace = document.getElementById('r-avg-pace')?.value?.trim();
   if (manualPace) {
     const p = paceStrToDecimal(manualPace);
@@ -1247,579 +1230,877 @@ window.calcAvgPace = function () {
     if (disp) disp.textContent = `Pace เฉลี่ย: ${formatPace(p)}`;
     return p;
   }
-  // คำนวณจาก splits
   const paces = [...document.querySelectorAll('.sp-pace')];
-  let total = 0, cnt = 0;
-  paces.forEach(p => {
-    const val = paceStrToDecimal(p.value);
-    if (val > 0) { total += val; cnt++; }
-  });
+  let total=0, cnt=0;
+  paces.forEach(p => { const val=paceStrToDecimal(p.value); if(val>0){total+=val;cnt++;} });
   const disp = document.getElementById('avg-pace-disp');
-  if (!disp) return cnt > 0 ? total / cnt : 0;
-  if (!cnt) { disp.textContent = 'Pace เฉลี่ย: —'; return 0; }
-  const avg = total / cnt;
+  if (!disp) return cnt>0 ? total/cnt : 0;
+  if (!cnt) { disp.textContent='Pace เฉลี่ย: —'; return 0; }
+  const avg = total/cnt;
   disp.textContent = `Pace เฉลี่ย: ${formatPace(avg)}`;
   return avg;
 };
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // WORKOUT CRUD
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 async function saveWorkout() {
   const dist = parseFloat(document.getElementById('r-distance').value) || 0;
-  if (!dist) { showToast('กรุณาใส่ระยะทาง', 'error'); return; }
-
-  const splits = [...document.querySelectorAll('#splits-area tbody tr')].map((row, i) => ({
-    km: i + 1,
-    pace: row.querySelector('.sp-pace')?.value || '',
-    hr: parseInt(row.querySelector('.sp-hr')?.value) || 0,
-  })).filter(s => s.pace || s.hr);
-
-  const type = document.getElementById('f-type').value || 'run';
-  const avgPace = type === 'interval' ? 0 : calcAvgPace();
-
-  // เก็บข้อมูล interval
-  let intervalData = null;
-  let totalDist = dist;
-  if (type === 'interval') {
-    const reps = parseInt(document.getElementById('iv-reps')?.value) || 0;
-    const repDist = parseFloat(document.getElementById('iv-rep-dist')?.value) || 0;
-    const repPace = document.getElementById('iv-rep-pace')?.value || '';
-    const repHR = parseInt(document.getElementById('iv-rep-hr')?.value) || 0;
-    const restTime = parseFloat(document.getElementById('iv-rest-time')?.value) || 0;
-    const restHR = parseInt(document.getElementById('iv-rest-hr')?.value) || 0;
-    const wuDist = parseFloat(document.getElementById('iv-wu-dist')?.value) || 0;
-    const wuTime = parseFloat(document.getElementById('iv-wu-time')?.value) || 0;
-    const wuPace = document.getElementById('iv-wu-pace')?.value || '';
-    const cdDist = parseFloat(document.getElementById('iv-cd-dist')?.value) || 0;
-    const cdTime = parseFloat(document.getElementById('iv-cd-time')?.value) || 0;
-    const cdPace = document.getElementById('iv-cd-pace')?.value || '';
-    totalDist = +(wuDist + reps * repDist + cdDist).toFixed(2);
-    const totalTime = wuTime + reps * (paceStrToDecimal(repPace) * repDist + restTime) + cdTime;
-    intervalData = { reps, repDist, repPace, repHR, restTime, restHR,
-      warmup: { dist: wuDist, time: wuTime, pace: wuPace },
-      cooldown: { dist: cdDist, time: cdTime, pace: cdPace },
-      totalTime: +totalTime.toFixed(1) };
-    if (!reps || !repDist) { showToast('กรุณาใส่จำนวนรอบและระยะต่อรอบ', 'error'); return; }
+  if (!dist) { showToast('กรุณาใส่ระยะทาง','error'); return; }
+  const splits = [...document.querySelectorAll('#splits-area tbody tr')].map((row,i) => ({
+    km:i+1, pace:row.querySelector('.sp-pace')?.value||'', hr:parseInt(row.querySelector('.sp-hr')?.value)||0
+  })).filter(s => s.pace||s.hr);
+  const type = document.getElementById('f-type').value||'run';
+  const avgPace = type==='interval' ? 0 : calcAvgPace();
+  let intervalData=null, totalDist=dist;
+  if (type==='interval') {
+    const reps=parseInt(document.getElementById('iv-reps')?.value)||0;
+    const repDist=parseFloat(document.getElementById('iv-rep-dist')?.value)||0;
+    const repPace=document.getElementById('iv-rep-pace')?.value||'';
+    const repHR=parseInt(document.getElementById('iv-rep-hr')?.value)||0;
+    const restTime=parseFloat(document.getElementById('iv-rest-time')?.value)||0;
+    const restHR=parseInt(document.getElementById('iv-rest-hr')?.value)||0;
+    const wuDist=parseFloat(document.getElementById('iv-wu-dist')?.value)||0;
+    const wuTime=parseFloat(document.getElementById('iv-wu-time')?.value)||0;
+    const wuPace=document.getElementById('iv-wu-pace')?.value||'';
+    const cdDist=parseFloat(document.getElementById('iv-cd-dist')?.value)||0;
+    const cdTime=parseFloat(document.getElementById('iv-cd-time')?.value)||0;
+    const cdPace=document.getElementById('iv-cd-pace')?.value||'';
+    totalDist = +(wuDist+reps*repDist+cdDist).toFixed(2);
+    const totalTime = wuTime+reps*(paceStrToDecimal(repPace)*repDist+restTime)+cdTime;
+    intervalData = {reps,repDist,repPace,repHR,restTime,restHR,
+      warmup:{dist:wuDist,time:wuTime,pace:wuPace},cooldown:{dist:cdDist,time:cdTime,pace:cdPace},
+      totalTime:+totalTime.toFixed(1)};
+    if (!reps||!repDist) { showToast('กรุณาใส่จำนวนรอบและระยะต่อรอบ','error'); return; }
   }
-
   showLoading('กำลังบันทึก...');
   try {
     await window._fb.pushData('workouts', {
-      date: document.getElementById('f-date').value || new Date().toISOString().slice(0, 10),
-      dist: type === 'interval' ? totalDist : dist,
-      time: type === 'interval' ? (intervalData?.totalTime || 0) : (parseFloat(document.getElementById('r-time').value) || 0),
-      hr: type === 'interval' ? (intervalData?.repHR || 0) : (parseInt(document.getElementById('r-hr').value) || 0),
-      cad: parseInt(document.getElementById('r-cad')?.value) || 0,
-      note: document.getElementById('r-note').value || '',
-      type,
-      avgPace, splits,
-      ...(intervalData ? { interval: intervalData } : {}),
+      date: document.getElementById('f-date').value||new Date().toISOString().slice(0,10),
+      dist: type==='interval' ? totalDist : dist,
+      time: type==='interval' ? (intervalData?.totalTime||0) : (parseFloat(document.getElementById('r-time').value)||0),
+      hr: type==='interval' ? (intervalData?.repHR||0) : (parseInt(document.getElementById('r-hr').value)||0),
+      cad: parseInt(document.getElementById('r-cad')?.value)||0,
+      note: document.getElementById('r-note').value||'',
+      type, avgPace, splits,
+      ...(intervalData?{interval:intervalData}:{}),
       createdAt: Date.now()
     });
-    ['r-distance', 'r-time', 'r-hr', 'r-cad', 'r-note'].forEach(id => {
-      const el = document.getElementById(id); if (el) el.value = '';
-    });
-    const sa = document.getElementById('splits-area');
-    if (sa) sa.innerHTML = '<p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p>';
+    ['r-distance','r-time','r-hr','r-cad','r-note'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    const sa=document.getElementById('splits-area');
+    if(sa) sa.innerHTML='<p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p>';
     showToast('✅ บันทึกขึ้น Cloud แล้ว');
-  } catch (e) {
-    showToast('Error: ' + e.message, 'error');
-  } finally {
-    hideLoading();
-  }
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { hideLoading(); }
 }
 
 function renderRecentWorkouts() {
   const c = document.getElementById('recent-workouts-list');
   if (!c) return;
-  const em = { run: '🏃', interval: '⚡', bike: '🚴', swim: '🏊', walk: '🚶' };
-  if (!window._workouts.length) {
-    c.innerHTML = '<p class="text2 text-sm">ไม่มีข้อมูล — เริ่มบันทึกได้เลย</p>';
-    return;
-  }
-  c.innerHTML = window._workouts.slice(0, 10).map(w => {
-    let mainLine = '', subLine = '';
-    if (w.type === 'interval' && w.interval) {
-      const iv = w.interval;
-      mainLine = `⚡ Interval ${iv.reps}×${iv.repDist}กม. @ ${iv.repPace || '—'} · รวม ${w.dist} กม.`;
-      subLine = `${w.date} · พัก ${iv.restTime}น. · WU ${iv.warmup?.dist||0}กม. CD ${iv.cooldown?.dist||0}กม.`;
+  const em = {run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
+  if (!window._workouts.length) { c.innerHTML='<p class="text2 text-sm">ไม่มีข้อมูล — เริ่มบันทึกได้เลย</p>'; return; }
+  c.innerHTML = window._workouts.slice(0,10).map(w => {
+    let mainLine='', subLine='';
+    if (w.type==='interval'&&w.interval) {
+      const iv=w.interval;
+      mainLine=`⚡ Interval ${iv.reps}×${iv.repDist}กม. @ ${iv.repPace||'—'} · รวม ${w.dist} กม.`;
+      subLine=`${w.date} · พัก ${iv.restTime}น. · WU ${iv.warmup?.dist||0}กม. CD ${iv.cooldown?.dist||0}กม.`;
     } else {
       const pace = w.avgPace ? formatPace(w.avgPace) : '—';
-      mainLine = `${w.dist} กม. · ${w.time} น.${w.hr ? ' · HR ' + w.hr : ''}${w.cad ? ' · ' + w.cad + ' spm' : ''}`;
-      subLine = `${w.date} · ${pace}/กม.${w.stride ? ' · stride '+w.stride+'ม.' : ''}${w.note ? ' — '+w.note : ''}`;
+      mainLine=`${w.dist} กม. · ${w.time} น.${w.hr?' · HR '+w.hr:''}${w.cad?' · '+w.cad+' spm':''}`;
+      subLine=`${w.date} · ${pace}/กม.${w.stride?' · stride '+w.stride+'ม.':''}${w.note?' — '+w.note:''}`;
     }
-    return `
-    <div class="workout-item">
-      <div class="workout-icon">${em[w.type] || '🏅'}</div>
+    return `<div class="workout-item">
+      <div class="workout-icon">${em[w.type]||'🏅'}</div>
       <div style="flex:1;min-width:0">
         <div class="workout-main" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mainLine}</div>
         <div class="workout-sub">${subLine}</div>
       </div>
-      <button onclick="deleteWorkout('${w._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;flex-shrink:0" title="ลบ">✕</button>
+      <button onclick="deleteWorkout('${w._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;flex-shrink:0">✕</button>
     </div>`;
   }).join('');
 }
 
 async function deleteWorkout(key) {
   if (!confirm('ลบรายการนี้?')) return;
-  try {
-    await window._fb.removeData(`workouts/${key}`);
-    showToast('ลบแล้ว');
-  } catch (e) { showToast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
+  try { await window._fb.removeData(`workouts/${key}`); showToast('ลบแล้ว'); }
+  catch(e) { showToast('ลบไม่สำเร็จ: '+e.message,'error'); }
 }
 
 function formatPace(p) {
-  if (!p || isNaN(p)) return '—';
-  const totalSec = Math.round(p * 60); // แปลงเป็นวินาทีก่อน แก้ floating point
-  const mins = Math.floor(totalSec / 60);
-  const secs = totalSec % 60;
-  return `${mins}:${String(secs).padStart(2, '0')}`;
+  if (!p||isNaN(p)) return '—';
+  const totalSec = Math.round(p*60);
+  const mins = Math.floor(totalSec/60);
+  const secs = totalSec%60;
+  return `${mins}:${String(secs).padStart(2,'0')}`;
 }
 
-// แปลง string "5:30" → decimal minutes
 function paceStrToDecimal(str) {
   if (!str) return 0;
   const parts = str.trim().split(':');
-  if (parts.length < 2) return parseFloat(str) || 0;
-  const m = parseInt(parts[0]) || 0;
-  const s = parseInt(parts[1]) || 0;
-  return m + s / 60;
+  if (parts.length<2) return parseFloat(str)||0;
+  return (parseInt(parts[0])||0)+(parseInt(parts[1])||0)/60;
 }
 
-// ═══════════════════════════════════════════════════
-// STATS & CHARTS
-// ═══════════════════════════════════════════════════
-const charts = {};
+// ═══════════════════════════════════════
+// STATS — WEEK/MONTH NAV STATE
+// ═══════════════════════════════════════
+let _statsWeekOffset = 0; // 0 = this week, -1 = last week...
+let _statsMonthOffset = 0;
 
+function initStatsNav() {
+  _statsWeekOffset = 0;
+  _statsMonthOffset = 0;
+}
+
+function navWeek(dir) {
+  _statsWeekOffset += dir;
+  const nextBtn = document.getElementById('btn-week-next');
+  if (nextBtn) nextBtn.disabled = _statsWeekOffset >= 0;
+  renderWeekStats();
+}
+
+function goToCurrentWeek() {
+  _statsWeekOffset = 0;
+  document.getElementById('btn-week-next').disabled = true;
+  renderWeekStats();
+}
+
+function navMonth(dir) {
+  _statsMonthOffset += dir;
+  const nextBtn = document.getElementById('btn-month-next');
+  if (nextBtn) nextBtn.disabled = _statsMonthOffset >= 0;
+  renderMonthStats();
+}
+
+function goToCurrentMonth() {
+  _statsMonthOffset = 0;
+  document.getElementById('btn-month-next').disabled = true;
+  renderMonthStats();
+}
+
+function renderCurrentStatsView() {
+  if (document.getElementById('stats-week-view').style.display !== 'none') renderWeekStats();
+  else renderMonthStats();
+}
+
+// ── STATS TAB SWITCH ──
 function switchStatsTab(tab, el) {
   document.querySelectorAll('#page-fitness-stats .tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('stats-week-view').style.display = tab === 'week' ? 'block' : 'none';
-  document.getElementById('stats-month-view').style.display = tab === 'month' ? 'block' : 'none';
-  if (tab === 'week') renderWeekStats();
-  if (tab === 'month') renderMonthStats();
+  document.getElementById('stats-week-view').style.display = tab==='week' ? 'block' : 'none';
+  document.getElementById('stats-month-view').style.display = tab==='month' ? 'block' : 'none';
+  if (tab==='week') renderWeekStats();
+  if (tab==='month') renderMonthStats();
+}
+
+// ── WEEK STATS ──
+const charts = {};
+
+function getWeekDates(offset) {
+  // returns array of 7 Date objects: Mon–Sun of (this week + offset weeks)
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  monday.setHours(0,0,0,0);
+  return Array.from({length:7}, (_,i) => { const d=new Date(monday); d.setDate(monday.getDate()+i); return d; });
 }
 
 function renderWeekStats() {
-  const labels = [], data = [];
-  let totalDist = 0, totalTime = 0, days = 0;
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().slice(0, 10);
-    labels.push(d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }));
-    const manualWks = window._workouts.filter(w => w.date === ds);
-    const stravaWks = (window._stravaWorkouts || []).filter(w => w.date === ds);
-    const dayWks = [...manualWks, ...stravaWks];
-    const dist = dayWks.reduce((s, w) => s + parseFloat(w.dist || 0), 0);
-    const time = dayWks.reduce((s, w) => s + parseFloat(w.time || 0), 0);
+  const days = getWeekDates(_statsWeekOffset);
+  const today = new Date().toISOString().slice(0,10);
+  const allWks = [...window._workouts, ...(window._stravaWorkouts||[])];
+
+  // nav label
+  const label = document.getElementById('week-nav-label');
+  if (label) {
+    const s = days[0].toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+    const e = days[6].toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});
+    label.textContent = _statsWeekOffset === 0 ? `สัปดาห์นี้ (${s}–${e})` : `${s}–${e}`;
+  }
+  document.getElementById('btn-week-next').disabled = _statsWeekOffset >= 0;
+
+  let labels=[], data=[], totalDist=0, totalTime=0, dayCount=0, hrSum=0, hrCnt=0, cadSum=0, cadCnt=0;
+
+  days.forEach(d => {
+    const ds = d.toISOString().slice(0,10);
+    labels.push(d.toLocaleDateString('th-TH',{weekday:'short',day:'numeric'}));
+    const dayWks = allWks.filter(w => w.date===ds);
+    const dist = dayWks.reduce((s,w) => s+parseFloat(w.dist||0), 0);
+    const time = dayWks.reduce((s,w) => s+parseFloat(w.time||0), 0);
     data.push(+dist.toFixed(2));
     totalDist += dist; totalTime += time;
-    if (dayWks.length) days++;
-  }
-  const pace = totalDist > 0 ? totalTime / totalDist : 0;
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('stat-wk-dist', totalDist.toFixed(1) + ' กม.');
-  set('stat-wk-count', days + ' วัน');
-  set('stat-wk-time', Math.round(totalTime) + ' น.');
-  set('stat-wk-pace', pace > 0 ? formatPace(pace) : '—');
+    if (dayWks.length) dayCount++;
+    dayWks.forEach(w => {
+      if (w.hr) { hrSum += w.hr; hrCnt++; }
+      if (w.cad) { cadSum += w.cad; cadCnt++; }
+    });
+  });
 
+  const pace = totalDist>0 ? totalTime/totalDist : 0;
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('stat-wk-dist', totalDist.toFixed(1));
+  set('stat-wk-count', dayCount);
+  set('stat-wk-time', Math.round(totalTime));
+  set('stat-wk-pace', pace>0 ? formatPace(pace) : '—');
+  set('stat-wk-hr', hrCnt>0 ? Math.round(hrSum/hrCnt)+' bpm' : '—');
+  set('stat-wk-cad', cadCnt>0 ? Math.round(cadSum/cadCnt)+' spm' : '—');
+
+  // ATL = weighted sum of distances last 7 days (simple)
+  const atl = Math.min(100, Math.round(totalDist / 0.7)); // rough: 70km/week = 100
+  set('stat-atl', atl);
+  const atlFill = document.getElementById('atl-bar-fill');
+  if (atlFill) atlFill.style.width = atl+'%';
+
+  // Chart
   if (charts.week) charts.week.destroy();
   const ctx = document.getElementById('chart-week-trend')?.getContext('2d');
-  if (!ctx) return;
-  charts.week = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'กม.', data,
-        backgroundColor: data.map(v => v > 0 ? 'rgba(79,142,247,.7)' : 'rgba(79,142,247,.15)'),
-        borderRadius: 7, borderSkipped: false
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { color: '#7b9cc4' }, beginAtZero: true },
-        x: { grid: { display: false }, ticks: { color: '#7b9cc4' } }
-      }
-    }
-  });
+  if (ctx) {
+    charts.week = new Chart(ctx, {
+      type:'bar',
+      data:{labels, datasets:[{label:'กม.',data,
+        backgroundColor: data.map((_,i) => {
+          const ds = days[i].toISOString().slice(0,10);
+          return ds===today ? 'rgba(34,211,160,.8)' : (data[i]>0 ? 'rgba(79,142,247,.7)' : 'rgba(79,142,247,.15)');
+        }),
+        borderRadius:7,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#7b9cc4'},beginAtZero:true},
+          x:{grid:{display:false},ticks:{color:'#7b9cc4'}}}}
+    });
+  }
+
+  // Day breakdown
+  const bdEl = document.getElementById('week-day-breakdown');
+  if (bdEl) {
+    const dayNames = ['จ','อ','พ','พฤ','ศ','ส','อา'];
+    bdEl.innerHTML = days.map((d,i) => {
+      const ds = d.toISOString().slice(0,10);
+      const dayWks = allWks.filter(w => w.date===ds);
+      const dist = dayWks.reduce((s,w) => s+parseFloat(w.dist||0), 0);
+      const isToday = ds===today;
+      const isFuture = ds > today;
+      let color = 'var(--text3)'; let bg = 'var(--surface2)';
+      if (dist>0) { color='var(--accent2)'; bg='rgba(34,211,160,.08)'; }
+      if (isToday) { color='var(--accent)'; bg='rgba(79,142,247,.1)'; }
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:${bg};border-radius:8px;border:1px solid ${dist>0?'rgba(34,211,160,.2)':'var(--border)'}">
+        <div style="font-size:11px;font-weight:700;color:${color};width:24px;text-align:center">${dayNames[i]}</div>
+        <div style="font-size:11px;color:var(--text3);width:60px">${d.toLocaleDateString('th-TH',{day:'numeric',month:'short'})}</div>
+        ${dist>0 ? `<div style="flex:1;font-size:13px;font-weight:700;color:var(--accent2)">${dist.toFixed(1)} กม.</div>
+          ${dayWks[0]?.avgPace ? `<div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text2)">${formatPace(dayWks[0].avgPace)}/กม.</div>` : ''}
+          ${dayWks[0]?.hr ? `<div style="font-size:11px;color:var(--accent4);margin-left:4px">♥${dayWks[0].hr}</div>` : ''}`
+        : `<div style="flex:1;font-size:12px;color:${isFuture?'var(--text3)':'var(--text3);opacity:.5'}">${isFuture?'—':'พักผ่อน'}</div>`}
+      </div>`;
+    }).join('');
+  }
+}
+
+// ── MONTH STATS ──
+function getMonthBounds(offset) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + offset; // can be negative, JS Date handles it
+  const start = new Date(y, m, 1);
+  const end = new Date(y, m+1, 0);
+  return {start, end, year:start.getFullYear(), month:start.getMonth()};
 }
 
 function renderMonthStats() {
-  const labels = ['W1', 'W2', 'W3', 'W4'], data = [0, 0, 0, 0];
-  const now = new Date();
-  const allWks = [...window._workouts, ...(window._stravaWorkouts || [])];
-  allWks.forEach(w => {
+  const {start, end, year, month} = getMonthBounds(_statsMonthOffset);
+  const monthName = start.toLocaleDateString('th-TH',{month:'long',year:'numeric'});
+  const allWks = [...window._workouts, ...(window._stravaWorkouts||[])];
+
+  // nav label
+  const label = document.getElementById('month-nav-label');
+  if (label) label.textContent = _statsMonthOffset===0 ? `เดือนนี้ (${monthName})` : monthName;
+  document.getElementById('btn-month-next').disabled = _statsMonthOffset >= 0;
+
+  // filter workouts this month
+  const monthWks = allWks.filter(w => {
+    if (!w.date) return false;
     const d = new Date(w.date);
-    if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
-      data[Math.min(3, Math.floor((d.getDate() - 1) / 7))] += parseFloat(w.dist || 0);
-    }
+    return d.getFullYear()===year && d.getMonth()===month;
   });
+
+  const totalDist = monthWks.reduce((s,w) => s+parseFloat(w.dist||0), 0);
+  const totalTime = monthWks.reduce((s,w) => s+parseFloat(w.time||0), 0);
+  const pace = totalDist>0 ? totalTime/totalDist : 0;
+
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('stat-mo-dist', totalDist.toFixed(1));
+  set('stat-mo-count', monthWks.length);
+  set('stat-mo-time', Math.round(totalTime));
+  set('stat-mo-pace', pace>0 ? formatPace(pace) : '—');
+
+  // Weekly breakdown for chart
+  const labels=['W1','W2','W3','W4','W5'], data=[0,0,0,0,0];
+  monthWks.forEach(w => {
+    const d = new Date(w.date);
+    const wIdx = Math.min(4, Math.floor((d.getDate()-1)/7));
+    data[wIdx] += parseFloat(w.dist||0);
+  });
+  const trimData = data.map(v => +v.toFixed(2));
+  const maxW = start.getDay(); // work out how many full weeks
+  const displayLabels = trimData.map((_,i) => `W${i+1}`);
+
   if (charts.month) charts.month.destroy();
   const ctx = document.getElementById('chart-month-trend')?.getContext('2d');
-  if (!ctx) return;
-  charts.month = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'กม.', data: data.map(v => +v.toFixed(2)),
-        borderColor: '#22d3a0', tension: .4, fill: true,
-        backgroundColor: 'rgba(34,211,160,.08)',
-        pointBackgroundColor: '#22d3a0', pointRadius: 5
-      }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
+  if (ctx) {
+    charts.month = new Chart(ctx, {
+      type:'bar',
+      data:{labels:displayLabels, datasets:[{
+        label:'กม.',data:trimData,
+        backgroundColor:'rgba(34,211,160,.65)',borderRadius:7,borderSkipped:false,
+        borderColor:'rgba(34,211,160,.9)',borderWidth:1
+      }]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:i=>`${i.parsed.y.toFixed(1)} กม.`}}},
+        scales:{y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#7b9cc4'},beginAtZero:true},
+          x:{grid:{display:false},ticks:{color:'#7b9cc4'}}}}
+    });
+  }
+
+  // Activity list
+  const listEl = document.getElementById('month-activity-list');
+  if (listEl) {
+    const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
+    listEl.innerHTML = monthWks.length
+      ? [...monthWks].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(w => `
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:16px">${em[w.type]||'🏅'}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600">${w.dist} กม.${w.avgPace?' · '+formatPace(w.avgPace)+'/กม.':''}</div>
+            <div style="font-size:11px;color:var(--text2)">${w.date}</div>
+          </div>
+          ${w.hr?`<span style="font-size:11px;color:var(--accent4)">♥${w.hr}</span>`:''}
+        </div>`).join('')
+      : '<p class="text-sm text2">ไม่มีกิจกรรมในเดือนนี้</p>';
+  }
 }
 
-async function analyzeFitnessAI(period = 'week') {
-  const summary = window._workouts.slice(0, 14)
-    .map(w => `${w.date}: ${w.dist}กม. ${w.time}น.${w.hr ? ' HR' + w.hr : ''}${w.avgPace ? ' Pace' + formatPace(w.avgPace) : ''}`)
-    .join('\n');
-  const outId = period === 'week' ? 'ai-stats-output' : 'ai-month-output';
-  const btnId = period === 'week' ? 'btn-analyze-wk' : 'btn-analyze-mo';
-  await askClaude(
-    `ข้อมูลการออกกำลังกาย:\n${summary || 'ยังไม่มีข้อมูล'}\n\nวิเคราะห์ Training Load, ความสม่ำเสมอ, ความเสี่ยง Overtraining และให้คำแนะนำ 3 ข้อที่ชัดเจน`,
-    'คุณคือนักสรีรวิทยาการออกกำลังกาย วิเคราะห์เป็นภาษาไทย ตรงประเด็น ไม่เยิ่นเย้อ',
-    btnId, outId
-  );
+// ── AI ANALYZE — FIXED to include ALL data ──
+async function analyzeFitnessAI(period='week') {
+  // รวมข้อมูลทั้ง manual workouts + strava
+  const allWks = [...window._workouts, ...(window._stravaWorkouts||[])];
+
+  let wksToAnalyze = [];
+  let periodLabel = '';
+
+  if (period==='week') {
+    const days = getWeekDates(_statsWeekOffset);
+    const ds0 = days[0].toISOString().slice(0,10);
+    const ds6 = days[6].toISOString().slice(0,10);
+    wksToAnalyze = allWks.filter(w => w.date>=ds0 && w.date<=ds6);
+    periodLabel = `สัปดาห์ ${ds0} ถึง ${ds6}`;
+  } else {
+    const {year, month} = getMonthBounds(_statsMonthOffset);
+    wksToAnalyze = allWks.filter(w => {
+      if (!w.date) return false;
+      const d = new Date(w.date);
+      return d.getFullYear()===year && d.getMonth()===month;
+    });
+    const mName = new Date(year,month,1).toLocaleDateString('th-TH',{month:'long',year:'numeric'});
+    periodLabel = `เดือน ${mName}`;
+  }
+
+  const totalDist = wksToAnalyze.reduce((s,w) => s+parseFloat(w.dist||0), 0);
+  const totalTime = wksToAnalyze.reduce((s,w) => s+parseFloat(w.time||0), 0);
+  const avgPace = totalDist>0 ? totalTime/totalDist : 0;
+  const avgHR = wksToAnalyze.filter(w=>w.hr).length
+    ? Math.round(wksToAnalyze.filter(w=>w.hr).reduce((s,w)=>s+w.hr,0)/wksToAnalyze.filter(w=>w.hr).length)
+    : 0;
+
+  const summary = wksToAnalyze.length>0
+    ? wksToAnalyze.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(w =>
+        `[${w.date}] ${w.type||'run'} ${w.dist}กม. ${w.time}น.${w.hr?' HR'+w.hr:''}${w.avgPace?' Pace'+formatPace(w.avgPace):''}${w.cad?' Cad'+w.cad:''}`
+      ).join('\n')
+    : 'ไม่มีข้อมูลกิจกรรมในช่วงนี้';
+
+  const statsLine = wksToAnalyze.length>0
+    ? `\n\nสรุปรวม: ${wksToAnalyze.length} sessions · ${totalDist.toFixed(1)} กม. · ${Math.round(totalTime)} น. · Pace เฉลี่ย ${formatPace(avgPace)}${avgHR?' · HR เฉลี่ย '+avgHR+' bpm':''}`
+    : '';
+
+  const outId = period==='week' ? 'ai-stats-output' : 'ai-month-output';
+  const btnId = period==='week' ? 'btn-analyze-wk' : 'btn-analyze-mo';
+
+  const prompt = `ข้อมูลการออกกำลังกาย ช่วง${periodLabel}:
+${summary}${statsLine}
+
+${wksToAnalyze.length===0 ? 'ไม่มีข้อมูลในช่วงนี้ กรุณาแจ้งให้ผู้ใช้ทราบและแนะนำให้บันทึกหรือ Sync ข้อมูล' : 
+`วิเคราะห์:
+1. Training Load และ Volume เหมาะสมหรือไม่
+2. ความสม่ำเสมอของการซ้อม
+3. จุดเด่นและความเสี่ยง Overtraining / Undertraining
+4. คำแนะนำ 3 ข้อที่ชัดเจนสำหรับสัปดาห์ถัดไป`}`;
+
+  await askClaude(prompt,
+    'คุณคือนักสรีรวิทยาการออกกำลังกายและโค้ชวิ่งผู้เชี่ยวชาญ วิเคราะห์เป็นภาษาไทย ตรงประเด็น ไม่เยิ่นเย้อ ใช้ข้อมูลจริงที่ได้รับ',
+    btnId, outId);
 }
 
-// ═══════════════════════════════════════════════════
-// AI COACH
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// AI COACH — TRAINING PLAN
+// ═══════════════════════════════════════
+window._coachPlan = null;
+
 async function generateTrainingPlan() {
   const goal = document.getElementById('coach-goal')?.value?.trim();
-  if (!goal) { showToast('กรุณาใส่เป้าหมาย', 'error'); return; }
+  if (!goal) { showToast('กรุณาใส่เป้าหมาย','error'); return; }
   const level = document.getElementById('coach-level')?.value;
   const days = document.getElementById('coach-days')?.value;
-  const history = window._workouts.slice(0, 7).map(w => `${w.date}:${w.dist}กม.`).join(', ');
+  const startDate = document.getElementById('coach-start-date')?.value || new Date().toISOString().slice(0,10);
+  const history = window._workouts.slice(0,7).map(w=>`${w.date}:${w.dist}กม.${w.avgPace?' Pace'+formatPace(w.avgPace):''}`).join(', ');
+
   const out = document.getElementById('coach-output');
-  if (out) { out.style.color = 'var(--text2)'; out.innerHTML = '⏳ กำลังสร้างแผน...'; }
-  const res = await askClaude(
-    `เป้าหมาย: ${goal}\nระดับ: ${level}\nวันซ้อม: ${days} วัน/สัปดาห์\nประวัติล่าสุด: ${history || 'ยังไม่มี'}\n\nสร้างตารางซ้อม 4 สัปดาห์ รายวัน พร้อม Pace target และ Type (Easy/Tempo/Long/Rest)`,
-    'คุณคือโค้ชวิ่งที่มีใบรับรอง IAAF วางแผนโดยใช้หลัก Periodization ตอบเป็นภาษาไทย',
-    'btn-coach'
-  );
-  if (out && res) { out.style.color = 'var(--text)'; out.innerHTML = res.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>'); }
+  if (out) { out.style.color='var(--text2)'; out.innerHTML='⏳ กำลังสร้างแผน...'; }
+
+  if (!window._claudeKey) { showToast('กรุณาตั้งค่า API Key ก่อน','error'); showPage('settings'); return; }
+
+  const prompt = `เป้าหมาย: ${goal}
+ระดับ: ${level}
+วันซ้อมต่อสัปดาห์: ${days} วัน
+วันเริ่มต้น: ${startDate}
+ประวัติล่าสุด: ${history||'ยังไม่มี'}
+
+สร้างแผนซ้อม โดยต้องตอบในรูปแบบ JSON ONLY ไม่มีข้อความอื่น:
+{
+  "goal": "เป้าหมาย",
+  "startDate": "YYYY-MM-DD",
+  "totalWeeks": 4,
+  "sessions": [
+    {
+      "date": "YYYY-MM-DD",
+      "type": "Easy|Tempo|Interval|Long|Rest",
+      "description": "รายละเอียดสั้นๆ",
+      "targetDist": 5.0,
+      "targetPace": "5:30",
+      "targetHR": 140,
+      "notes": "คำแนะนำเพิ่มเติม"
+    }
+  ]
 }
 
-// ═══════════════════════════════════════════════════
+สร้าง sessions สำหรับ ${parseInt(days)*4} วันซ้อม (4 สัปดาห์) เริ่มจาก ${startDate} วันพักให้ใส่ type:"Rest" targetDist:0`;
+
+  const btn = document.getElementById('btn-coach');
+  if (btn) { btn.innerHTML='⏳ กำลังสร้าง...'; btn.disabled=true; }
+
+  try {
+    const res = await fetch(CF_WORKER, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':window._claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-6', max_tokens:4096,
+        system:'คุณเป็นโค้ชวิ่ง IAAF วางแผนตาม Periodization ตอบเป็น JSON ONLY ไม่มี markdown หรือข้อความอื่น',
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const rawText = data?.content?.[0]?.text || '';
+
+    // parse JSON
+    let plan = null;
+    try {
+      const cleaned = rawText.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim();
+      plan = JSON.parse(cleaned);
+    } catch(e) {
+      // fallback: ถ้า parse ไม่ได้ แสดงเป็น text
+      if (out) { out.style.color='var(--text)'; out.innerHTML = mdToHtml(rawText); }
+      showToast('สร้างแผนแล้ว แต่ไม่สามารถบันทึกเป็น JSON ได้','warn');
+      return;
+    }
+
+    // save to Firebase
+    await window._fb.setData('coach_plan', {
+      ...plan,
+      createdAt: Date.now(),
+      completedDates: {}
+    });
+
+    if (out) {
+      out.style.color = 'var(--text)';
+      out.innerHTML = `<div style="color:var(--accent2);font-weight:700;margin-bottom:8px">✅ บันทึกแผนขึ้น Firebase แล้ว!</div>
+        <div style="font-size:13px;color:var(--text2)">เป้าหมาย: <strong style="color:var(--text)">${plan.goal}</strong><br>
+        จำนวน sessions: ${plan.sessions?.length||0} วัน · ${plan.totalWeeks} สัปดาห์<br>
+        ไปที่แท็บ <strong style="color:var(--accent)">ติดตามแผน</strong> เพื่อดูตาราง</div>`;
+    }
+    showToast('✅ สร้างและบันทึกแผนแล้ว');
+
+  } catch(e) {
+    if (out) out.innerHTML = `<span style="color:var(--accent4)">⚠️ ${e.message}</span>`;
+  } finally {
+    if (btn) { btn.innerHTML='✨ สร้างแผนการซ้อม + บันทึก Firebase'; btn.disabled=false; }
+  }
+}
+
+// ── COACH TAB SWITCH ──
+function switchCoachTab(tab, el) {
+  document.querySelectorAll('#page-coach .tab').forEach(t => t.classList.remove('active'));
+  // find the right tab element
+  const tabs = document.querySelectorAll('#page-coach .tab');
+  if (tab==='create') tabs[0].classList.add('active');
+  else tabs[1].classList.add('active');
+  document.getElementById('coach-create-tab').style.display = tab==='create' ? 'block' : 'none';
+  document.getElementById('coach-track-tab').style.display = tab==='track' ? 'block' : 'none';
+  if (tab==='track') renderCoachTracking();
+}
+
+// ── RENDER COACH TRACKING ──
+function renderCoachTracking() {
+  const plan = window._coachPlan;
+  const noplan = document.getElementById('coach-no-plan');
+  const planView = document.getElementById('coach-plan-view');
+  const planHeader = document.getElementById('coach-plan-header');
+
+  if (!plan || !plan.sessions || !plan.sessions.length) {
+    if (noplan) noplan.style.display = 'block';
+    if (planView) planView.style.display = 'none';
+    return;
+  }
+  if (noplan) noplan.style.display = 'none';
+  if (planView) planView.style.display = 'block';
+  if (planHeader) planHeader.style.display = 'block';
+
+  // Header info
+  const goalDisp = document.getElementById('coach-plan-goal-disp');
+  if (goalDisp) goalDisp.textContent = '🎯 ' + (plan.goal||'—');
+  const metaDisp = document.getElementById('coach-plan-meta-disp');
+  if (metaDisp) metaDisp.textContent = `เริ่ม ${plan.startDate||'—'} · ${plan.totalWeeks||4} สัปดาห์ · ${plan.sessions.length} sessions`;
+
+  const today = new Date().toISOString().slice(0,10);
+  const completedDates = plan.completedDates || {};
+  const workoutDates = new Set([
+    ...window._workouts.map(w=>w.date),
+    ...(window._stravaWorkouts||[]).map(w=>w.date)
+  ]);
+
+  // Count stats
+  let doneCount=0, missCount=0, remainCount=0;
+  plan.sessions.forEach(s => {
+    if (s.type==='Rest') return;
+    if (completedDates[s.date] || workoutDates.has(s.date)) doneCount++;
+    else if (s.date < today) missCount++;
+    else remainCount++;
+  });
+
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('coach-done-count', doneCount);
+  set('coach-miss-count', missCount);
+  set('coach-remain-count', remainCount);
+
+  const totalNonRest = plan.sessions.filter(s=>s.type!=='Rest').length;
+  const pct = totalNonRest>0 ? Math.round(doneCount/totalNonRest*100) : 0;
+  set('coach-progress-pct', pct+'%');
+  const pb = document.getElementById('coach-progress-bar');
+  if (pb) pb.style.width = pct+'%';
+
+  // Render sessions
+  const daysEl = document.getElementById('coach-plan-days');
+  if (!daysEl) return;
+
+  const typeEmoji = {Easy:'🟢',Tempo:'🟡',Interval:'🔴',Long:'🔵',Rest:'⚪'};
+  const typeColor = {Easy:'var(--accent2)',Tempo:'var(--accent3)',Interval:'var(--accent4)',Long:'var(--accent)',Rest:'var(--text3)'};
+
+  daysEl.innerHTML = plan.sessions.map(s => {
+    const isToday = s.date===today;
+    const isFuture = s.date > today;
+    const isRest = s.type==='Rest';
+    const isDoneByPlan = !!completedDates[s.date];
+    const actualWks = [...window._workouts,...(window._stravaWorkouts||[])].filter(w=>w.date===s.date);
+    const isDoneActual = actualWks.length>0;
+    const isDone = isDoneByPlan || isDoneActual;
+    const isMissed = !isDone && s.date<today && !isRest;
+
+    let cls = 'plan-day';
+    if (isToday) cls+=' today-row';
+    else if (isDone) cls+=' done';
+    else if (isMissed) cls+=' missed';
+
+    let badge = '';
+    if (isRest) badge = '<span class="plan-day-badge badge-upcoming">🛌 พักผ่อน</span>';
+    else if (isDone) badge = '<span class="plan-day-badge badge-done">✅ เสร็จแล้ว</span>';
+    else if (isMissed) badge = '<span class="plan-day-badge badge-missed">❌ พลาด</span>';
+    else if (isToday) badge = '<span class="plan-day-badge badge-today">📍 วันนี้</span>';
+    else badge = '<span class="plan-day-badge badge-upcoming">⏳ รอ</span>';
+
+    const dateObj = new Date(s.date+'T00:00:00');
+    const dateStr = dateObj.toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
+
+    let actualLine = '';
+    if (isDoneActual && actualWks.length) {
+      const aw = actualWks[0];
+      actualLine = `<div class="plan-day-actual">📊 จริง: ${aw.dist}กม.${aw.avgPace?' · Pace '+formatPace(aw.avgPace):''}${aw.hr?' · HR '+aw.hr:''}</div>`;
+      // compare vs target
+      if (s.targetDist>0 && aw.dist>0) {
+        const diff = ((parseFloat(aw.dist)-s.targetDist)/s.targetDist*100).toFixed(0);
+        const color = Math.abs(diff)<=10 ? 'var(--accent2)' : (diff>0?'var(--accent)':'var(--accent3)');
+        actualLine += `<div style="font-size:11px;color:${color};margin-top:2px">${diff>0?'↑':'↓'} ${Math.abs(diff)}% จากเป้า</div>`;
+      }
+    }
+
+    return `<div class="${cls}">
+      <div class="plan-day-header">
+        <div class="plan-day-date">${dateStr}</div>
+        ${badge}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">${typeEmoji[s.type]||'🏃'}</span>
+        <div style="flex:1">
+          <div class="plan-day-desc" style="color:${typeColor[s.type]||'var(--text)'}">${s.type}${s.targetDist>0?' — '+s.targetDist+' กม.':''}</div>
+          <div class="plan-day-target">${s.description||''}${s.targetPace?' · เป้า Pace '+s.targetPace:''}${s.targetHR?' · HR <'+s.targetHR:''}</div>
+          ${s.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">💡 ${s.notes}</div>`:''}
+          ${actualLine}
+        </div>
+        ${(!isDone&&!isFuture&&!isRest) ? `<button onclick="markDone('${s.date}')" class="btn btn-success btn-xs" style="flex-shrink:0">✓ ทำแล้ว</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MATCH WORKOUTS TO PLAN ──
+async function matchWorkoutsToPlan(silent=false) {
+  const plan = window._coachPlan;
+  if (!plan?.sessions) return;
+  // ไม่ต้องทำอะไรเพิ่ม เพราะ renderCoachTracking() ดึงข้อมูลจาก workouts โดยตรงแล้ว
+  if (document.getElementById('page-coach').classList.contains('active')
+    && document.getElementById('coach-track-tab').style.display !== 'none') {
+    renderCoachTracking();
+  }
+  if (!silent) showToast('🔄 จับคู่กิจกรรมกับแผนเรียบร้อย');
+}
+
+async function markDone(date) {
+  const plan = window._coachPlan;
+  if (!plan) return;
+  const completedDates = plan.completedDates || {};
+  completedDates[date] = Date.now();
+  await window._fb.setData('coach_plan/completedDates', completedDates);
+  showToast('✅ บันทึกแล้ว');
+}
+
+async function clearCoachPlan() {
+  if (!confirm('ลบแผนการซ้อมนี้?')) return;
+  await window._fb.removeData('coach_plan');
+  window._coachPlan = null;
+  renderCoachTracking();
+  showToast('ลบแผนแล้ว');
+}
+
+async function reviewPlanAI() {
+  const plan = window._coachPlan;
+  if (!plan?.sessions) { showToast('ไม่มีแผนการซ้อม','error'); return; }
+
+  const today = new Date().toISOString().slice(0,10);
+  const allWks = [...window._workouts,...(window._stravaWorkouts||[])];
+  const completedDates = plan.completedDates||{};
+
+  let summary = `แผน: ${plan.goal}\n\n`;
+  let doneCount=0, missCount=0;
+
+  plan.sessions.forEach(s => {
+    if (s.type==='Rest') return;
+    const actualWks = allWks.filter(w=>w.date===s.date);
+    const isDone = !!completedDates[s.date] || actualWks.length>0;
+    const isMissed = !isDone && s.date<today;
+    if (isDone) doneCount++;
+    if (isMissed) missCount++;
+    if (s.date<=today) {
+      const aw = actualWks[0];
+      summary += `[${s.date}] ${s.type} เป้า:${s.targetDist}กม.@${s.targetPace||'—'} `;
+      if (aw) summary += `→ จริง:${aw.dist}กม.${aw.avgPace?' @'+formatPace(aw.avgPace):''}${aw.hr?' HR'+aw.hr:''} ✅\n`;
+      else summary += `→ ❌ พลาด\n`;
+    }
+  });
+
+  summary += `\nสรุป: ทำแล้ว ${doneCount} sessions, พลาด ${missCount} sessions`;
+
+  await askClaude(
+    `${summary}\n\nทบทวนความก้าวหน้าตามแผน วิเคราะห์ว่าเป็นไปตามเป้าหมายหรือไม่ และให้คำแนะนำปรับแผนถ้าจำเป็น`,
+    'คุณคือโค้ชวิ่งผู้เชี่ยวชาญ วิเคราะห์ความก้าวหน้าและให้คำแนะนำเป็นภาษาไทย',
+    'btn-coach-review', 'coach-review-output'
+  );
+}
+
+// ═══════════════════════════════════════
+// NEWS / Q&A
+// ═══════════════════════════════════════
+async function askNewsAI() {
+  const q = document.getElementById('news-query')?.value?.trim();
+  if (!q) { showToast('กรุณาพิมพ์คำถาม','error'); return; }
+  await askClaude(q,'คุณคือผู้เชี่ยวชาญรอบด้าน ตอบเป็นภาษาไทย ชัดเจน กระชับ พร้อมยกตัวอย่าง','btn-news','news-output');
+}
+function setNewsQ(q) { document.getElementById('news-query').value=q; }
+
+// ═══════════════════════════════════════
 // IMAGE AI EXTRACTION
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 async function processImageWithAI(event) {
-  const files = Array.from(event.target.files || []);
+  const files = Array.from(event.target.files||[]);
   if (!files.length) return;
-  if (!window._claudeKey) { showToast('กรุณาตั้งค่า API Key ก่อน', 'error'); showPage('settings'); return; }
+  if (!window._claudeKey) { showToast('กรุณาตั้งค่า API Key ก่อน','error'); showPage('settings'); return; }
   showLoading('AI กำลังสกัดข้อมูลจากรูป...');
   try {
     const f = files[0];
-    const b64 = await new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = e => res(e.target.result.split(',')[1]);
-      r.onerror = rej;
-      r.readAsDataURL(f);
+    const b64 = await new Promise((res,rej) => {
+      const r=new FileReader(); r.onload=e=>res(e.target.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(f);
     });
     const text = await askClaudeVision(b64, f.type, 'Extract running data from this fitness screenshot.');
     if (!text) throw new Error('ไม่ได้รับข้อมูลจาก AI');
-    const d = JSON.parse(text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim());
-    if (d.distance) { document.getElementById('r-distance').value = d.distance; buildSplits(); }
-    if (d.time) document.getElementById('r-time').value = d.time;
-    if (d.hr) document.getElementById('r-hr').value = d.hr;
-    if (d.cadence) document.getElementById('r-cad').value = d.cadence;
+    const d = JSON.parse(text.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim());
+    if (d.distance) { document.getElementById('r-distance').value=d.distance; buildSplits(); }
+    if (d.time) document.getElementById('r-time').value=d.time;
+    if (d.hr) document.getElementById('r-hr').value=d.hr;
+    if (d.cadence) document.getElementById('r-cad').value=d.cadence;
     if (d.splits?.length) {
       setTimeout(() => {
-        document.querySelectorAll('.sp-pace').forEach((el, i) => { if (d.splits[i]?.pace) el.value = d.splits[i].pace; });
-        document.querySelectorAll('.sp-hr').forEach((el, i) => { if (d.splits[i]?.hr) el.value = d.splits[i].hr; });
+        document.querySelectorAll('.sp-pace').forEach((el,i) => { if(d.splits[i]?.pace) el.value=d.splits[i].pace; });
+        document.querySelectorAll('.sp-hr').forEach((el,i) => { if(d.splits[i]?.hr) el.value=d.splits[i].hr; });
         calcAvgPace();
       }, 300);
     }
     showToast('✅ สกัดข้อมูลสำเร็จ');
-  } catch (e) {
-    showToast('Error: ' + e.message, 'error');
-  } finally {
-    hideLoading();
-    event.target.value = '';
-  }
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { hideLoading(); event.target.value=''; }
 }
 
-// ═══════════════════════════════════════════════════
-// DOC SUMMARY (image upload)
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// DOC SUMMARY
+// ═══════════════════════════════════════
 let _docFile = null;
-
 function onDocFileSelected(input) {
-  _docFile = input.files?.[0] || null;
-  const chip = document.getElementById('doc-file-chip');
-  const name = document.getElementById('doc-file-name');
-  if (_docFile) {
-    chip.style.display = 'inline-flex';
-    name.textContent = `${_docFile.name} (${(_docFile.size / 1024 / 1024).toFixed(1)} MB)`;
-  } else {
-    chip.style.display = 'none';
-  }
+  _docFile = input.files?.[0]||null;
+  const chip=document.getElementById('doc-file-chip'), name=document.getElementById('doc-file-name');
+  if (_docFile) { chip.style.display='inline-flex'; name.textContent=`${_docFile.name} (${(_docFile.size/1024/1024).toFixed(1)} MB)`; }
+  else chip.style.display='none';
 }
-
-function clearDocFile() {
-  _docFile = null;
-  document.getElementById('doc-file-input').value = '';
-  document.getElementById('doc-file-chip').style.display = 'none';
-}
-
+function clearDocFile() { _docFile=null; document.getElementById('doc-file-input').value=''; document.getElementById('doc-file-chip').style.display='none'; }
 function handleDocDrop(e) {
   e.preventDefault();
   document.getElementById('doc-drop-zone').classList.remove('drag-over');
-  const file = e.dataTransfer.files?.[0];
-  if (!file) return;
-  _docFile = file;
-  document.getElementById('doc-file-chip').style.display = 'inline-flex';
-  document.getElementById('doc-file-name').textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
+  const file=e.dataTransfer.files?.[0]; if(!file) return;
+  _docFile=file;
+  document.getElementById('doc-file-chip').style.display='inline-flex';
+  document.getElementById('doc-file-name').textContent=`${file.name} (${(file.size/1024/1024).toFixed(1)} MB)`;
 }
 
 async function summarizeDocAI() {
-  const text = document.getElementById('ai-doc-input')?.value?.trim();
-  const format = document.getElementById('doc-summary-format')?.value || 'brief';
-  const out = document.getElementById('ai-doc-output-page');
-  const btn = document.getElementById('btn-doc-ai');
-
-  if (!_docFile && !text) { showToast('กรุณาอัปโหลดรูปหรือวางข้อความก่อน', 'error'); return; }
-
-  if (out) out.innerHTML = '<span style="opacity:.45;font-style:italic;font-size:13px">⏳ Claude กำลังอ่านและสรุป...</span>';
-  if (btn) { btn.innerHTML = '⏳ กำลังสรุป...'; btn.disabled = true; }
-
-  const sys = {
-    brief: 'สรุปหนังสือราชการ 3 ข้อสั้นๆ กระชับ เพื่อเสนอผู้บริหาร',
-    detailed: 'สรุปหนังสือราชการอย่างละเอียด แบ่งเป็น: บริบท สาระสำคัญ ข้อสังเกต',
-    action: 'อ่านหนังสือราชการและระบุ Action Items ที่ต้องดำเนินการ พร้อมผู้รับผิดชอบและกำหนดเวลา'
+  const text=document.getElementById('ai-doc-input')?.value?.trim();
+  const format=document.getElementById('doc-summary-format')?.value||'brief';
+  const out=document.getElementById('ai-doc-output-page');
+  const btn=document.getElementById('btn-doc-ai');
+  if (!_docFile&&!text) { showToast('กรุณาอัปโหลดรูปหรือวางข้อความก่อน','error'); return; }
+  if (out) out.innerHTML='<span style="opacity:.45;font-style:italic;font-size:13px">⏳ Claude กำลังอ่านและสรุป...</span>';
+  if (btn) { btn.innerHTML='⏳ กำลังสรุป...'; btn.disabled=true; }
+  const sys={
+    brief:'สรุปหนังสือราชการ 3 ข้อสั้นๆ กระชับ เพื่อเสนอผู้บริหาร',
+    detailed:'สรุปหนังสือราชการอย่างละเอียด แบ่งเป็น: บริบท สาระสำคัญ ข้อสังเกต',
+    action:'อ่านหนังสือราชการและระบุ Action Items ที่ต้องดำเนินการ พร้อมผู้รับผิดชอบและกำหนดเวลา'
   };
-
   try {
-    let reply = null;
+    let reply=null;
     if (_docFile) {
-      // ส่งเป็น vision request
-      const b64 = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload = e => res(e.target.result.split(',')[1]);
-        r.onerror = rej;
-        r.readAsDataURL(_docFile);
-      });
-      const res = await fetch(CF_WORKER, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': window._claudeKey, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 2048,
-          system: sys[format],
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: _docFile.type, data: b64 } },
-              { type: 'text', text: 'สรุปหนังสือราชการในภาพนี้' }
-            ]
-          }]
-        })
-      });
-      const data = await res.json();
-      reply = data?.content?.[0]?.text || '';
+      const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=e=>res(e.target.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(_docFile); });
+      const res=await fetch(CF_WORKER,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':window._claudeKey,'anthropic-version':'2023-06-01'},
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2048,system:sys[format],
+          messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:_docFile.type,data:b64}},{type:'text',text:'สรุปหนังสือราชการในภาพนี้'}]}]})});
+      const data=await res.json(); reply=data?.content?.[0]?.text||'';
     } else {
-      reply = await askClaude(text, sys[format]);
+      reply=await askClaude(text, sys[format]);
     }
-    if (out && reply) {
-      out.innerHTML = reply
-        .replace(/\n/g, '<br>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    }
-  } catch (e) {
-    if (out) out.innerHTML = `<span style="color:var(--accent4)">⚠️ ${e.message}</span>`;
-  } finally {
-    if (btn) { btn.innerHTML = '✨ สรุปด้วย Claude AI'; btn.disabled = false; }
-  }
+    if (out&&reply) out.innerHTML=reply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  } catch(e) { if(out) out.innerHTML=`<span style="color:var(--accent4)">⚠️ ${e.message}</span>`; }
+  finally { if(btn) { btn.innerHTML='✨ สรุปด้วย Claude AI'; btn.disabled=false; } }
 }
 
-// ═══════════════════════════════════════════════════
-// NEWS / Q&A
-// ═══════════════════════════════════════════════════
-async function askNewsAI() {
-  const q = document.getElementById('news-query')?.value?.trim();
-  if (!q) { showToast('กรุณาพิมพ์คำถาม', 'error'); return; }
-  await askClaude(
-    q,
-    'คุณคือผู้เชี่ยวชาญรอบด้าน ตอบเป็นภาษาไทย ชัดเจน กระชับ พร้อมยกตัวอย่าง',
-    'btn-news', 'news-output'
-  );
-}
-function setNewsQ(q) { document.getElementById('news-query').value = q; }
-
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // STRAVA
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 const STRAVA_API = 'https://www.strava.com/api/v3';
 
 function stravaConnect() {
-  const sb = document.getElementById('strava-status-box');
-  sb.innerHTML = `
-    <div style="width:100%">
-      <p style="font-weight:700;font-size:13px;margin-bottom:4px">วาง Refresh Token <span style="color:var(--accent2);font-weight:400;font-size:12px">— ไม่หมดอายุ ใช้ครั้งเดียวตลอดไป</span></p>
-      <p class="text-xs text2 mb-8">ดูวิธีรับ Refresh Token จากคำแนะนำด้านล่าง (ต้องตั้งค่า Client ID / Secret ในหน้าตั้งค่าก่อน)</p>
-      <div class="flex gap-8">
-        <input type="text" id="strava-token-input" placeholder="วาง refresh_token ที่นี่..." style="flex:1;font-size:12px">
-        <button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ เชื่อมต่อ</button>
-      </div>
-    </div>`;
+  const sb=document.getElementById('strava-status-box');
+  sb.innerHTML=`<div style="width:100%">
+    <p style="font-weight:700;font-size:13px;margin-bottom:4px">วาง Refresh Token</p>
+    <div class="flex gap-8">
+      <input type="text" id="strava-token-input" placeholder="วาง refresh_token ที่นี่..." style="flex:1;font-size:12px">
+      <button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ เชื่อมต่อ</button>
+    </div>
+  </div>`;
 }
 
 async function stravaConnectDirect() {
-  const refreshToken = (document.getElementById('strava-token-input')?.value || '').trim();
-  if (!refreshToken) { showToast('กรุณาวาง Refresh Token', 'error'); return; }
-  showLoading('กำลังตรวจสอบ Refresh Token...');
+  const refreshToken=(document.getElementById('strava-token-input')?.value||'').trim();
+  if (!refreshToken) { showToast('กรุณาวาง Refresh Token','error'); return; }
+  showLoading('กำลังตรวจสอบ...');
   try {
-    const cfg = await window._fb.getData('settings') || {};
-    if (!cfg.stravaId || !cfg.stravaSecret) {
-      throw new Error('กรุณาบันทึก Client ID และ Client Secret ในหน้าตั้งค่าก่อน');
-    }
-    // แลก refresh_token เพื่อรับ access_token ใหม่
-    const exchanged = await stravaRefreshTokenCall(refreshToken, cfg.stravaId, cfg.stravaSecret);
-    // ดึงข้อมูล athlete
-    const res = await fetch(`${STRAVA_API}/athlete`, {
-      headers: { 'Authorization': `Bearer ${exchanged.access_token}` }
-    });
+    const cfg=await window._fb.getData('settings')||{};
+    if (!cfg.stravaId||!cfg.stravaSecret) throw new Error('กรุณาบันทึก Client ID/Secret ในหน้าตั้งค่าก่อน');
+    const exchanged=await stravaRefreshTokenCall(refreshToken, cfg.stravaId, cfg.stravaSecret);
+    const res=await fetch(`${STRAVA_API}/athlete`,{headers:{'Authorization':`Bearer ${exchanged.access_token}`}});
     if (!res.ok) throw new Error(`ไม่สามารถดึงข้อมูล Athlete (HTTP ${res.status})`);
-    const athlete = await res.json();
-    await window._fb.setData('strava_token', {
-      access_token: exchanged.access_token,
-      refresh_token: refreshToken,           // เก็บ refresh_token ถาวร
-      expires_at: exchanged.expires_at,      // unix timestamp จริงจาก Strava
-      athlete
-    });
-    showToast(`✅ ยินดีต้อนรับ ${athlete.firstname} ${athlete.lastname}! (Auto-refresh พร้อมแล้ว)`);
+    const athlete=await res.json();
+    await window._fb.setData('strava_token',{access_token:exchanged.access_token,refresh_token:refreshToken,expires_at:exchanged.expires_at,athlete});
+    showToast(`✅ ยินดีต้อนรับ ${athlete.firstname}!`);
     renderStravaPage();
-  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { hideLoading(); }
 }
 
-// ═══════════════════════════════════════════════════
-// STRAVA TOKEN HELPERS
-// ═══════════════════════════════════════════════════
-
-// เรียก Strava /oauth/token เพื่อ exchange refresh_token → access_token ใหม่
 async function stravaRefreshTokenCall(refreshToken, clientId, clientSecret) {
-  const res = await fetch('https://www.strava.com/oauth/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token'
-    })
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.message || `Refresh ไม่สำเร็จ (HTTP ${res.status})`);
-  }
-  return await res.json(); // { access_token, refresh_token, expires_at, ... }
+  const res=await fetch('https://www.strava.com/oauth/token',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({client_id:clientId,client_secret:clientSecret,refresh_token:refreshToken,grant_type:'refresh_token'})});
+  if (!res.ok) { const err=await res.json().catch(()=>({})); throw new Error(err?.message||`Refresh ไม่สำเร็จ (HTTP ${res.status})`); }
+  return await res.json();
 }
 
-// ดึง access_token ที่ใช้ได้ — refresh อัตโนมัติถ้าหมดอายุหรือใกล้หมด (ภายใน 5 นาที)
 async function stravaGetValidToken() {
-  const tokenData = await window._fb.getData('strava_token');
+  const tokenData=await window._fb.getData('strava_token');
   if (!tokenData?.access_token) return null;
-
-  const nowSec = Math.floor(Date.now() / 1000);
-  const expiresAt = tokenData.expires_at || 0;
-  const BUFFER = 5 * 60; // 5 นาที buffer
-
-  if (expiresAt - nowSec > BUFFER) {
-    // ยังไม่หมด — ใช้ได้เลย
-    return tokenData.access_token;
-  }
-
-  // หมดหรือใกล้หมด — ต้อง refresh
-  if (!tokenData.refresh_token) {
-    // ยังเป็น token เก่าแบบ manual paste — บอกให้ connect ใหม่
-    stravaTokenExpired();
-    return null;
-  }
-
+  const nowSec=Math.floor(Date.now()/1000);
+  if ((tokenData.expires_at||0)-nowSec > 300) return tokenData.access_token;
+  if (!tokenData.refresh_token) { stravaTokenExpired(); return null; }
   try {
-    const cfg = await window._fb.getData('settings') || {};
-    if (!cfg.stravaId || !cfg.stravaSecret) {
-      showToast('⚠️ ไม่พบ Client ID/Secret — กรุณาตั้งค่าใหม่', 'error');
-      return null;
-    }
-    showToast('🔄 กำลัง Refresh Strava Token...', 'info');
-    const refreshed = await stravaRefreshTokenCall(
-      tokenData.refresh_token, cfg.stravaId, cfg.stravaSecret
-    );
-    // Strava อาจส่ง refresh_token ใหม่มาด้วย — บันทึกทับ
-    await window._fb.setData('strava_token', {
-      ...tokenData,
-      access_token: refreshed.access_token,
-      refresh_token: refreshed.refresh_token || tokenData.refresh_token,
-      expires_at: refreshed.expires_at
-    });
+    const cfg=await window._fb.getData('settings')||{};
+    const refreshed=await stravaRefreshTokenCall(tokenData.refresh_token, cfg.stravaId, cfg.stravaSecret);
+    await window._fb.setData('strava_token',{...tokenData,access_token:refreshed.access_token,refresh_token:refreshed.refresh_token||tokenData.refresh_token,expires_at:refreshed.expires_at});
     return refreshed.access_token;
-  } catch (e) {
-    showToast('⚠️ Refresh Token ไม่สำเร็จ: ' + e.message, 'error');
-    return null;
-  }
+  } catch(e) { showToast('⚠️ Refresh Token ไม่สำเร็จ: '+e.message,'error'); return null; }
 }
 
 async function stravaSync() {
-  const btn = document.getElementById('btn-strava-sync');
-  const oldHTML = btn?.innerHTML;
-  if (btn) { btn.innerHTML = '⏳ กำลัง Sync...'; btn.disabled = true; }
+  const btn=document.getElementById('btn-strava-sync'), oldHTML=btn?.innerHTML;
+  if(btn){btn.innerHTML='⏳ Sync...';btn.disabled=true;}
   try {
-    let accessToken = await stravaGetValidToken();
-    if (!accessToken) return;
-
-    let res = await fetch(`${STRAVA_API}/athlete/activities?per_page=30`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
-    });
-
-    // ถ้า 401 — force refresh แล้วลองอีกครั้ง
-    if (res.status === 401) {
-      showToast('🔄 Token หมด กำลัง Refresh...', 'info');
-      const tokenData = await window._fb.getData('strava_token');
-      if (!tokenData?.refresh_token) { stravaTokenExpired(); return; }
-      const cfg = await window._fb.getData('settings') || {};
-      const refreshed = await stravaRefreshTokenCall(
-        tokenData.refresh_token, cfg.stravaId, cfg.stravaSecret
-      );
-      await window._fb.setData('strava_token', {
-        ...tokenData,
-        access_token: refreshed.access_token,
-        refresh_token: refreshed.refresh_token || tokenData.refresh_token,
-        expires_at: refreshed.expires_at
-      });
-      accessToken = refreshed.access_token;
-      res = await fetch(`${STRAVA_API}/athlete/activities?per_page=30`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+    let accessToken=await stravaGetValidToken(); if(!accessToken) return;
+    let res=await fetch(`${STRAVA_API}/athlete/activities?per_page=30`,{headers:{'Authorization':`Bearer ${accessToken}`}});
+    if (res.status===401) {
+      const tokenData=await window._fb.getData('strava_token');
+      const cfg=await window._fb.getData('settings')||{};
+      const refreshed=await stravaRefreshTokenCall(tokenData.refresh_token,cfg.stravaId,cfg.stravaSecret);
+      await window._fb.setData('strava_token',{...tokenData,access_token:refreshed.access_token,refresh_token:refreshed.refresh_token||tokenData.refresh_token,expires_at:refreshed.expires_at});
+      accessToken=refreshed.access_token;
+      res=await fetch(`${STRAVA_API}/athlete/activities?per_page=30`,{headers:{'Authorization':`Bearer ${accessToken}`}});
     }
-
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const acts = await res.json();
+    const acts=await res.json();
     await window._fb.setData('strava_activities', acts);
     renderStravaActivities(acts);
+    // also match to coach plan
+    matchWorkoutsToPlan(true);
     showToast(`✅ Sync ${acts.length} กิจกรรมสำเร็จ`);
-  } catch (e) { showToast('Error: ' + e.message, 'error'); }
-  finally { if (btn) { btn.innerHTML = oldHTML; btn.disabled = false; } }
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  finally { if(btn){btn.innerHTML=oldHTML;btn.disabled=false;} }
 }
 
 function stravaTokenExpired() {
-  showToast('⚠️ Refresh Token ใช้ไม่ได้ — กรุณาเชื่อมต่อใหม่', 'error');
+  showToast('⚠️ Refresh Token ใช้ไม่ได้ — กรุณาเชื่อมต่อใหม่','error');
   window._fb.removeData('strava_token').catch(()=>{});
   renderStravaPage();
-  setTimeout(() => stravaConnect(), 500);
 }
 
 async function stravaDisconnect() {
-  if (!confirm('ยืนยันยกเลิกการเชื่อมต่อ Strava?')) return;
+  if (!confirm('ยืนยันยกเลิกการเชื่อมต่อ?')) return;
   await window._fb.removeData('strava_token');
   await window._fb.removeData('strava_activities');
   renderStravaPage();
@@ -1827,443 +2108,321 @@ async function stravaDisconnect() {
 }
 
 async function renderStravaPage() {
-  const tokenData = await window._fb.getData('strava_token');
-  const sb = document.getElementById('strava-status-box');
-  const cb = document.getElementById('btn-strava-connect');
-  const db = document.getElementById('btn-strava-disconnect');
-  const sync = document.getElementById('btn-strava-sync');
+  const tokenData=await window._fb.getData('strava_token');
+  const sb=document.getElementById('strava-status-box');
+  const cb=document.getElementById('btn-strava-connect');
+  const db=document.getElementById('btn-strava-disconnect');
+  const sync=document.getElementById('btn-strava-sync');
   if (tokenData?.access_token) {
-    const a = tokenData.athlete || {};
-    sb.style.cssText = 'background:rgba(252,76,2,.1);border:1px solid rgba(252,76,2,.3);border-radius:9px;padding:8px 14px;display:flex;align-items:center;gap:10px';
-    sb.innerHTML = `<div style="width:9px;height:9px;border-radius:50%;background:var(--strava)"></div>
+    const a=tokenData.athlete||{};
+    sb.style.cssText='background:rgba(252,76,2,.1);border:1px solid rgba(252,76,2,.3);border-radius:9px;padding:8px 14px;display:flex;align-items:center;gap:10px';
+    sb.innerHTML=`<div style="width:9px;height:9px;border-radius:50%;background:var(--strava)"></div>
       <div><div style="font-weight:700;color:var(--strava);font-size:13px">${a.firstname||''} ${a.lastname||''}</div>
       <div style="font-size:11px;color:var(--text2)">${tokenData.refresh_token?'🔄 Auto-refresh':'⚠️ Manual'}</div></div>`;
-    cb.style.display = 'none'; db.style.display = 'block'; sync.style.display = 'inline-flex';
-    const guide = document.getElementById('strava-guide-box');
-    if (guide) guide.style.display = 'none';
-    const cached = await window._fb.getData('strava_activities');
-    if (cached) renderStravaActivities(Array.isArray(cached) ? cached : Object.values(cached));
-    else document.getElementById('strava-activities-list').innerHTML = '<p class="text-sm text2">กด Sync เพื่อดึงข้อมูล</p>';
+    cb.style.display='none'; db.style.display='block'; sync.style.display='inline-flex';
+    document.getElementById('strava-guide-box').style.display='none';
+    const cached=await window._fb.getData('strava_activities');
+    if (cached) renderStravaActivities(Array.isArray(cached)?cached:Object.values(cached));
+    else document.getElementById('strava-activities-list').innerHTML='<p class="text-sm text2">กด Sync เพื่อดึงข้อมูล</p>';
   } else {
-    sb.style.cssText = 'background:var(--surface2);border-radius:9px;padding:8px 14px;display:flex;align-items:center;gap:8px';
-    sb.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:var(--text3)"></div><span class="text-sm text2">ยังไม่ได้เชื่อมต่อ</span>';
-    cb.style.display = 'block'; db.style.display = 'none'; sync.style.display = 'none';
-    const guide = document.getElementById('strava-guide-box');
-    if (guide) guide.style.display = 'block';
-    const strip = document.getElementById('strava-week-strip');
-    if (strip) strip.style.display = 'none';
+    sb.style.cssText='background:var(--surface2);border-radius:9px;padding:8px 14px;display:flex;align-items:center;gap:8px';
+    sb.innerHTML='<div style="width:8px;height:8px;border-radius:50%;background:var(--text3)"></div><span class="text-sm text2">ยังไม่ได้เชื่อมต่อ</span>';
+    cb.style.display='block'; db.style.display='none'; sync.style.display='none';
+    document.getElementById('strava-guide-box').style.display='block';
+    document.getElementById('strava-week-strip').style.display='none';
   }
 }
 
 function renderStravaActivities(acts) {
-  // sync ข้อมูลเข้า _stravaWorkouts
-  window._stravaWorkouts = (acts || []).map(a => ({
-    date: a.start_date_local ? a.start_date_local.slice(0,10) : '',
-    dist: +(a.distance / 1000).toFixed(2),
-    time: +(a.moving_time / 60).toFixed(1),
-    hr: a.average_heartrate ? Math.round(a.average_heartrate) : 0,
-    avgPace: a.distance > 0 ? a.moving_time / a.distance * 1000 / 60 : 0,
-    type: a.type === 'Run' ? 'run' : a.type === 'Ride' ? 'bike' : a.type === 'Swim' ? 'swim' : 'run',
-    name: a.name, source: 'strava'
+  window._stravaWorkouts=(acts||[]).map(a=>({
+    date:a.start_date_local?a.start_date_local.slice(0,10):'',
+    dist:+(a.distance/1000).toFixed(2),
+    time:+(a.moving_time/60).toFixed(1),
+    hr:a.average_heartrate?Math.round(a.average_heartrate):0,
+    avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,
+    type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',
+    name:a.name,source:'strava'
   }));
-  if (document.getElementById('page-fitness-stats')?.classList.contains('active')) {
-    renderWeekStats(); renderMonthStats();
-  }
+  if (document.getElementById('page-fitness-stats')?.classList.contains('active')) renderCurrentStatsView();
   renderTodayStats();
+  matchWorkoutsToPlan(true);
 
-  // Weekly summary strip
-  const strip = document.getElementById('strava-week-strip');
-  if (strip && acts?.length) {
-    strip.style.display = 'grid';
-    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
-    const wk = acts.filter(a => new Date(a.start_date_local) >= cutoff);
-    const wkDist = wk.reduce((s,a) => s + a.distance/1000, 0);
-    const wkHR = wk.filter(a=>a.average_heartrate).map(a=>a.average_heartrate);
-    const wkPaceSec = wk.filter(a=>a.distance>0 && a.type==='Run')
-      .map(a => a.moving_time/a.distance*1000);
-    const avgPace = wkPaceSec.length ? wkPaceSec.reduce((s,p)=>s+p,0)/wkPaceSec.length : 0;
-    document.getElementById('sv-dist').textContent = wkDist.toFixed(1);
-    document.getElementById('sv-count').textContent = wk.length;
-    document.getElementById('sv-pace').textContent = avgPace > 0 ? formatPace(avgPace/60) : '—';
-    document.getElementById('sv-hr').textContent = wkHR.length ? Math.round(wkHR.reduce((s,h)=>s+h,0)/wkHR.length) : '—';
+  const strip=document.getElementById('strava-week-strip');
+  if (strip&&acts?.length) {
+    strip.style.display='grid';
+    const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-7);
+    const wk=acts.filter(a=>new Date(a.start_date_local)>=cutoff);
+    const wkDist=wk.reduce((s,a)=>s+a.distance/1000,0);
+    const wkHR=wk.filter(a=>a.average_heartrate).map(a=>a.average_heartrate);
+    const wkPaceSec=wk.filter(a=>a.distance>0&&a.type==='Run').map(a=>a.moving_time/a.distance*1000);
+    const avgPace=wkPaceSec.length?wkPaceSec.reduce((s,p)=>s+p,0)/wkPaceSec.length:0;
+    document.getElementById('sv-dist').textContent=wkDist.toFixed(1);
+    document.getElementById('sv-count').textContent=wk.length;
+    document.getElementById('sv-pace').textContent=avgPace>0?formatPace(avgPace/60):'—';
+    document.getElementById('sv-hr').textContent=wkHR.length?Math.round(wkHR.reduce((s,h)=>s+h,0)/wkHR.length):'—';
   }
 
-  const c = document.getElementById('strava-activities-list');
-  if (!acts?.length) { c.innerHTML = '<p class="text-sm text2">ไม่มีข้อมูล — กด Sync ก่อน</p>'; return; }
-  window._stravaActs = acts;
+  const c=document.getElementById('strava-activities-list');
+  if (!acts?.length) { c.innerHTML='<p class="text-sm text2">ไม่มีข้อมูล — กด Sync ก่อน</p>'; return; }
+  window._stravaActs=acts;
 
-  const em = { Run:'🏃', Ride:'🚴', Swim:'🏊', Walk:'🚶', Hike:'🥾', WeightTraining:'🏋️', Workout:'💪' };
-  const typeColor = { Run:'var(--accent)', Ride:'var(--accent2)', Swim:'#60a5fa', Walk:'var(--text2)', Hike:'var(--accent3)' };
+  const em={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',Hike:'🥾',WeightTraining:'🏋️',Workout:'💪'};
+  const typeColor={Run:'var(--accent)',Ride:'var(--accent2)',Swim:'#60a5fa',Walk:'var(--text2)',Hike:'var(--accent3)'};
 
-  c.innerHTML = acts.slice(0, 20).map((a, idx) => {
-    const dist = (a.distance / 1000).toFixed(2);
-    const mins = Math.floor(a.moving_time / 60);
-    const secs = a.moving_time % 60;
-    const paceSec = a.distance > 0 ? a.moving_time / a.distance * 1000 : 0;
-    const pace = (a.type==='Run'||a.type==='Walk') && paceSec>0 ? formatPace(paceSec/60) : '';
-    const hasMap = !!a.map?.summary_polyline;
-    const hr = a.average_heartrate ? Math.round(a.average_heartrate) : 0;
-    const elev = a.total_elevation_gain ? Math.round(a.total_elevation_gain) : 0;
-    const cad = a.average_cadence ? Math.round(a.average_cadence*2) : 0;
-    const dateStr = new Date(a.start_date_local).toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
-    const color = typeColor[a.type] || 'var(--text2)';
+  c.innerHTML=acts.slice(0,20).map((a,idx)=>{
+    const dist=(a.distance/1000).toFixed(2);
+    const mins=Math.floor(a.moving_time/60), secs=a.moving_time%60;
+    const paceSec=a.distance>0?a.moving_time/a.distance*1000:0;
+    const pace=(a.type==='Run'||a.type==='Walk')&&paceSec>0?formatPace(paceSec/60):'';
+    const hasMap=!!a.map?.summary_polyline;
+    const hr=a.average_heartrate?Math.round(a.average_heartrate):0;
+    const elev=a.total_elevation_gain?Math.round(a.total_elevation_gain):0;
+    const cad=a.average_cadence?Math.round(a.average_cadence*2):0;
+    const dateStr=new Date(a.start_date_local).toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
+    const color=typeColor[a.type]||'var(--text2)';
 
-    // HR zone bar (Z1<120 Z2<140 Z3<160 Z4<180 Z5>=180)
-    let hrBar = '';
-    if (hr > 0) {
-      const zones = [
-        {label:'Z1',max:120,color:'#60a5fa'},{label:'Z2',max:140,color:'#34d399'},
-        {label:'Z3',max:160,color:'#fbbf24'},{label:'Z4',max:180,color:'#f97316'},{label:'Z5',max:999,color:'#ef4444'}
-      ];
-      const zone = zones.find(z => hr < z.max) || zones[4];
-      const pct = Math.min(100, Math.round((hr - 60) / (200 - 60) * 100));
-      hrBar = `<div style="margin-top:10px">
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px">
-          <span>HR ${zone.label} · ${hr} bpm</span>
-          <span style="color:${zone.color};font-weight:700">${zone.label}</span>
-        </div>
-        <div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#60a5fa,${zone.color});border-radius:3px;transition:width .6s"></div>
-        </div>
+    let hrBar='';
+    if (hr>0) {
+      const zones=[{label:'Z1',max:120,color:'#60a5fa'},{label:'Z2',max:140,color:'#34d399'},{label:'Z3',max:160,color:'#fbbf24'},{label:'Z4',max:180,color:'#f97316'},{label:'Z5',max:999,color:'#ef4444'}];
+      const zone=zones.find(z=>hr<z.max)||zones[4];
+      const pct=Math.min(100,Math.round((hr-60)/(200-60)*100));
+      hrBar=`<div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px"><span>HR ${zone.label} · ${hr} bpm</span><span style="color:${zone.color};font-weight:700">${zone.label}</span></div>
+        <div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#60a5fa,${zone.color});border-radius:3px"></div></div>
       </div>`;
     }
 
     return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
-      <!-- MAP PREVIEW (top, always visible if has GPS) -->
-      ${hasMap ? `<div id="map-card-${idx}" style="height:160px;background:var(--surface2);position:relative;cursor:pointer" onclick="openStravaDetail(${idx})">
+      ${hasMap?`<div id="map-card-${idx}" style="height:160px;background:var(--surface2);position:relative;cursor:pointer" onclick="openStravaDetail(${idx})">
         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px" id="map-placeholder-${idx}">🗺️ คลิกเพื่อโหลดแผนที่</div>
-        <button onclick="event.stopPropagation();loadCardMap(${idx})" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);border:none;border-radius:6px;color:#fff;font-size:11px;padding:4px 10px;cursor:pointer;backdrop-filter:blur(4px)">📍 โหลดแผนที่</button>
-      </div>` : ''}
-      <!-- BODY -->
+        <button onclick="event.stopPropagation();loadCardMap(${idx})" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);border:none;border-radius:6px;color:#fff;font-size:11px;padding:4px 10px;cursor:pointer">📍 โหลดแผนที่</button>
+      </div>`:''}
       <div style="padding:16px;cursor:pointer" onclick="openStravaDetail(${idx})">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
-          <div>
-            <div style="font-size:11px;color:var(--text3);margin-bottom:3px">${dateStr} · ${em[a.type]||'🏅'} <span style="color:${color};font-weight:700">${a.type}</span></div>
-            <div style="font-size:16px;font-weight:700;color:var(--text)">${a.name}</div>
-          </div>
-          <span style="color:var(--text3);font-size:18px;padding-top:2px">›</span>
+          <div><div style="font-size:11px;color:var(--text3);margin-bottom:3px">${dateStr} · ${em[a.type]||'🏅'} <span style="color:${color};font-weight:700">${a.type}</span></div>
+          <div style="font-size:16px;font-weight:700">${a.name}</div></div>
+          <span style="color:var(--text3);font-size:18px">›</span>
         </div>
-        <!-- MAIN STATS ROW -->
-        <div style="display:grid;grid-template-columns:${dist>0?'1fr':''}${pace?' 1fr':''}${mins?' 1fr':''}${elev?' 1fr':''};gap:12px;margin-bottom:${hrBar?'0':'4px'}">
-          ${dist>0 ? `<div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">ระยะทาง</div>
-            <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:${color}">${dist}<span style="font-size:12px;color:var(--text2);margin-left:3px">กม.</span></div></div>` : ''}
-          ${pace ? `<div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Pace</div>
-            <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent2)">${pace}<span style="font-size:12px;color:var(--text2);margin-left:3px">/กม.</span></div></div>` : ''}
-          <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">เวลา</div>
-            <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--text)">${mins}<span style="font-size:12px;color:var(--text2);margin-left:2px">น.</span>${secs>0?`<span style="font-size:14px">${String(secs).padStart(2,'0')}</span>`:''}
-            </div></div>
-          ${elev ? `<div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">↑ Elevation</div>
-            <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent3)">${elev}<span style="font-size:12px;color:var(--text2);margin-left:3px">ม.</span></div></div>` : ''}
+        <div style="display:grid;grid-template-columns:${dist>0?'1fr':''}${pace?' 1fr':''}1fr${elev?' 1fr':''};gap:12px;margin-bottom:${hrBar?'0':'4px'}">
+          ${dist>0?`<div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">ระยะทาง</div><div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:${color}">${dist}<span style="font-size:12px;color:var(--text2);margin-left:3px">กม.</span></div></div>`:''}
+          ${pace?`<div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Pace</div><div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent2)">${pace}<span style="font-size:12px;color:var(--text2);margin-left:3px">/กม.</span></div></div>`:''}
+          <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">เวลา</div><div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700">${mins}<span style="font-size:12px;color:var(--text2);margin-left:2px">น.</span>${secs>0?`<span style="font-size:14px">${String(secs).padStart(2,'0')}</span>`:''}</div></div>
+          ${elev?`<div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">↑ Elev</div><div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent3)">${elev}<span style="font-size:12px;color:var(--text2);margin-left:3px">ม.</span></div></div>`:''}
         </div>
         ${hrBar}
-        <!-- SECONDARY ROW -->
-        ${cad||a.suffer_score||a.kudos_count!==undefined ? `<div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">
-          ${cad ? `<span style="font-size:12px;color:var(--text2)">👟 ${cad} spm</span>` : ''}
-          ${a.suffer_score ? `<span style="font-size:12px;color:var(--accent4)">💥 Suffer ${a.suffer_score}</span>` : ''}
-          ${a.kudos_count !== undefined ? `<span style="font-size:12px;color:var(--accent3)">👍 ${a.kudos_count}</span>` : ''}
-          ${a.average_watts ? `<span style="font-size:12px;color:var(--accent)">⚡ ${Math.round(a.average_watts)}W</span>` : ''}
-        </div>` : ''}
+        ${cad||a.suffer_score||a.kudos_count!==undefined?`<div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">
+          ${cad?`<span style="font-size:12px;color:var(--text2)">👟 ${cad} spm</span>`:''}
+          ${a.suffer_score?`<span style="font-size:12px;color:var(--accent4)">💥 Suffer ${a.suffer_score}</span>`:''}
+          ${a.kudos_count!==undefined?`<span style="font-size:12px;color:var(--accent3)">👍 ${a.kudos_count}</span>`:''}
+          ${a.average_watts?`<span style="font-size:12px;color:var(--accent)">⚡ ${Math.round(a.average_watts)}W</span>`:''}
+        </div>`:''}
       </div>
     </div>`;
   }).join('');
 }
 
-// โหลดแผนที่ใน card (ไม่ต้องเปิด modal)
 function loadCardMap(idx) {
-  const a = (window._stravaActs || [])[idx];
+  const a=(window._stravaActs||[])[idx];
   if (!a?.map?.summary_polyline) return;
-  const placeholder = document.getElementById(`map-placeholder-${idx}`);
-  const container = document.getElementById(`map-card-${idx}`);
-  if (!container || container.dataset.mapInit) return;
-  container.dataset.mapInit = '1';
-  if (placeholder) placeholder.style.display = 'none';
-  // สร้าง div สำหรับแผนที่
-  const mapDiv = document.createElement('div');
-  mapDiv.id = `leaflet-card-${idx}`;
-  mapDiv.style.cssText = 'height:100%;width:100%';
-  container.insertBefore(mapDiv, container.firstChild);
-  loadLeaflet(() => {
-    const coords = decodePolyline(a.map.summary_polyline);
-    if (!coords.length) return;
-    const map = L.map(`leaflet-card-${idx}`, { zoomControl:false, attributionControl:false, dragging:false, scrollWheelZoom:false });
+  const container=document.getElementById(`map-card-${idx}`);
+  if (!container||container.dataset.mapInit) return;
+  container.dataset.mapInit='1';
+  const placeholder=document.getElementById(`map-placeholder-${idx}`);
+  if (placeholder) placeholder.style.display='none';
+  const mapDiv=document.createElement('div'); mapDiv.id=`leaflet-card-${idx}`; mapDiv.style.cssText='height:100%;width:100%';
+  container.insertBefore(mapDiv,container.firstChild);
+  loadLeaflet(()=>{
+    const coords=decodePolyline(a.map.summary_polyline); if(!coords.length) return;
+    const map=L.map(`leaflet-card-${idx}`,{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false});
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    const line = L.polyline(coords, { color:'#fc4c02', weight:3 }).addTo(map);
-    map.fitBounds(line.getBounds(), { padding:[8,8] });
-    L.circleMarker(coords[0], {radius:5,color:'#22d3a0',fillColor:'#22d3a0',fillOpacity:1}).addTo(map);
-    L.circleMarker(coords[coords.length-1], {radius:5,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1}).addTo(map);
+    const line=L.polyline(coords,{color:'#fc4c02',weight:3}).addTo(map);
+    map.fitBounds(line.getBounds(),{padding:[8,8]});
+    L.circleMarker(coords[0],{radius:5,color:'#22d3a0',fillColor:'#22d3a0',fillOpacity:1}).addTo(map);
+    L.circleMarker(coords[coords.length-1],{radius:5,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1}).addTo(map);
   });
 }
 
 function openStravaDetail(idx) {
-  const a = (window._stravaActs || [])[idx];
-  if (!a) return;
-  const dist = (a.distance / 1000).toFixed(2);
-  const mins = Math.floor(a.moving_time / 60);
-  const secs = a.moving_time % 60;
-  const paceSec = a.distance > 0 ? a.moving_time / a.distance * 1000 : 0;
-  const pace = paceSec > 0 ? formatPace(paceSec / 60) : '—';
-  const date = new Date(a.start_date_local).toLocaleDateString('th-TH', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const em = { Run: '🏃', Ride: '🚴', Swim: '🏊', Walk: '🚶', Hike: '🥾' };
-
-  const overlay = document.createElement('div');
-  overlay.id = 'strava-detail-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:28px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
-        <div>
-          <div style="font-size:22px;margin-bottom:4px">${em[a.type] || '🏅'} ${a.name}</div>
-          <div style="color:var(--text2);font-size:13px">${date}</div>
-        </div>
-        <button onclick="document.getElementById('strava-detail-overlay').remove()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1">✕</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
-        ${statBox('ระยะทาง', dist + ' กม.', 'var(--accent)')}
-        ${statBox('เวลา', mins + ':' + String(secs).padStart(2,'0') + ' น.', 'var(--accent2)')}
-        ${statBox('Pace เฉลี่ย', pace + '/กม.', 'var(--accent3)')}
-        ${a.average_heartrate ? statBox('HR เฉลี่ย', Math.round(a.average_heartrate) + ' bpm', 'var(--accent4)') : ''}
-        ${a.max_heartrate ? statBox('HR สูงสุด', a.max_heartrate + ' bpm', 'var(--accent4)') : ''}
-        ${a.average_cadence ? statBox('Cadence', Math.round(a.average_cadence*2) + ' spm', 'var(--text2)') : ''}
-        ${a.total_elevation_gain ? statBox('Elevation', '↑' + Math.round(a.total_elevation_gain) + ' ม.', 'var(--accent2)') : ''}
-        ${a.average_watts ? statBox('Power', Math.round(a.average_watts) + ' W', 'var(--accent)') : ''}
-        ${a.suffer_score ? statBox('Suffer Score', a.suffer_score, 'var(--accent4)') : ''}
-        ${a.kudos_count !== undefined ? statBox('Kudos', '👍 ' + a.kudos_count, 'var(--accent3)') : ''}
-      </div>
-      ${a.description ? `<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:var(--text2);line-height:1.7">${a.description}</div>` : ''}
-      ${a.map?.summary_polyline ? `<div id="detail-map" style="height:220px;border-radius:10px;overflow:hidden;margin-bottom:14px"></div>` : ''}
-      <div style="display:flex;gap:8px">
-        <a href="https://www.strava.com/activities/${a.id}" target="_blank" class="btn btn-strava btn-sm" style="text-decoration:none">🔗 ดูใน Strava</a>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('strava-detail-overlay').remove()">ปิด</button>
-      </div>
-    </div>`;
+  const a=(window._stravaActs||[])[idx]; if(!a) return;
+  const dist=(a.distance/1000).toFixed(2);
+  const mins=Math.floor(a.moving_time/60), secs=a.moving_time%60;
+  const paceSec=a.distance>0?a.moving_time/a.distance*1000:0;
+  const pace=paceSec>0?formatPace(paceSec/60):'—';
+  const date=new Date(a.start_date_local).toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const em={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',Hike:'🥾'};
+  const overlay=document.createElement('div');
+  overlay.id='strava-detail-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:28px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+      <div><div style="font-size:22px;margin-bottom:4px">${em[a.type]||'🏅'} ${a.name}</div><div style="color:var(--text2);font-size:13px">${date}</div></div>
+      <button onclick="document.getElementById('strava-detail-overlay').remove()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+      ${statBox('ระยะทาง',dist+' กม.','var(--accent)')}
+      ${statBox('เวลา',mins+':'+String(secs).padStart(2,'0')+' น.','var(--accent2)')}
+      ${statBox('Pace เฉลี่ย',pace+'/กม.','var(--accent3)')}
+      ${a.average_heartrate?statBox('HR เฉลี่ย',Math.round(a.average_heartrate)+' bpm','var(--accent4)'):''}
+      ${a.max_heartrate?statBox('HR สูงสุด',a.max_heartrate+' bpm','var(--accent4)'):''}
+      ${a.average_cadence?statBox('Cadence',Math.round(a.average_cadence*2)+' spm','var(--text2)'):''}
+      ${a.total_elevation_gain?statBox('Elevation','↑'+Math.round(a.total_elevation_gain)+' ม.','var(--accent2)'):''}
+      ${a.average_watts?statBox('Power',Math.round(a.average_watts)+' W','var(--accent)'):''}
+      ${a.suffer_score?statBox('Suffer Score',a.suffer_score,'var(--accent4)'):''}
+      ${a.kudos_count!==undefined?statBox('Kudos','👍 '+a.kudos_count,'var(--accent3)'):''}
+    </div>
+    ${a.description?`<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:var(--text2);line-height:1.7">${a.description}</div>`:''}
+    ${a.map?.summary_polyline?`<div id="detail-map" style="height:220px;border-radius:10px;overflow:hidden;margin-bottom:14px"></div>`:''}
+    <div style="display:flex;gap:8px">
+      <a href="https://www.strava.com/activities/${a.id}" target="_blank" class="btn btn-strava btn-sm" style="text-decoration:none">🔗 ดูใน Strava</a>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('strava-detail-overlay').remove()">ปิด</button>
+    </div>
+  </div>`;
   document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
   if (a.map?.summary_polyline) {
-    loadLeaflet(() => {
-      const coords = decodePolyline(a.map.summary_polyline);
-      if (!coords.length) return;
-      const map = L.map('detail-map', { zoomControl: true, attributionControl: false });
+    loadLeaflet(()=>{
+      const coords=decodePolyline(a.map.summary_polyline); if(!coords.length) return;
+      const map=L.map('detail-map',{zoomControl:true,attributionControl:false});
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-      const line = L.polyline(coords, { color: '#fc4c02', weight: 4 }).addTo(map);
-      map.fitBounds(line.getBounds(), { padding: [15, 15] });
-      if (coords.length) {
-        L.circleMarker(coords[0], { radius: 7, color: '#22d3a0', fillColor: '#22d3a0', fillOpacity: 1 }).addTo(map);
-        L.circleMarker(coords[coords.length-1], { radius: 7, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1 }).addTo(map);
-      }
+      const line=L.polyline(coords,{color:'#fc4c02',weight:4}).addTo(map);
+      map.fitBounds(line.getBounds(),{padding:[15,15]});
+      L.circleMarker(coords[0],{radius:7,color:'#22d3a0',fillColor:'#22d3a0',fillOpacity:1}).addTo(map);
+      L.circleMarker(coords[coords.length-1],{radius:7,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1}).addTo(map);
     });
   }
 }
 
-function statBox(label, value, color) {
+function statBox(label,value,color) {
   return `<div style="background:var(--surface2);border-radius:10px;padding:12px">
     <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">${label}</div>
     <div style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:${color}">${value}</div>
   </div>`;
 }
 
-function toggleMap(mapId) {
-  const el = document.getElementById(mapId);
-  if (!el) return;
-  if (el.style.display === 'none') {
-    el.style.display = 'block';
-    if (!el.dataset.init) {
-      el.dataset.init = '1';
-      initStravaMap(mapId);
-    }
-  } else {
-    el.style.display = 'none';
-  }
-}
-
-function initStravaMap(mapId) {
-  // หา polyline จาก acts
-  const idx = parseInt(mapId.split('-')[1]);
-  window._fb.getData('strava_activities').then(cached => {
-    const acts = cached ? (Array.isArray(cached) ? cached : Object.values(cached)) : [];
-    const act = acts[idx];
-    if (!act?.map?.summary_polyline) return;
-    // โหลด Leaflet + polyline decoder
-    loadLeaflet(() => {
-      const coords = decodePolyline(act.map.summary_polyline);
-      if (!coords.length) return;
-      const map = L.map(mapId, { zoomControl: true, attributionControl: false });
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-      const line = L.polyline(coords, { color: '#fc4c02', weight: 3 }).addTo(map);
-      map.fitBounds(line.getBounds(), { padding: [10, 10] });
-      // start/end markers
-      if (coords.length > 0) {
-        L.circleMarker(coords[0], { radius: 6, color: '#22d3a0', fillColor: '#22d3a0', fillOpacity: 1 }).addTo(map);
-        L.circleMarker(coords[coords.length-1], { radius: 6, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1 }).addTo(map);
-      }
-    });
-  });
-}
-
-let _leafletLoaded = false;
+let _leafletLoaded=false;
 function loadLeaflet(cb) {
   if (_leafletLoaded) { cb(); return; }
-  const css = document.createElement('link');
-  css.rel = 'stylesheet';
-  css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
-  document.head.appendChild(css);
-  const js = document.createElement('script');
-  js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
-  js.onload = () => { _leafletLoaded = true; cb(); };
-  document.head.appendChild(js);
+  const css=document.createElement('link'); css.rel='stylesheet'; css.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+  const js=document.createElement('script'); js.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; js.onload=()=>{_leafletLoaded=true;cb();}; document.head.appendChild(js);
 }
 
-// Google Encoded Polyline decoder
 function decodePolyline(encoded) {
-  const coords = [];
-  let index = 0, lat = 0, lng = 0;
-  while (index < encoded.length) {
-    let b, shift = 0, result = 0;
-    do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
-    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
-    shift = 0; result = 0;
-    do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
-    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
-    coords.push([lat / 1e5, lng / 1e5]);
+  const coords=[]; let index=0, lat=0, lng=0;
+  while(index<encoded.length){
+    let b,shift=0,result=0;
+    do{b=encoded.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);
+    lat+=(result&1)?~(result>>1):(result>>1);shift=0;result=0;
+    do{b=encoded.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);
+    lng+=(result&1)?~(result>>1):(result>>1);
+    coords.push([lat/1e5,lng/1e5]);
   }
   return coords;
 }
 
 async function stravaAnalyze() {
-  const cached = await window._fb.getData('strava_activities');
-  const acts = cached ? (Array.isArray(cached) ? cached : Object.values(cached)) : [];
-  if (!acts.length) { showToast('กรุณา Sync ก่อน', 'error'); return; }
-  const summary = acts.slice(0, 15).map(a =>
-    `[${new Date(a.start_date_local).toLocaleDateString('th-TH')}] ${a.type} ${(a.distance / 1000).toFixed(2)}กม. ${Math.floor(a.moving_time / 60)}น.${a.average_heartrate ? ' HR' + Math.round(a.average_heartrate) : ''}`
+  const cached=await window._fb.getData('strava_activities');
+  const acts=cached?(Array.isArray(cached)?cached:Object.values(cached)):[];
+  if (!acts.length) { showToast('กรุณา Sync ก่อน','error'); return; }
+  const summary=acts.slice(0,15).map(a=>
+    `[${new Date(a.start_date_local).toLocaleDateString('th-TH')}] ${a.type} ${(a.distance/1000).toFixed(2)}กม. ${Math.floor(a.moving_time/60)}น.${a.average_heartrate?' HR'+Math.round(a.average_heartrate):''}`
   ).join('\n');
-  await askClaude(
-    `Strava data (${acts.length} กิจกรรม):\n${summary}\n\nวิเคราะห์ Training Load, จุดแข็ง, และคำแนะนำ 3 ข้อ`,
-    'คุณคือโค้ชวิ่งผู้เชี่ยวชาญ วิเคราะห์เป็นภาษาไทย ตรงประเด็น',
-    'btn-strava-analyze', 'strava-ai-output'
-  );
+  await askClaude(`Strava (${acts.length} กิจกรรม):\n${summary}\n\nวิเคราะห์ Training Load จุดแข็งและคำแนะนำ 3 ข้อ`,
+    'คุณคือโค้ชวิ่งผู้เชี่ยวชาญ วิเคราะห์เป็นภาษาไทย','btn-strava-analyze','strava-ai-output');
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // DOC CREATE
-// ═══════════════════════════════════════════════════
-let currentDocType = 'out';
-let _garudaB64 = null;
+// ═══════════════════════════════════════
+let currentDocType='out';
+let _garudaB64=null;
 
-function esc(s) {
-  return (s || '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
-}
-function v(id) { return esc(document.getElementById(id)?.value || ''); }
+function esc(s) { return (s||'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+function v(id) { return esc(document.getElementById(id)?.value||''); }
 
 function garudaHtml(size) {
-  const h = size === 'lg' ? '3cm' : '1.5cm';
-  if (!_garudaB64)
-    return `<div style="width:${h};height:${h};border:1px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:${size === 'lg' ? '10pt' : '7pt'};font-weight:bold;font-family:serif">ครุฑ</div>`;
+  const h=size==='lg'?'3cm':'1.5cm';
+  if (!_garudaB64) return `<div style="width:${h};height:${h};border:1px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:${size==='lg'?'10pt':'7pt'};font-weight:bold;font-family:serif">ครุฑ</div>`;
   return `<img src="${_garudaB64}" style="height:${h};width:auto;object-fit:contain;display:block">`;
 }
 
 async function loadGaruda(e) {
-  const f = e.target.files?.[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = async ev => {
-    _garudaB64 = ev.target.result;
-    window._garudaB64 = _garudaB64;
-    document.getElementById('garuda-preview-thumb').innerHTML = `<img src="${_garudaB64}" style="width:100%;height:100%;object-fit:contain">`;
-    try { await window._fb.setData('settings/garudaImg', _garudaB64); } catch { }
+  const f=e.target.files?.[0]; if(!f) return;
+  const r=new FileReader(); r.onload=async ev=>{
+    _garudaB64=ev.target.result; window._garudaB64=_garudaB64;
+    document.getElementById('garuda-preview-thumb').innerHTML=`<img src="${_garudaB64}" style="width:100%;height:100%;object-fit:contain">`;
+    try { await window._fb.setData('settings/garudaImg',_garudaB64); } catch{}
     updateDocPreview();
-  };
-  r.readAsDataURL(f);
+  }; r.readAsDataURL(f);
 }
 
 async function clearGaruda() {
-  _garudaB64 = null; window._garudaB64 = null;
-  document.getElementById('garuda-preview-thumb').innerHTML = 'ครุฑ';
-  try { await window._fb.removeData('settings/garudaImg'); } catch { }
+  _garudaB64=null; window._garudaB64=null;
+  document.getElementById('garuda-preview-thumb').innerHTML='ครุฑ';
+  try { await window._fb.removeData('settings/garudaImg'); } catch{}
   updateDocPreview();
 }
 
-function switchDocTab(type, el) {
-  currentDocType = type;
-  document.querySelectorAll('#page-doc-create .tab').forEach(t => t.classList.remove('active'));
+function switchDocTab(type,el) {
+  currentDocType=type;
+  document.querySelectorAll('#page-doc-create .tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('do-attach-group').style.display = type === 'out' ? 'block' : 'none';
-  document.getElementById('do-bottom-section').style.display = type === 'out' ? 'block' : 'none';
+  document.getElementById('do-attach-group').style.display=type==='out'?'block':'none';
+  document.getElementById('do-bottom-section').style.display=type==='out'?'block':'none';
   updateDocPreview();
 }
 
 function updateDocPreview() {
-  let html = '';
-  if (currentDocType === 'out') {
-    html = `
-      <div style="text-align:center;margin-bottom:4pt">${garudaHtml('lg')}</div>
+  let html='';
+  if (currentDocType==='out') {
+    html=`<div style="text-align:center;margin-bottom:4pt">${garudaHtml('lg')}</div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4pt">
-        <div>ที่&nbsp;&nbsp;${v('do-num') || '......................'}</div>
-        <div style="text-align:right;white-space:pre-wrap">${v('do-dept') || 'ชื่อหน่วยงาน'}</div>
+        <div>ที่&nbsp;&nbsp;${v('do-num')||'....................'}</div>
+        <div style="text-align:right;white-space:pre-wrap">${v('do-dept')||'ชื่อหน่วยงาน'}</div>
       </div>
-      <div style="text-align:right;margin-bottom:10pt">${v('do-date') || 'วันที่'}</div>
-      ${v('do-attach') ? `<div style="margin-bottom:4pt">สิ่งที่ส่งมาด้วย&nbsp;&nbsp;${v('do-attach')}</div>` : ''}
-      <div style="margin-bottom:4pt">เรื่อง&nbsp;&nbsp;${v('do-subject') || '...............................................'}</div>
-      <div style="margin-bottom:12pt">เรียน&nbsp;&nbsp;${v('do-to') || '...............................................'}</div>
+      <div style="text-align:right;margin-bottom:10pt">${v('do-date')||'วันที่'}</div>
+      ${v('do-attach')?`<div style="margin-bottom:4pt">สิ่งที่ส่งมาด้วย&nbsp;&nbsp;${v('do-attach')}</div>`:''}
+      <div style="margin-bottom:4pt">เรื่อง&nbsp;&nbsp;${v('do-subject')||'...............'}</div>
+      <div style="margin-bottom:12pt">เรียน&nbsp;&nbsp;${v('do-to')||'...............'}</div>
       <hr style="border:none;border-top:.5pt solid #000;margin-bottom:12pt">
-      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body') || 'ด้วย ...'}</div>
-      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion') || 'จึงเรียนมาเพื่อโปรดพิจารณา'}</div>
+      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body')||'ด้วย ...'}</div>
+      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion')||'จึงเรียนมาเพื่อโปรดพิจารณา'}</div>
       <div style="margin-left:9cm;text-align:center;line-height:2">
         <div style="margin-bottom:3cm">ขอแสดงความนับถือ</div>
-        <div>(${v('do-signer') || '...........................'})</div>
-        <div>${v('do-pos') || 'ตำแหน่ง'}</div>
+        <div>(${v('do-signer')||'...........................'})</div>
+        <div>${v('do-pos')||'ตำแหน่ง'}</div>
       </div>
       <div style="margin-top:auto;padding-top:10pt;font-size:14pt;border-top:.5pt solid #ccc;line-height:1.8">
-        ${v('do-contact-name') ? `<div>${v('do-contact-name')}</div>` : ''}
-        ${v('do-contact-phone') ? `<div>โทร. ${v('do-contact-phone')}</div>` : ''}
-        ${v('do-slogan') ? `<div style="text-align:center;margin-top:8pt;font-weight:bold">${v('do-slogan')}</div>` : ''}
+        ${v('do-contact-name')?`<div>${v('do-contact-name')}</div>`:''}
+        ${v('do-contact-phone')?`<div>โทร. ${v('do-contact-phone')}</div>`:''}
+        ${v('do-slogan')?`<div style="text-align:center;margin-top:8pt;font-weight:bold">${v('do-slogan')}</div>`:''}
       </div>`;
   } else {
-    html = `
-      <div style="display:flex;align-items:flex-end;gap:12pt;margin-bottom:8pt">
+    html=`<div style="display:flex;align-items:flex-end;gap:12pt;margin-bottom:8pt">
         ${garudaHtml('sm')}
         <div style="font-size:22pt;font-weight:bold;padding-bottom:2pt">บันทึกข้อความ</div>
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:16pt;margin-bottom:8pt">
-        <tr>
-          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:3cm">ส่วนราชการ</td>
-          <td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-dept')}</td>
-        </tr>
-        <tr>
-          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">ที่</td>
-          <td style="border:1px solid #000;padding:3pt 6pt;width:5cm">${v('do-num') || '&nbsp;'}</td>
-          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:1.5cm">วันที่</td>
-          <td style="border:1px solid #000;padding:3pt 6pt">${v('do-date')}</td>
-        </tr>
-        <tr>
-          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรื่อง</td>
-          <td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-subject')}</td>
-        </tr>
-        <tr>
-          <td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรียน</td>
-          <td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-to')}</td>
-        </tr>
+        <tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:3cm">ส่วนราชการ</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-dept')}</td></tr>
+        <tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">ที่</td><td style="border:1px solid #000;padding:3pt 6pt;width:5cm">${v('do-num')||'&nbsp;'}</td><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:1.5cm">วันที่</td><td style="border:1px solid #000;padding:3pt 6pt">${v('do-date')}</td></tr>
+        <tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรื่อง</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-subject')}</td></tr>
+        <tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรียน</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-to')}</td></tr>
       </table>
-      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body') || 'ด้วย ...'}</div>
-      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion') || 'จึงเรียนมาเพื่อโปรดทราบ'}</div>
+      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body')||'ด้วย ...'}</div>
+      <div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion')||'จึงเรียนมาเพื่อโปรดทราบ'}</div>
       <div style="margin-left:9cm;text-align:center;line-height:2">
         <div style="margin-bottom:2.5cm"></div>
-        <div>(${v('do-signer') || '...........................'})</div>
-        <div>${v('do-pos') || 'ตำแหน่ง'}</div>
+        <div>(${v('do-signer')||'...........................'})</div>
+        <div>${v('do-pos')||'ตำแหน่ง'}</div>
       </div>`;
   }
-  const area = document.getElementById('doc-render-area');
-  if (area) area.innerHTML = html;
+  const area=document.getElementById('doc-render-area'); if(area) area.innerHTML=html;
 }
 
 function printDoc() {
-  const content = document.getElementById('doc-render-area')?.innerHTML || '';
-  const win = window.open('', '_blank');
+  const content=document.getElementById('doc-render-area')?.innerHTML||'';
+  const win=window.open('','_blank');
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <style>
-      @font-face{font-family:'TH Sarabun New';src:local('TH Sarabun New');}
-      @page{size:A4;margin:0;}
-      body{margin:0;}
-      .p{width:210mm;min-height:297mm;padding:2.5cm 2cm 2cm 3cm;font-family:'TH Sarabun New',serif;font-size:16pt;color:#000;display:flex;flex-direction:column;box-sizing:border-box;}
-    </style>
+    <style>@font-face{font-family:'TH Sarabun New';src:local('TH Sarabun New');}@page{size:A4;margin:0;}body{margin:0;}.p{width:210mm;min-height:297mm;padding:2.5cm 2cm 2cm 3cm;font-family:'TH Sarabun New',serif;font-size:16pt;color:#000;display:flex;flex-direction:column;box-sizing:border-box;}</style>
   </head><body><div class="p">${content}</div>
   <script>window.onload=()=>{window.print();window.onafterprint=()=>window.close();};<\/script></body></html>`);
   win.document.close();
@@ -2272,96 +2431,71 @@ function printDoc() {
 async function saveDocDb() {
   showLoading('กำลังบันทึก...');
   try {
-    await window._fb.pushData('docs', {
-      num: document.getElementById('do-num')?.value || '',
-      sub: document.getElementById('do-subject')?.value || '',
-      date: document.getElementById('do-date')?.value || '',
-      type: currentDocType,
-      createdAt: Date.now()
-    });
+    await window._fb.pushData('docs',{num:document.getElementById('do-num')?.value||'',sub:document.getElementById('do-subject')?.value||'',date:document.getElementById('do-date')?.value||'',type:currentDocType,createdAt:Date.now()});
     showToast('✅ บันทึกทะเบียนแล้ว');
-  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { hideLoading(); }
 }
 
 function renderDocList() {
-  const body = document.getElementById('doc-table-body');
-  if (!body) return;
-  if (!window._docs.length) {
-    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">ยังไม่มีข้อมูล</td></tr>';
-    return;
-  }
-  const typeLabel = { out: 'หนังสือภายนอก', memo: 'บันทึกข้อความ' };
-  body.innerHTML = window._docs.map((d, i) => `
-    <tr>
-      <td style="color:var(--text3);font-size:11px">${i + 1}</td>
-      <td>${d.num || '-'}</td>
-      <td>${d.date || '-'}</td>
-      <td>${d.sub || '-'}</td>
-      <td style="font-size:12px;color:var(--text2)">${typeLabel[d.type] || '-'}</td>
-      <td>
-        <button onclick="deleteDoc('${d._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px" title="ลบ">✕</button>
-      </td>
-    </tr>`).join('');
+  const body=document.getElementById('doc-table-body'); if(!body) return;
+  if (!window._docs.length) { body.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">ยังไม่มีข้อมูล</td></tr>'; return; }
+  const typeLabel={out:'หนังสือภายนอก',memo:'บันทึกข้อความ'};
+  body.innerHTML=window._docs.map((d,i)=>`<tr>
+    <td style="color:var(--text3);font-size:11px">${i+1}</td><td>${d.num||'-'}</td><td>${d.date||'-'}</td><td>${d.sub||'-'}</td>
+    <td style="font-size:12px;color:var(--text2)">${typeLabel[d.type]||'-'}</td>
+    <td><button onclick="deleteDoc('${d._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px">✕</button></td>
+  </tr>`).join('');
 }
 
 async function deleteDoc(key) {
   if (!confirm('ลบรายการนี้?')) return;
-  try {
-    await window._fb.removeData(`docs/${key}`);
-    showToast('ลบแล้ว');
-  } catch (e) { showToast('ลบไม่สำเร็จ', 'error'); }
+  try { await window._fb.removeData(`docs/${key}`); showToast('ลบแล้ว'); }
+  catch(e) { showToast('ลบไม่สำเร็จ','error'); }
 }
 
 function exportDocList() {
-  if (!window._docs.length) { showToast('ไม่มีข้อมูล', 'error'); return; }
-  const csv = [
-    '\uFEFF#,เลขที่,วันที่,เรื่อง,ประเภท',
-    ...window._docs.map((d, i) => `${i + 1},"${d.num || ''}","${d.date || ''}","${d.sub || ''}","${d.type || ''}"`)
-  ].join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = 'ทะเบียนหนังสือ.csv';
-  a.click();
+  if (!window._docs.length) { showToast('ไม่มีข้อมูล','error'); return; }
+  const csv=['\uFEFF#,เลขที่,วันที่,เรื่อง,ประเภท',...window._docs.map((d,i)=>`${i+1},"${d.num||''}","${d.date||''}","${d.sub||''}","${d.type||''}"`).join('\n')];
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv.join('\n')],{type:'text/csv;charset=utf-8'})); a.download='ทะเบียนหนังสือ.csv'; a.click();
 }
 
-// ═══════════════════════════════════════════════════
-// SETTINGS SAVE
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════
 async function saveClaudeKey() {
-  const key = document.getElementById('set-claude-key').value.trim();
-  if (!key) { showToast('กรุณาใส่ API Key', 'error'); return; }
+  const key=document.getElementById('set-claude-key').value.trim();
+  if (!key) { showToast('กรุณาใส่ API Key','error'); return; }
   showLoading('กำลังบันทึก...');
   try {
-    window._claudeKey = key;
-    const cfg = await window._fb.getData('settings') || {};
-    cfg.claudeKey = key;
-    await window._fb.setData('settings', cfg);
-    document.getElementById('claude-key-status').innerHTML =
-      '<span style="color:var(--accent2)">✓ บันทึกขึ้น Firebase แล้ว — พร้อมใช้งาน</span>';
+    window._claudeKey=key;
+    const cfg=await window._fb.getData('settings')||{};
+    cfg.claudeKey=key;
+    await window._fb.setData('settings',cfg);
+    document.getElementById('claude-key-status').innerHTML='<span style="color:var(--accent2)">✓ บันทึกขึ้น Firebase แล้ว</span>';
     showToast('✅ บันทึก API Key แล้ว');
-  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { hideLoading(); }
 }
 
 async function saveStravaSettings() {
   showLoading('กำลังบันทึก...');
   try {
-    const cfg = await window._fb.getData('settings') || {};
-    cfg.stravaId = document.getElementById('set-strava-id').value;
-    cfg.stravaSecret = document.getElementById('set-strava-secret').value;
-    cfg.stravaRedirect = document.getElementById('set-strava-redirect').value;
-    await window._fb.setData('settings', cfg);
+    const cfg=await window._fb.getData('settings')||{};
+    cfg.stravaId=document.getElementById('set-strava-id').value;
+    cfg.stravaSecret=document.getElementById('set-strava-secret').value;
+    cfg.stravaRedirect=document.getElementById('set-strava-redirect').value;
+    await window._fb.setData('settings',cfg);
     showToast('✅ บันทึก Strava Settings แล้ว');
-  } catch (e) { showToast('Error: ' + e.message, 'error'); }
+  } catch(e) { showToast('Error: '+e.message,'error'); }
   finally { hideLoading(); }
 }
 
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════
 document.getElementById('today-date-label').textContent =
-  new Date().toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  new Date().toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 </script>
 </body>
 </html>
