@@ -955,7 +955,7 @@ async function askClaude(userPrompt, systemMsg = '', btnId = '', outId = '') {
         'anthropic-dangerous-allow-browser': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-4-6',
         max_tokens: 2048,
         system: systemMsg || 'คุณคือผู้ช่วยอัจฉริยะ ตอบเป็นภาษาไทย กระชับ ตรงประเด็น',
         messages: [{ role: 'user', content: userPrompt }]
