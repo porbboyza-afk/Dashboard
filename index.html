@@ -690,46 +690,69 @@ onAuthStateChanged(auth, user => {
 
     <!-- ─── STRAVA ─── -->
     <div class="page" id="page-strava">
-      <h1>Strava 🚴</h1>
-      <div class="subtitle">เชื่อมต่อ Strava เพื่อ sync กิจกรรมอัตโนมัติ</div>
-      <div class="grid grid-2 mb-16">
-        <div class="card">
-          <div class="card-title">สถานะการเชื่อมต่อ</div>
-          <div id="strava-status-box" style="background:var(--surface2);border-radius:9px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+      <!-- TOP BAR -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h1 style="margin-bottom:2px">Strava <span style="color:var(--strava)">●</span></h1>
+          <div class="subtitle" style="margin:0">กิจกรรมออกกำลังกายจาก Strava — sync อัตโนมัติ</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div id="strava-status-box" style="background:var(--surface2);border-radius:9px;padding:8px 14px;display:flex;align-items:center;gap:8px">
             <div style="width:8px;height:8px;border-radius:50%;background:var(--text3)"></div>
             <span class="text-sm text2">ยังไม่ได้เชื่อมต่อ</span>
           </div>
-          <button id="btn-strava-connect" class="btn btn-strava" onclick="stravaConnect()" style="width:100%">🔗 เชื่อมต่อ Strava</button>
-          <button id="btn-strava-disconnect" class="btn btn-ghost mt-8" onclick="stravaDisconnect()" style="width:100%;display:none">✕ ยกเลิกการเชื่อมต่อ</button>
-          <div class="mt-16" style="background:var(--surface2);border-radius:10px;padding:14px">
-            <div class="text-xs text2 bold mb-8" style="text-transform:uppercase;letter-spacing:.5px">วิธีรับ Refresh Token (ใช้ครั้งเดียว — ไม่หมดอายุ)</div>
-            <ol style="padding-left:16px;font-size:13px;color:var(--text2);line-height:2.2">
-              <li>ไปที่ <a href="https://www.strava.com/settings/api" target="_blank" style="color:var(--accent)">strava.com/settings/api</a> — ดู <strong style="color:var(--text)">Client ID</strong> และ <strong style="color:var(--text)">Client Secret</strong> แล้วบันทึกในหน้าตั้งค่าก่อน</li>
-              <li>เปิด URL นี้ใน browser (แทน CLIENT_ID ด้วยเลขของคุณ):<br>
-                <code style="font-size:11px;color:var(--accent2);word-break:break-all">https://www.strava.com/oauth/authorize?client_id=CLIENT_ID&redirect_uri=http://localhost&response_type=code&scope=activity:read_all</code>
-              </li>
-              <li>กด <strong style="color:var(--text)">Authorize</strong> — browser จะ redirect ไป localhost (error ไม่เป็นไร) — คัดลอก <strong style="color:var(--accent3)">code=xxxx</strong> จาก URL</li>
-              <li>แลก code เป็น refresh_token โดย run คำสั่งนี้ใน terminal:<br>
-                <code style="font-size:11px;color:var(--accent2);word-break:break-all">curl -X POST https://www.strava.com/oauth/token -d "client_id=ID&client_secret=SECRET&code=CODE&grant_type=authorization_code"</code>
-              </li>
-              <li>คัดลอก <strong style="color:var(--accent2)">refresh_token</strong> จาก response แล้ววางด้านล่าง — ระบบจะ refresh อัตโนมัติตลอด ✅</li>
-            </ol>
-          </div>
-        </div>
-        <div class="card">
-          <div class="flex justify-between items-center mb-12">
-            <div class="card-title" style="margin:0">กิจกรรมล่าสุด</div>
-            <button id="btn-strava-sync" class="btn btn-ghost btn-sm" onclick="stravaSync()" style="display:none">🔄 Sync</button>
-          </div>
-          <div id="strava-activities-list"><p class="text2 text-sm">ยังไม่ได้เชื่อมต่อ</p></div>
+          <button id="btn-strava-sync" class="btn btn-strava btn-sm" onclick="stravaSync()" style="display:none">🔄 Sync</button>
+          <button id="btn-strava-connect" class="btn btn-strava btn-sm" onclick="stravaConnect()">🔗 เชื่อมต่อ</button>
+          <button id="btn-strava-disconnect" class="btn btn-ghost btn-sm" onclick="stravaDisconnect()" style="display:none">✕ ยกเลิก</button>
         </div>
       </div>
-      <div class="card ai-box">
+
+      <!-- WEEKLY SUMMARY STRIP -->
+      <div id="strava-week-strip" style="display:none;gap:12px;margin-bottom:20px;grid-template-columns:repeat(4,1fr)" class="grid">
+        <div class="card stat-card" style="padding:14px">
+          <div class="card-title">สัปดาห์นี้</div>
+          <span class="stat-num" id="sv-dist" style="font-size:24px">—</span><span class="stat-unit">กม.</span>
+        </div>
+        <div class="card stat-card" style="padding:14px">
+          <div class="card-title">กิจกรรม</div>
+          <span class="stat-num" id="sv-count" style="font-size:24px">—</span><span class="stat-unit">ครั้ง</span>
+        </div>
+        <div class="card stat-card" style="padding:14px">
+          <div class="card-title">Pace เฉลี่ย</div>
+          <span class="stat-num" id="sv-pace" style="font-size:24px">—</span><span class="stat-unit">/กม.</span>
+        </div>
+        <div class="card stat-card" style="padding:14px">
+          <div class="card-title">HR เฉลี่ย</div>
+          <span class="stat-num" id="sv-hr" style="font-size:24px">—</span><span class="stat-unit">bpm</span>
+        </div>
+      </div>
+
+      <!-- ACTIVITY CARDS FEED -->
+      <div id="strava-activities-list" style="display:flex;flex-direction:column;gap:14px">
+        <p class="text2 text-sm">ยังไม่ได้เชื่อมต่อ — กดเชื่อมต่อด้านบน</p>
+      </div>
+
+      <!-- AI ANALYZE -->
+      <div class="card ai-box mt-16">
         <div class="flex justify-between items-center mb-12">
           <div class="card-title" style="margin:0">🤖 วิเคราะห์ Training Load จาก Strava</div>
           <button class="btn btn-primary btn-sm" id="btn-strava-analyze" onclick="stravaAnalyze()">✨ วิเคราะห์</button>
         </div>
         <div id="strava-ai-output" class="ai-result" style="display:none"></div>
+      </div>
+
+      <!-- CONNECT GUIDE (hidden by default, shown when disconnected) -->
+      <div id="strava-guide-box" class="card mt-16" style="display:none">
+        <div class="card-title">วิธีรับ Refresh Token (ใช้ครั้งเดียว — ไม่หมดอายุ)</div>
+        <ol style="padding-left:16px;font-size:13px;color:var(--text2);line-height:2.4">
+          <li>ไปที่ <a href="https://www.strava.com/settings/api" target="_blank" style="color:var(--accent)">strava.com/settings/api</a> — ดู <strong style="color:var(--text)">Client ID</strong> และ <strong style="color:var(--text)">Client Secret</strong> แล้วบันทึกในหน้าตั้งค่าก่อน</li>
+          <li>เปิด URL นี้ใน browser (แทน CLIENT_ID):<br>
+            <code style="font-size:11px;color:var(--accent2);word-break:break-all">https://www.strava.com/oauth/authorize?client_id=CLIENT_ID&redirect_uri=http://localhost&response_type=code&scope=activity:read_all</code></li>
+          <li>กด Authorize → คัดลอก <strong style="color:var(--accent3)">code=xxxx</strong> จาก URL</li>
+          <li>แลก code:<br>
+            <code style="font-size:11px;color:var(--accent2);word-break:break-all">curl -X POST https://www.strava.com/oauth/token -d "client_id=ID&client_secret=SECRET&code=CODE&grant_type=authorization_code"</code></li>
+          <li>คัดลอก <strong style="color:var(--accent2)">refresh_token</strong> แล้วกด "เชื่อมต่อ" ด้านบน ✅</li>
+        </ol>
       </div>
     </div>
 
@@ -955,7 +978,7 @@ async function askClaude(userPrompt, systemMsg = '', btnId = '', outId = '') {
         'anthropic-dangerous-allow-browser': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-4-6',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 2048,
         system: systemMsg || 'คุณคือผู้ช่วยอัจฉริยะ ตอบเป็นภาษาไทย กระชับ ตรงประเด็น',
         messages: [{ role: 'user', content: userPrompt }]
@@ -1811,26 +1834,29 @@ async function renderStravaPage() {
   const sync = document.getElementById('btn-strava-sync');
   if (tokenData?.access_token) {
     const a = tokenData.athlete || {};
-    sb.style.cssText = 'background:rgba(252,76,2,.1);border:1px solid rgba(252,76,2,.3);border-radius:9px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:10px';
-    sb.innerHTML = `
-      <div style="width:9px;height:9px;border-radius:50%;background:var(--strava)"></div>
-      <div>
-        <div style="font-weight:700;color:var(--strava);font-size:14px">${a.firstname || ''} ${a.lastname || ''}</div>
-        <div style="font-size:11px;color:var(--text2)">${a.city || ''} · Connected ✓ · ${tokenData.refresh_token ? '🔄 Auto-refresh พร้อม' : '⚠️ ใช้ Manual Token (หมดอายุ 6 ชม.)'}</div>
-      </div>`;
+    sb.style.cssText = 'background:rgba(252,76,2,.1);border:1px solid rgba(252,76,2,.3);border-radius:9px;padding:8px 14px;display:flex;align-items:center;gap:10px';
+    sb.innerHTML = `<div style="width:9px;height:9px;border-radius:50%;background:var(--strava)"></div>
+      <div><div style="font-weight:700;color:var(--strava);font-size:13px">${a.firstname||''} ${a.lastname||''}</div>
+      <div style="font-size:11px;color:var(--text2)">${tokenData.refresh_token?'🔄 Auto-refresh':'⚠️ Manual'}</div></div>`;
     cb.style.display = 'none'; db.style.display = 'block'; sync.style.display = 'inline-flex';
+    const guide = document.getElementById('strava-guide-box');
+    if (guide) guide.style.display = 'none';
     const cached = await window._fb.getData('strava_activities');
     if (cached) renderStravaActivities(Array.isArray(cached) ? cached : Object.values(cached));
     else document.getElementById('strava-activities-list').innerHTML = '<p class="text-sm text2">กด Sync เพื่อดึงข้อมูล</p>';
   } else {
-    sb.style.cssText = 'background:var(--surface2);border-radius:9px;padding:12px;margin-bottom:14px;display:flex;align-items:center;gap:8px';
+    sb.style.cssText = 'background:var(--surface2);border-radius:9px;padding:8px 14px;display:flex;align-items:center;gap:8px';
     sb.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:var(--text3)"></div><span class="text-sm text2">ยังไม่ได้เชื่อมต่อ</span>';
     cb.style.display = 'block'; db.style.display = 'none'; sync.style.display = 'none';
+    const guide = document.getElementById('strava-guide-box');
+    if (guide) guide.style.display = 'block';
+    const strip = document.getElementById('strava-week-strip');
+    if (strip) strip.style.display = 'none';
   }
 }
 
 function renderStravaActivities(acts) {
-  // sync Strava activities เข้า window._stravaWorkouts เพื่อใช้ในกราฟ
+  // sync ข้อมูลเข้า _stravaWorkouts
   window._stravaWorkouts = (acts || []).map(a => ({
     date: a.start_date_local ? a.start_date_local.slice(0,10) : '',
     dist: +(a.distance / 1000).toFixed(2),
@@ -1838,43 +1864,134 @@ function renderStravaActivities(acts) {
     hr: a.average_heartrate ? Math.round(a.average_heartrate) : 0,
     avgPace: a.distance > 0 ? a.moving_time / a.distance * 1000 / 60 : 0,
     type: a.type === 'Run' ? 'run' : a.type === 'Ride' ? 'bike' : a.type === 'Swim' ? 'swim' : 'run',
-    name: a.name,
-    source: 'strava'
+    name: a.name, source: 'strava'
   }));
-  // re-render กราฟถ้าหน้าสถิติเปิดอยู่
   if (document.getElementById('page-fitness-stats')?.classList.contains('active')) {
     renderWeekStats(); renderMonthStats();
   }
   renderTodayStats();
 
+  // Weekly summary strip
+  const strip = document.getElementById('strava-week-strip');
+  if (strip && acts?.length) {
+    strip.style.display = 'grid';
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+    const wk = acts.filter(a => new Date(a.start_date_local) >= cutoff);
+    const wkDist = wk.reduce((s,a) => s + a.distance/1000, 0);
+    const wkHR = wk.filter(a=>a.average_heartrate).map(a=>a.average_heartrate);
+    const wkPaceSec = wk.filter(a=>a.distance>0 && a.type==='Run')
+      .map(a => a.moving_time/a.distance*1000);
+    const avgPace = wkPaceSec.length ? wkPaceSec.reduce((s,p)=>s+p,0)/wkPaceSec.length : 0;
+    document.getElementById('sv-dist').textContent = wkDist.toFixed(1);
+    document.getElementById('sv-count').textContent = wk.length;
+    document.getElementById('sv-pace').textContent = avgPace > 0 ? formatPace(avgPace/60) : '—';
+    document.getElementById('sv-hr').textContent = wkHR.length ? Math.round(wkHR.reduce((s,h)=>s+h,0)/wkHR.length) : '—';
+  }
+
   const c = document.getElementById('strava-activities-list');
   if (!acts?.length) { c.innerHTML = '<p class="text-sm text2">ไม่มีข้อมูล — กด Sync ก่อน</p>'; return; }
-  const em = { Run: '🏃', Ride: '🚴', Swim: '🏊', Walk: '🚶', Hike: '🥾' };
-  window._stravaActs = acts; // เก็บไว้เปิด modal
+  window._stravaActs = acts;
+
+  const em = { Run:'🏃', Ride:'🚴', Swim:'🏊', Walk:'🚶', Hike:'🥾', WeightTraining:'🏋️', Workout:'💪' };
+  const typeColor = { Run:'var(--accent)', Ride:'var(--accent2)', Swim:'#60a5fa', Walk:'var(--text2)', Hike:'var(--accent3)' };
+
   c.innerHTML = acts.slice(0, 20).map((a, idx) => {
     const dist = (a.distance / 1000).toFixed(2);
     const mins = Math.floor(a.moving_time / 60);
+    const secs = a.moving_time % 60;
     const paceSec = a.distance > 0 ? a.moving_time / a.distance * 1000 : 0;
-    const pace = (a.type === 'Run' || a.type === 'Walk') && paceSec > 0 ? formatPace(paceSec / 60) : '';
+    const pace = (a.type==='Run'||a.type==='Walk') && paceSec>0 ? formatPace(paceSec/60) : '';
     const hasMap = !!a.map?.summary_polyline;
-    const elev = a.total_elevation_gain ? `· ↑${Math.round(a.total_elevation_gain)}ม.` : '';
-    const cad = a.average_cadence ? `· ${Math.round(a.average_cadence*2)} spm` : '';
-    return `
-      <div style="border-bottom:1px solid var(--border);padding:10px 0">
-        <div class="workout-item" style="border:none;padding:0;cursor:pointer" onclick="openStravaDetail(${idx})">
-          <div class="workout-icon">${em[a.type] || '🏅'}</div>
-          <div style="flex:1;min-width:0">
-            <div class="workout-main" style="color:var(--accent)">${a.name}</div>
-            <div class="workout-sub">${new Date(a.start_date_local).toLocaleDateString('th-TH')} · ${dist} กม. · ${mins} น.${pace ? ' · '+pace+'/กม.' : ''}${a.average_heartrate ? ' · HR '+Math.round(a.average_heartrate) : ''} ${elev} ${cad}</div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
-            ${hasMap ? `<button onclick="event.stopPropagation();toggleMap('map-${idx}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:11px;padding:3px 8px">🗺️ GPS</button>` : ''}
-            <span style="color:var(--text3);font-size:16px">›</span>
-          </div>
+    const hr = a.average_heartrate ? Math.round(a.average_heartrate) : 0;
+    const elev = a.total_elevation_gain ? Math.round(a.total_elevation_gain) : 0;
+    const cad = a.average_cadence ? Math.round(a.average_cadence*2) : 0;
+    const dateStr = new Date(a.start_date_local).toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
+    const color = typeColor[a.type] || 'var(--text2)';
+
+    // HR zone bar (Z1<120 Z2<140 Z3<160 Z4<180 Z5>=180)
+    let hrBar = '';
+    if (hr > 0) {
+      const zones = [
+        {label:'Z1',max:120,color:'#60a5fa'},{label:'Z2',max:140,color:'#34d399'},
+        {label:'Z3',max:160,color:'#fbbf24'},{label:'Z4',max:180,color:'#f97316'},{label:'Z5',max:999,color:'#ef4444'}
+      ];
+      const zone = zones.find(z => hr < z.max) || zones[4];
+      const pct = Math.min(100, Math.round((hr - 60) / (200 - 60) * 100));
+      hrBar = `<div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px">
+          <span>HR ${zone.label} · ${hr} bpm</span>
+          <span style="color:${zone.color};font-weight:700">${zone.label}</span>
         </div>
-        ${hasMap ? `<div id="map-${idx}" style="display:none;height:200px;border-radius:8px;overflow:hidden;margin-top:6px"></div>` : ''}
+        <div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#60a5fa,${zone.color});border-radius:3px;transition:width .6s"></div>
+        </div>
       </div>`;
+    }
+
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+      <!-- MAP PREVIEW (top, always visible if has GPS) -->
+      ${hasMap ? `<div id="map-card-${idx}" style="height:160px;background:var(--surface2);position:relative;cursor:pointer" onclick="openStravaDetail(${idx})">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px" id="map-placeholder-${idx}">🗺️ คลิกเพื่อโหลดแผนที่</div>
+        <button onclick="event.stopPropagation();loadCardMap(${idx})" style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);border:none;border-radius:6px;color:#fff;font-size:11px;padding:4px 10px;cursor:pointer;backdrop-filter:blur(4px)">📍 โหลดแผนที่</button>
+      </div>` : ''}
+      <!-- BODY -->
+      <div style="padding:16px;cursor:pointer" onclick="openStravaDetail(${idx})">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:3px">${dateStr} · ${em[a.type]||'🏅'} <span style="color:${color};font-weight:700">${a.type}</span></div>
+            <div style="font-size:16px;font-weight:700;color:var(--text)">${a.name}</div>
+          </div>
+          <span style="color:var(--text3);font-size:18px;padding-top:2px">›</span>
+        </div>
+        <!-- MAIN STATS ROW -->
+        <div style="display:grid;grid-template-columns:${dist>0?'1fr':''}${pace?' 1fr':''}${mins?' 1fr':''}${elev?' 1fr':''};gap:12px;margin-bottom:${hrBar?'0':'4px'}">
+          ${dist>0 ? `<div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">ระยะทาง</div>
+            <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:${color}">${dist}<span style="font-size:12px;color:var(--text2);margin-left:3px">กม.</span></div></div>` : ''}
+          ${pace ? `<div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">Pace</div>
+            <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent2)">${pace}<span style="font-size:12px;color:var(--text2);margin-left:3px">/กม.</span></div></div>` : ''}
+          <div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">เวลา</div>
+            <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--text)">${mins}<span style="font-size:12px;color:var(--text2);margin-left:2px">น.</span>${secs>0?`<span style="font-size:14px">${String(secs).padStart(2,'0')}</span>`:''}
+            </div></div>
+          ${elev ? `<div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px">↑ Elevation</div>
+            <div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--accent3)">${elev}<span style="font-size:12px;color:var(--text2);margin-left:3px">ม.</span></div></div>` : ''}
+        </div>
+        ${hrBar}
+        <!-- SECONDARY ROW -->
+        ${cad||a.suffer_score||a.kudos_count!==undefined ? `<div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap">
+          ${cad ? `<span style="font-size:12px;color:var(--text2)">👟 ${cad} spm</span>` : ''}
+          ${a.suffer_score ? `<span style="font-size:12px;color:var(--accent4)">💥 Suffer ${a.suffer_score}</span>` : ''}
+          ${a.kudos_count !== undefined ? `<span style="font-size:12px;color:var(--accent3)">👍 ${a.kudos_count}</span>` : ''}
+          ${a.average_watts ? `<span style="font-size:12px;color:var(--accent)">⚡ ${Math.round(a.average_watts)}W</span>` : ''}
+        </div>` : ''}
+      </div>
+    </div>`;
   }).join('');
+}
+
+// โหลดแผนที่ใน card (ไม่ต้องเปิด modal)
+function loadCardMap(idx) {
+  const a = (window._stravaActs || [])[idx];
+  if (!a?.map?.summary_polyline) return;
+  const placeholder = document.getElementById(`map-placeholder-${idx}`);
+  const container = document.getElementById(`map-card-${idx}`);
+  if (!container || container.dataset.mapInit) return;
+  container.dataset.mapInit = '1';
+  if (placeholder) placeholder.style.display = 'none';
+  // สร้าง div สำหรับแผนที่
+  const mapDiv = document.createElement('div');
+  mapDiv.id = `leaflet-card-${idx}`;
+  mapDiv.style.cssText = 'height:100%;width:100%';
+  container.insertBefore(mapDiv, container.firstChild);
+  loadLeaflet(() => {
+    const coords = decodePolyline(a.map.summary_polyline);
+    if (!coords.length) return;
+    const map = L.map(`leaflet-card-${idx}`, { zoomControl:false, attributionControl:false, dragging:false, scrollWheelZoom:false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const line = L.polyline(coords, { color:'#fc4c02', weight:3 }).addTo(map);
+    map.fitBounds(line.getBounds(), { padding:[8,8] });
+    L.circleMarker(coords[0], {radius:5,color:'#22d3a0',fillColor:'#22d3a0',fillOpacity:1}).addTo(map);
+    L.circleMarker(coords[coords.length-1], {radius:5,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1}).addTo(map);
+  });
 }
 
 function openStravaDetail(idx) {
