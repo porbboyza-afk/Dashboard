@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>MyDashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -378,6 +378,19 @@ onAuthStateChanged(auth, user => {
     .logo-text span,.nav-item span,.nav-section,.user-info{display:none;}
     .main{margin-left:56px;padding:16px;}
     .grid-2,.grid-3{grid-template-columns:1fr;}
+    h1{font-size:20px;}
+    .stat-num{font-size:24px;}
+    .doc-preview-bg{display:none;} /* hide doc preview on mobile */
+    .a4-sim{display:none;}
+  }
+  @media(max-width:480px){
+    .sidebar{width:48px;}
+    .main{margin-left:48px;padding:12px;}
+    .nav-item{padding:10px 14px;}
+    .nav-item .icon{font-size:18px;}
+    .card{padding:14px;}
+    .btn{padding:8px 12px;font-size:13px;}
+    .splits-wrap input{width:60px!important;}
   }
 </style>
 </head>
@@ -494,38 +507,84 @@ onAuthStateChanged(auth, user => {
         </label>
       </div>
       <div class="grid grid-2">
-        <div class="card">
+        <div class="card" style="overflow-y:auto;max-height:90vh">
           <div class="form-group"><label>วันที่</label><input type="date" id="f-date"></div>
           <div class="form-group"><label>ประเภท</label>
-            <select id="f-type">
-              <option value="run">🏃 วิ่ง</option>
+            <select id="f-type" onchange="onTypeChange()">
+              <option value="run">🏃 วิ่ง — Easy/Long</option>
+              <option value="interval">⚡ วิ่ง — Interval</option>
               <option value="bike">🚴 ปั่น</option>
               <option value="swim">🏊 ว่ายน้ำ</option>
               <option value="walk">🚶 เดิน</option>
             </select>
           </div>
-          <div class="grid grid-2" style="gap:10px">
-            <div class="form-group"><label>ระยะทาง (กม.)</label><input type="number" id="r-distance" step="0.01" placeholder="0.00" oninput="buildSplits()"></div>
-            <div class="form-group"><label>เวลา (นาที)</label><input type="number" id="r-time" step="0.1" placeholder="0"></div>
-          </div>
-          <div class="grid grid-2" style="gap:10px">
-            <div class="form-group"><label>HR เฉลี่ย (bpm)</label><input type="number" id="r-hr" placeholder="—"></div>
-            <div class="form-group"><label>รอบขาเฉลี่ย (spm)</label><input type="number" id="r-cad" placeholder="170"></div>
-          </div>
-          <div class="grid grid-2" style="gap:10px">
-           <div class="form-group"><label>ความยาวก้าว (m.)</label><input type="number" id="r-stride" placeholder="1.2m"></div>
-            <div class="form-group"><label>เพซเฉลี่ย (min/km.)</label><input type="number" id="r-avgPace" placeholder="5:55"></div>
-          </div> 
 
-          <div class="splits-wrap">
-            <div class="splits-header">
-              <span style="font-size:12px;font-weight:700;color:var(--accent)">⚡ Splits รายกิโล</span>
-              <span id="avg-pace-disp" class="text-xs mono" style="color:var(--accent2)">Pace เฉลี่ย: —</span>
+          <!-- ─ NORMAL RUN FIELDS ─ -->
+          <div id="fields-normal">
+            <div class="grid grid-2" style="gap:10px">
+              <div class="form-group"><label>ระยะทาง (กม.)</label><input type="number" id="r-distance" step="0.01" placeholder="0.00" oninput="buildSplits()"></div>
+              <div class="form-group"><label>เวลา (นาที)</label><input type="number" id="r-time" step="0.1" placeholder="0"></div>
             </div>
-            <div id="splits-area"><p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p></div>
+            <div class="grid grid-2" style="gap:10px">
+              <div class="form-group"><label>HR เฉลี่ย (bpm)</label><input type="number" id="r-hr" placeholder="—"></div>
+              <div class="form-group"><label>รอบขา (spm)</label><input type="number" id="r-cadence" placeholder="170"></div>
+            </div>
+            <div class="grid grid-2" style="gap:10px">
+              <div class="form-group">
+                <label>เพซเฉลี่ย (น:ว/กม.) <span style="color:var(--accent3);font-size:10px">กรอกเองหรือคำนวณจาก Splits</span></label>
+                <input type="text" id="r-avg-pace" placeholder="5:30" oninput="calcAvgPace()" style="font-family:'Space Mono',monospace">
+              </div>
+              <div class="form-group"><label>ความยาวก้าว (ม.)</label><input type="number" id="r-stride" step="0.01" placeholder="1.20"></div>
+            </div>
+
+            <div class="splits-wrap">
+              <div class="splits-header">
+                <span style="font-size:12px;font-weight:700;color:var(--accent)">⚡ Splits รายกิโล</span>
+                <span id="avg-pace-disp" class="text-xs mono" style="color:var(--accent2)">Pace เฉลี่ย: —</span>
+              </div>
+              <div id="splits-area"><p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p></div>
+            </div>
           </div>
 
-          <div class="form-group"><label>หมายเหตุ</label><textarea id="r-note" rows="2" placeholder="เส้นทาง, ความรู้สึก..."></textarea></div>
+          <!-- ─ INTERVAL FIELDS ─ -->
+          <div id="fields-interval" style="display:none">
+            <div style="background:rgba(246,166,35,.07);border:1px solid rgba(246,166,35,.2);border-radius:10px;padding:12px;margin-bottom:14px">
+              <div style="font-size:12px;font-weight:700;color:var(--accent3);margin-bottom:10px">🔥 WARM UP</div>
+              <div class="grid grid-2" style="gap:10px">
+                <div class="form-group"><label>ระยะทาง (กม.)</label><input type="number" id="iv-wu-dist" step="0.01" placeholder="1.00"></div>
+                <div class="form-group"><label>เวลา (นาที)</label><input type="number" id="iv-wu-time" step="0.1" placeholder="10"></div>
+              </div>
+              <div class="form-group"><label>เพซ (น:ว/กม.)</label><input type="text" id="iv-wu-pace" placeholder="6:30" style="font-family:'Space Mono',monospace;width:120px"></div>
+            </div>
+
+            <div style="background:rgba(79,142,247,.07);border:1px solid rgba(79,142,247,.2);border-radius:10px;padding:12px;margin-bottom:14px">
+              <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px">⚡ MAIN SET</div>
+              <div class="grid grid-2" style="gap:10px">
+                <div class="form-group"><label>จำนวนรอบ</label><input type="number" id="iv-reps" placeholder="8" min="1" max="30"></div>
+                <div class="form-group"><label>ระยะต่อรอบ (กม.)</label><input type="number" id="iv-rep-dist" step="0.01" placeholder="0.40"></div>
+              </div>
+              <div class="grid grid-2" style="gap:10px">
+                <div class="form-group"><label>เพซเป้าหมาย (น:ว)</label><input type="text" id="iv-rep-pace" placeholder="4:00" style="font-family:'Space Mono',monospace"></div>
+                <div class="form-group"><label>HR เฉลี่ย (bpm)</label><input type="number" id="iv-rep-hr" placeholder="170"></div>
+              </div>
+              <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 8px">พัก (Recovery)</div>
+              <div class="grid grid-2" style="gap:10px">
+                <div class="form-group"><label>เวลาพัก (นาที)</label><input type="number" id="iv-rest-time" step="0.5" placeholder="2"></div>
+                <div class="form-group"><label>HR ช่วงพัก (bpm)</label><input type="number" id="iv-rest-hr" placeholder="120"></div>
+              </div>
+            </div>
+
+            <div style="background:rgba(34,211,160,.07);border:1px solid rgba(34,211,160,.2);border-radius:10px;padding:12px;margin-bottom:14px">
+              <div style="font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:10px">🧊 COOL DOWN</div>
+              <div class="grid grid-2" style="gap:10px">
+                <div class="form-group"><label>ระยะทาง (กม.)</label><input type="number" id="iv-cd-dist" step="0.01" placeholder="1.00"></div>
+                <div class="form-group"><label>เวลา (นาที)</label><input type="number" id="iv-cd-time" step="0.1" placeholder="10"></div>
+              </div>
+              <div class="form-group"><label>เพซ (น:ว/กม.)</label><input type="text" id="iv-cd-pace" placeholder="6:30" style="font-family:'Space Mono',monospace;width:120px"></div>
+            </div>
+          </div>
+
+          <div class="form-group"><label>หมายเหตุ / เส้นทาง</label><textarea id="r-note" rows="2" placeholder="เส้นทาง, ความรู้สึก, สภาพอากาศ..."></textarea></div>
           <button class="btn btn-primary" onclick="saveWorkout()" style="width:100%">☁️ บันทึกขึ้น Cloud</button>
         </div>
         <div class="card">
@@ -891,7 +950,7 @@ async function askClaude(userPrompt, systemMsg = '', btnId = '', outId = '') {
         'anthropic-dangerous-allow-browser': 'true'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 2048,
         system: systemMsg || 'คุณคือผู้ช่วยอัจฉริยะ ตอบเป็นภาษาไทย กระชับ ตรงประเด็น',
         messages: [{ role: 'user', content: userPrompt }]
@@ -937,7 +996,7 @@ async function askClaudeVision(imageBase64, mimeType, promptText) {
       'anthropic-dangerous-allow-browser': 'true'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 512,
       system: 'Extract fitness data from image. Return ONLY valid JSON: {distance:number,time:number,hr:number|null,cadence:number|null,splits:[{km:number,pace:string,hr:number}]|null,type:"run"|"bike"|"swim"|"walk"}',
       messages: [{
@@ -1085,7 +1144,7 @@ function renderTodayStats() {
 
   // recent workouts on today page
   const el = document.getElementById('today-recent-workouts');
-  const em = { run: '🏃', bike: '🚴', swim: '🏊', walk: '🚶' };
+  const em = { run: '🏃', interval: '⚡', bike: '🚴', swim: '🏊', walk: '🚶' };
   if (el) {
     el.innerHTML = window._workouts.length
       ? window._workouts.slice(0, 3).map(w => `
@@ -1121,17 +1180,25 @@ function buildSplits() {
     area.innerHTML = '<p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้างช่อง Splits</p>';
     calcAvgPace(); return;
   }
-  const n = Math.ceil(dist);
+  const fullKms = Math.floor(dist);
+  const remainder = +(dist - fullKms).toFixed(2); // เศษกิโลที่เหลือ
+  const total = remainder > 0 ? fullKms + 1 : fullKms;
+
   let html = `<table style="width:100%;border-collapse:collapse;font-size:12.5px">
     <thead><tr>
       <th style="padding:4px 6px;color:var(--text3);text-align:center;font-size:10px">กม.</th>
       <th style="padding:4px 6px;color:var(--text3);text-align:center;font-size:10px">Pace (น:ว)</th>
       <th style="padding:4px 6px;color:var(--text3);text-align:center;font-size:10px">HR</th>
     </tr></thead><tbody>`;
-  for (let i = 1; i <= n; i++) {
+
+  for (let i = 1; i <= total; i++) {
+    const isLast = i === total && remainder > 0;
+    const kmLabel = isLast
+      ? `<span style="font-size:10px;color:var(--accent3)">${i}<br>(${remainder}กม.)</span>`
+      : `${i}`;
     html += `<tr>
-      <td style="padding:3px 6px;text-align:center;font-weight:700;color:var(--accent);font-size:12px">${i}</td>
-      <td style="padding:3px 4px"><input type="text" class="sp-pace" placeholder="5:30" oninput="calcAvgPace()" style="padding:4px 8px;font-size:12px;text-align:center;width:75px;border-radius:6px"></td>
+      <td style="padding:3px 6px;text-align:center;font-weight:700;color:var(--accent);font-size:12px">${kmLabel}</td>
+      <td style="padding:3px 4px"><input type="text" class="sp-pace" data-km="${isLast ? remainder : 1}" placeholder="5:30" oninput="calcAvgPace()" style="padding:4px 8px;font-size:12px;text-align:center;width:75px;border-radius:6px${isLast ? ';border-color:var(--accent3)' : ''}"></td>
       <td style="padding:3px 4px"><input type="number" class="sp-hr" placeholder="150" style="padding:4px 8px;font-size:12px;text-align:center;width:70px;border-radius:6px"></td>
     </tr>`;
   }
@@ -1141,20 +1208,26 @@ function buildSplits() {
 }
 
 window.calcAvgPace = function () {
+  // ถ้ากรอก avg pace เองให้ใช้ค่านั้น
+  const manualPace = document.getElementById('r-avg-pace')?.value?.trim();
+  if (manualPace) {
+    const p = paceStrToDecimal(manualPace);
+    const disp = document.getElementById('avg-pace-disp');
+    if (disp) disp.textContent = `Pace เฉลี่ย: ${formatPace(p)}`;
+    return p;
+  }
+  // คำนวณจาก splits
   const paces = [...document.querySelectorAll('.sp-pace')];
   let total = 0, cnt = 0;
   paces.forEach(p => {
-    if (!p.value) return;
-    const parts = p.value.split(/[:.]/).map(Number);
-    if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-      total += parts[0] + parts[1] / 60; cnt++;
-    }
+    const val = paceStrToDecimal(p.value);
+    if (val > 0) { total += val; cnt++; }
   });
   const disp = document.getElementById('avg-pace-disp');
   if (!disp) return cnt > 0 ? total / cnt : 0;
   if (!cnt) { disp.textContent = 'Pace เฉลี่ย: —'; return 0; }
   const avg = total / cnt;
-  disp.textContent = `Pace เฉลี่ย: ${Math.floor(avg)}:${String(Math.round((avg % 1) * 60)).padStart(2, '0')}`;
+  disp.textContent = `Pace เฉลี่ย: ${formatPace(avg)}`;
   return avg;
 };
 
@@ -1201,20 +1274,32 @@ async function saveWorkout() {
 function renderRecentWorkouts() {
   const c = document.getElementById('recent-workouts-list');
   if (!c) return;
-  const em = { run: '🏃', bike: '🚴', swim: '🏊', walk: '🚶' };
+  const em = { run: '🏃', interval: '⚡', bike: '🚴', swim: '🏊', walk: '🚶' };
   if (!window._workouts.length) {
     c.innerHTML = '<p class="text2 text-sm">ไม่มีข้อมูล — เริ่มบันทึกได้เลย</p>';
     return;
   }
-  c.innerHTML = window._workouts.slice(0, 10).map(w => `
+  c.innerHTML = window._workouts.slice(0, 10).map(w => {
+    let mainLine = '', subLine = '';
+    if (w.type === 'interval' && w.interval) {
+      const iv = w.interval;
+      mainLine = `⚡ Interval ${iv.reps}×${iv.repDist}กม. @ ${iv.repPace || '—'} · รวม ${w.dist} กม.`;
+      subLine = `${w.date} · พัก ${iv.restTime}น. · WU ${iv.warmup?.dist||0}กม. CD ${iv.cooldown?.dist||0}กม.`;
+    } else {
+      const pace = w.avgPace ? formatPace(w.avgPace) : '—';
+      mainLine = `${w.dist} กม. · ${w.time} น.${w.hr ? ' · HR ' + w.hr : ''}${w.cad ? ' · ' + w.cad + ' spm' : ''}`;
+      subLine = `${w.date} · ${pace}/กม.${w.stride ? ' · stride '+w.stride+'ม.' : ''}${w.note ? ' — '+w.note : ''}`;
+    }
+    return `
     <div class="workout-item">
       <div class="workout-icon">${em[w.type] || '🏅'}</div>
-      <div style="flex:1">
-        <div class="workout-main">${w.dist} กม. · ${w.time} น.${w.hr ? ' · HR ' + w.hr : ''}${w.cad ? ' · ' + w.cad + ' spm' : ''}</div>
-        <div class="workout-sub">${w.date}${w.avgPace ? ' · ' + formatPace(w.avgPace) + '/กม.' : ''}${w.note ? ' — ' + w.note : ''}</div>
+      <div style="flex:1;min-width:0">
+        <div class="workout-main" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${mainLine}</div>
+        <div class="workout-sub">${subLine}</div>
       </div>
-      <button onclick="deleteWorkout('${w._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;border-radius:4px" title="ลบ">✕</button>
-    </div>`).join('');
+      <button onclick="deleteWorkout('${w._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;flex-shrink:0" title="ลบ">✕</button>
+    </div>`;
+  }).join('');
 }
 
 async function deleteWorkout(key) {
@@ -1226,8 +1311,21 @@ async function deleteWorkout(key) {
 }
 
 function formatPace(p) {
-  if (!p) return '—';
-  return `${Math.floor(p)}:${String(Math.round((p % 1) * 60)).padStart(2, '0')}`;
+  if (!p || isNaN(p)) return '—';
+  const totalSec = Math.round(p * 60); // แปลงเป็นวินาทีก่อน แก้ floating point
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
+// แปลง string "5:30" → decimal minutes
+function paceStrToDecimal(str) {
+  if (!str) return 0;
+  const parts = str.trim().split(':');
+  if (parts.length < 2) return parseFloat(str) || 0;
+  const m = parseInt(parts[0]) || 0;
+  const s = parseInt(parts[1]) || 0;
+  return m + s / 60;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1451,7 +1549,7 @@ async function summarizeDocAI() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': window._claudeKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-3-5-sonnet-20241022',
           max_tokens: 2048,
           system: sys[format],
           messages: [{
@@ -1497,14 +1595,14 @@ function setNewsQ(q) { document.getElementById('news-query').value = q; }
 // ═══════════════════════════════════════════════════
 // STRAVA
 // ═══════════════════════════════════════════════════
-const STRAVA_API = 'https://www.strava.com/api/v3/oauth/token';
+const STRAVA_API = 'https://www.strava.com/api/v3';
 
 function stravaConnect() {
   const sb = document.getElementById('strava-status-box');
   sb.innerHTML = `
     <div style="width:100%">
       <p style="font-weight:700;font-size:13px;margin-bottom:6px">วาง Access Token จาก strava.com/settings/api</p>
-      <p class="text-xs text2 mb-8">ดูที่หัวข้อ "โทเค็นการเข้าถึงของคุณ"</p>
+      <p class="text-xs text2 mb-8" style="color:var(--accent3)">⚠️ Token มีอายุ ~6 ชั่วโมง ต้อง Paste ใหม่เมื่อหมดอายุ</p>
       <div class="flex gap-8">
         <input type="text" id="strava-token-input" placeholder="ab1bd0adb..." style="flex:1;font-size:12px">
         <button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ เชื่อมต่อ</button>
@@ -1529,22 +1627,30 @@ async function stravaConnectDirect() {
 
 async function stravaSync() {
   const tokenData = await window._fb.getData('strava_token');
-  if (!tokenData?.access_token) { showToast('Token หมดอายุ กรุณา Connect ใหม่', 'error'); return; }
+  if (!tokenData?.access_token) { stravaTokenExpired(); return; }
   const btn = document.getElementById('btn-strava-sync');
-  const old = btn?.innerHTML;
-  if (btn) { btn.innerHTML = '⏳...'; btn.disabled = true; }
+  const oldHTML = btn?.innerHTML;
+  if (btn) { btn.innerHTML = '⏳ กำลัง Sync...'; btn.disabled = true; }
   try {
     const res = await fetch(`${STRAVA_API}/athlete/activities?per_page=30`, {
       headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
     });
-    if (res.status === 401) { showToast('Token หมดอายุ กรุณา Connect ใหม่', 'error'); return; }
+    if (res.status === 401) { stravaTokenExpired(); return; }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const acts = await res.json();
     await window._fb.setData('strava_activities', acts);
     renderStravaActivities(acts);
     showToast(`✅ Sync ${acts.length} กิจกรรมสำเร็จ`);
   } catch (e) { showToast('Error: ' + e.message, 'error'); }
-  finally { if (btn) { btn.innerHTML = old; btn.disabled = false; } }
+  finally { if (btn) { btn.innerHTML = oldHTML; btn.disabled = false; } }
+}
+
+function stravaTokenExpired() {
+  showToast('⚠️ Strava Token หมดอายุ — กรุณา Paste Token ใหม่', 'error');
+  // disconnect และแสดงฟอร์มใหม่
+  window._fb.removeData('strava_token').catch(()=>{});
+  renderStravaPage();
+  setTimeout(() => stravaConnect(), 500);
 }
 
 async function stravaDisconnect() {
@@ -1585,21 +1691,94 @@ function renderStravaActivities(acts) {
   const c = document.getElementById('strava-activities-list');
   if (!acts?.length) { c.innerHTML = '<p class="text-sm text2">ไม่มีข้อมูล — กด Sync ก่อน</p>'; return; }
   const em = { Run: '🏃', Ride: '🚴', Swim: '🏊', Walk: '🚶', Hike: '🥾' };
-  c.innerHTML = acts.slice(0, 12).map(a => {
+  c.innerHTML = acts.slice(0, 12).map((a, idx) => {
     const dist = (a.distance / 1000).toFixed(2);
     const mins = Math.floor(a.moving_time / 60);
-    const pace = a.type === 'Run' && a.distance > 0
-      ? `${Math.floor(a.moving_time / a.distance * 1000 / 60)}'${String(Math.round(a.moving_time / a.distance * 1000 % 60)).padStart(2, '0')}"`
+    const paceSec = a.distance > 0 ? a.moving_time / a.distance * 1000 : 0;
+    const pace = a.type === 'Run' && paceSec > 0
+      ? formatPace(paceSec / 60)
       : '';
+    const hasMap = !!a.map?.summary_polyline;
     return `
-      <div class="workout-item">
-        <div class="workout-icon">${em[a.type] || '🏅'}</div>
-        <div style="flex:1">
-          <div class="workout-main">${a.name}</div>
-          <div class="workout-sub">${new Date(a.start_date_local).toLocaleDateString('th-TH')} · ${dist} กม. · ${mins} น.${pace ? ' · ' + pace : ''}${a.average_heartrate ? ' · HR' + Math.round(a.average_heartrate) : ''}</div>
+      <div style="border-bottom:1px solid var(--border);padding:10px 0">
+        <div class="workout-item" style="border:none;padding:0;margin-bottom:${hasMap?'8px':'0'}">
+          <div class="workout-icon">${em[a.type] || '🏅'}</div>
+          <div style="flex:1;min-width:0">
+            <div class="workout-main">${a.name}</div>
+            <div class="workout-sub">${new Date(a.start_date_local).toLocaleDateString('th-TH')} · ${dist} กม. · ${mins} น.${pace ? ' · ' + pace + '/กม.' : ''}${a.average_heartrate ? ' · HR '+Math.round(a.average_heartrate) : ''}</div>
+          </div>
+          ${hasMap ? `<button onclick="toggleMap('map-${idx}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:11px;padding:3px 8px">🗺️ GPS</button>` : ''}
         </div>
+        ${hasMap ? `<div id="map-${idx}" style="display:none;height:200px;border-radius:8px;overflow:hidden;margin-top:6px"></div>` : ''}
       </div>`;
   }).join('');
+}
+
+function toggleMap(mapId) {
+  const el = document.getElementById(mapId);
+  if (!el) return;
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    if (!el.dataset.init) {
+      el.dataset.init = '1';
+      initStravaMap(mapId);
+    }
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function initStravaMap(mapId) {
+  // หา polyline จาก acts
+  const idx = parseInt(mapId.split('-')[1]);
+  window._fb.getData('strava_activities').then(cached => {
+    const acts = cached ? (Array.isArray(cached) ? cached : Object.values(cached)) : [];
+    const act = acts[idx];
+    if (!act?.map?.summary_polyline) return;
+    // โหลด Leaflet + polyline decoder
+    loadLeaflet(() => {
+      const coords = decodePolyline(act.map.summary_polyline);
+      if (!coords.length) return;
+      const map = L.map(mapId, { zoomControl: true, attributionControl: false });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      const line = L.polyline(coords, { color: '#fc4c02', weight: 3 }).addTo(map);
+      map.fitBounds(line.getBounds(), { padding: [10, 10] });
+      // start/end markers
+      if (coords.length > 0) {
+        L.circleMarker(coords[0], { radius: 6, color: '#22d3a0', fillColor: '#22d3a0', fillOpacity: 1 }).addTo(map);
+        L.circleMarker(coords[coords.length-1], { radius: 6, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1 }).addTo(map);
+      }
+    });
+  });
+}
+
+let _leafletLoaded = false;
+function loadLeaflet(cb) {
+  if (_leafletLoaded) { cb(); return; }
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+  document.head.appendChild(css);
+  const js = document.createElement('script');
+  js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+  js.onload = () => { _leafletLoaded = true; cb(); };
+  document.head.appendChild(js);
+}
+
+// Google Encoded Polyline decoder
+function decodePolyline(encoded) {
+  const coords = [];
+  let index = 0, lat = 0, lng = 0;
+  while (index < encoded.length) {
+    let b, shift = 0, result = 0;
+    do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+    shift = 0; result = 0;
+    do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+    lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+    coords.push([lat / 1e5, lng / 1e5]);
+  }
+  return coords;
 }
 
 async function stravaAnalyze() {
