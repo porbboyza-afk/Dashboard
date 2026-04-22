@@ -1022,6 +1022,8 @@ async function askClaudeVision(imageBase64, mimeType, promptText) {
 // ═══════════════════════════════════════════════════
 window._workouts = [];
 window._docs = [];
+window._stravaWorkouts = [];
+window._stravaActs = [];
 
 // ═══════════════════════════════════════════════════
 // APP READY
@@ -1140,7 +1142,8 @@ function renderTodayStats() {
   cutoff.setDate(cutoff.getDate() - 7);
   cutoff.setHours(0, 0, 0, 0);
 
-  const recent = window._workouts.filter(w => new Date(w.date) >= cutoff);
+  const allWorkouts = [...window._workouts, ...(window._stravaWorkouts || [])];
+  const recent = allWorkouts.filter(w => new Date(w.date) >= cutoff);
   const totalDist = recent.reduce((s, w) => s + parseFloat(w.dist || 0), 0);
 
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -1249,18 +1252,46 @@ async function saveWorkout() {
     hr: parseInt(row.querySelector('.sp-hr')?.value) || 0,
   })).filter(s => s.pace || s.hr);
 
-  const avgPace = calcAvgPace();
+  const type = document.getElementById('f-type').value || 'run';
+  const avgPace = type === 'interval' ? 0 : calcAvgPace();
+
+  // เก็บข้อมูล interval
+  let intervalData = null;
+  let totalDist = dist;
+  if (type === 'interval') {
+    const reps = parseInt(document.getElementById('iv-reps')?.value) || 0;
+    const repDist = parseFloat(document.getElementById('iv-rep-dist')?.value) || 0;
+    const repPace = document.getElementById('iv-rep-pace')?.value || '';
+    const repHR = parseInt(document.getElementById('iv-rep-hr')?.value) || 0;
+    const restTime = parseFloat(document.getElementById('iv-rest-time')?.value) || 0;
+    const restHR = parseInt(document.getElementById('iv-rest-hr')?.value) || 0;
+    const wuDist = parseFloat(document.getElementById('iv-wu-dist')?.value) || 0;
+    const wuTime = parseFloat(document.getElementById('iv-wu-time')?.value) || 0;
+    const wuPace = document.getElementById('iv-wu-pace')?.value || '';
+    const cdDist = parseFloat(document.getElementById('iv-cd-dist')?.value) || 0;
+    const cdTime = parseFloat(document.getElementById('iv-cd-time')?.value) || 0;
+    const cdPace = document.getElementById('iv-cd-pace')?.value || '';
+    totalDist = +(wuDist + reps * repDist + cdDist).toFixed(2);
+    const totalTime = wuTime + reps * (paceStrToDecimal(repPace) * repDist + restTime) + cdTime;
+    intervalData = { reps, repDist, repPace, repHR, restTime, restHR,
+      warmup: { dist: wuDist, time: wuTime, pace: wuPace },
+      cooldown: { dist: cdDist, time: cdTime, pace: cdPace },
+      totalTime: +totalTime.toFixed(1) };
+    if (!reps || !repDist) { showToast('กรุณาใส่จำนวนรอบและระยะต่อรอบ', 'error'); return; }
+  }
+
   showLoading('กำลังบันทึก...');
   try {
     await window._fb.pushData('workouts', {
       date: document.getElementById('f-date').value || new Date().toISOString().slice(0, 10),
-      dist,
-      time: parseFloat(document.getElementById('r-time').value) || 0,
-      hr: parseInt(document.getElementById('r-hr').value) || 0,
-      cad: parseInt(document.getElementById('r-cad').value) || 0,
+      dist: type === 'interval' ? totalDist : dist,
+      time: type === 'interval' ? (intervalData?.totalTime || 0) : (parseFloat(document.getElementById('r-time').value) || 0),
+      hr: type === 'interval' ? (intervalData?.repHR || 0) : (parseInt(document.getElementById('r-hr').value) || 0),
+      cad: parseInt(document.getElementById('r-cad')?.value) || 0,
       note: document.getElementById('r-note').value || '',
-      type: document.getElementById('f-type').value || 'run',
+      type,
       avgPace, splits,
+      ...(intervalData ? { interval: intervalData } : {}),
       createdAt: Date.now()
     });
     ['r-distance', 'r-time', 'r-hr', 'r-cad', 'r-note'].forEach(id => {
@@ -1354,7 +1385,9 @@ function renderWeekStats() {
     const d = new Date(); d.setDate(d.getDate() - i);
     const ds = d.toISOString().slice(0, 10);
     labels.push(d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }));
-    const dayWks = window._workouts.filter(w => w.date === ds);
+    const manualWks = window._workouts.filter(w => w.date === ds);
+    const stravaWks = (window._stravaWorkouts || []).filter(w => w.date === ds);
+    const dayWks = [...manualWks, ...stravaWks];
     const dist = dayWks.reduce((s, w) => s + parseFloat(w.dist || 0), 0);
     const time = dayWks.reduce((s, w) => s + parseFloat(w.time || 0), 0);
     data.push(+dist.toFixed(2));
@@ -1395,7 +1428,8 @@ function renderWeekStats() {
 function renderMonthStats() {
   const labels = ['W1', 'W2', 'W3', 'W4'], data = [0, 0, 0, 0];
   const now = new Date();
-  window._workouts.forEach(w => {
+  const allWks = [...window._workouts, ...(window._stravaWorkouts || [])];
+  allWks.forEach(w => {
     const d = new Date(w.date);
     if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) {
       data[Math.min(3, Math.floor((d.getDate() - 1) / 7))] += parseFloat(w.dist || 0);
@@ -1796,30 +1830,119 @@ async function renderStravaPage() {
 }
 
 function renderStravaActivities(acts) {
+  // sync Strava activities เข้า window._stravaWorkouts เพื่อใช้ในกราฟ
+  window._stravaWorkouts = (acts || []).map(a => ({
+    date: a.start_date_local ? a.start_date_local.slice(0,10) : '',
+    dist: +(a.distance / 1000).toFixed(2),
+    time: +(a.moving_time / 60).toFixed(1),
+    hr: a.average_heartrate ? Math.round(a.average_heartrate) : 0,
+    avgPace: a.distance > 0 ? a.moving_time / a.distance * 1000 / 60 : 0,
+    type: a.type === 'Run' ? 'run' : a.type === 'Ride' ? 'bike' : a.type === 'Swim' ? 'swim' : 'run',
+    name: a.name,
+    source: 'strava'
+  }));
+  // re-render กราฟถ้าหน้าสถิติเปิดอยู่
+  if (document.getElementById('page-fitness-stats')?.classList.contains('active')) {
+    renderWeekStats(); renderMonthStats();
+  }
+  renderTodayStats();
+
   const c = document.getElementById('strava-activities-list');
   if (!acts?.length) { c.innerHTML = '<p class="text-sm text2">ไม่มีข้อมูล — กด Sync ก่อน</p>'; return; }
   const em = { Run: '🏃', Ride: '🚴', Swim: '🏊', Walk: '🚶', Hike: '🥾' };
-  c.innerHTML = acts.slice(0, 12).map((a, idx) => {
+  window._stravaActs = acts; // เก็บไว้เปิด modal
+  c.innerHTML = acts.slice(0, 20).map((a, idx) => {
     const dist = (a.distance / 1000).toFixed(2);
     const mins = Math.floor(a.moving_time / 60);
     const paceSec = a.distance > 0 ? a.moving_time / a.distance * 1000 : 0;
-    const pace = a.type === 'Run' && paceSec > 0
-      ? formatPace(paceSec / 60)
-      : '';
+    const pace = (a.type === 'Run' || a.type === 'Walk') && paceSec > 0 ? formatPace(paceSec / 60) : '';
     const hasMap = !!a.map?.summary_polyline;
+    const elev = a.total_elevation_gain ? `· ↑${Math.round(a.total_elevation_gain)}ม.` : '';
+    const cad = a.average_cadence ? `· ${Math.round(a.average_cadence*2)} spm` : '';
     return `
       <div style="border-bottom:1px solid var(--border);padding:10px 0">
-        <div class="workout-item" style="border:none;padding:0;margin-bottom:${hasMap?'8px':'0'}">
+        <div class="workout-item" style="border:none;padding:0;cursor:pointer" onclick="openStravaDetail(${idx})">
           <div class="workout-icon">${em[a.type] || '🏅'}</div>
           <div style="flex:1;min-width:0">
-            <div class="workout-main">${a.name}</div>
-            <div class="workout-sub">${new Date(a.start_date_local).toLocaleDateString('th-TH')} · ${dist} กม. · ${mins} น.${pace ? ' · ' + pace + '/กม.' : ''}${a.average_heartrate ? ' · HR '+Math.round(a.average_heartrate) : ''}</div>
+            <div class="workout-main" style="color:var(--accent)">${a.name}</div>
+            <div class="workout-sub">${new Date(a.start_date_local).toLocaleDateString('th-TH')} · ${dist} กม. · ${mins} น.${pace ? ' · '+pace+'/กม.' : ''}${a.average_heartrate ? ' · HR '+Math.round(a.average_heartrate) : ''} ${elev} ${cad}</div>
           </div>
-          ${hasMap ? `<button onclick="toggleMap('map-${idx}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:11px;padding:3px 8px">🗺️ GPS</button>` : ''}
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+            ${hasMap ? `<button onclick="event.stopPropagation();toggleMap('map-${idx}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:11px;padding:3px 8px">🗺️ GPS</button>` : ''}
+            <span style="color:var(--text3);font-size:16px">›</span>
+          </div>
         </div>
         ${hasMap ? `<div id="map-${idx}" style="display:none;height:200px;border-radius:8px;overflow:hidden;margin-top:6px"></div>` : ''}
       </div>`;
   }).join('');
+}
+
+function openStravaDetail(idx) {
+  const a = (window._stravaActs || [])[idx];
+  if (!a) return;
+  const dist = (a.distance / 1000).toFixed(2);
+  const mins = Math.floor(a.moving_time / 60);
+  const secs = a.moving_time % 60;
+  const paceSec = a.distance > 0 ? a.moving_time / a.distance * 1000 : 0;
+  const pace = paceSec > 0 ? formatPace(paceSec / 60) : '—';
+  const date = new Date(a.start_date_local).toLocaleDateString('th-TH', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const em = { Run: '🏃', Ride: '🚴', Swim: '🏊', Walk: '🚶', Hike: '🥾' };
+
+  const overlay = document.createElement('div');
+  overlay.id = 'strava-detail-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:18px;padding:28px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+        <div>
+          <div style="font-size:22px;margin-bottom:4px">${em[a.type] || '🏅'} ${a.name}</div>
+          <div style="color:var(--text2);font-size:13px">${date}</div>
+        </div>
+        <button onclick="document.getElementById('strava-detail-overlay').remove()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+        ${statBox('ระยะทาง', dist + ' กม.', 'var(--accent)')}
+        ${statBox('เวลา', mins + ':' + String(secs).padStart(2,'0') + ' น.', 'var(--accent2)')}
+        ${statBox('Pace เฉลี่ย', pace + '/กม.', 'var(--accent3)')}
+        ${a.average_heartrate ? statBox('HR เฉลี่ย', Math.round(a.average_heartrate) + ' bpm', 'var(--accent4)') : ''}
+        ${a.max_heartrate ? statBox('HR สูงสุด', a.max_heartrate + ' bpm', 'var(--accent4)') : ''}
+        ${a.average_cadence ? statBox('Cadence', Math.round(a.average_cadence*2) + ' spm', 'var(--text2)') : ''}
+        ${a.total_elevation_gain ? statBox('Elevation', '↑' + Math.round(a.total_elevation_gain) + ' ม.', 'var(--accent2)') : ''}
+        ${a.average_watts ? statBox('Power', Math.round(a.average_watts) + ' W', 'var(--accent)') : ''}
+        ${a.suffer_score ? statBox('Suffer Score', a.suffer_score, 'var(--accent4)') : ''}
+        ${a.kudos_count !== undefined ? statBox('Kudos', '👍 ' + a.kudos_count, 'var(--accent3)') : ''}
+      </div>
+      ${a.description ? `<div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:var(--text2);line-height:1.7">${a.description}</div>` : ''}
+      ${a.map?.summary_polyline ? `<div id="detail-map" style="height:220px;border-radius:10px;overflow:hidden;margin-bottom:14px"></div>` : ''}
+      <div style="display:flex;gap:8px">
+        <a href="https://www.strava.com/activities/${a.id}" target="_blank" class="btn btn-strava btn-sm" style="text-decoration:none">🔗 ดูใน Strava</a>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('strava-detail-overlay').remove()">ปิด</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  if (a.map?.summary_polyline) {
+    loadLeaflet(() => {
+      const coords = decodePolyline(a.map.summary_polyline);
+      if (!coords.length) return;
+      const map = L.map('detail-map', { zoomControl: true, attributionControl: false });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      const line = L.polyline(coords, { color: '#fc4c02', weight: 4 }).addTo(map);
+      map.fitBounds(line.getBounds(), { padding: [15, 15] });
+      if (coords.length) {
+        L.circleMarker(coords[0], { radius: 7, color: '#22d3a0', fillColor: '#22d3a0', fillOpacity: 1 }).addTo(map);
+        L.circleMarker(coords[coords.length-1], { radius: 7, color: '#ef4444', fillColor: '#ef4444', fillOpacity: 1 }).addTo(map);
+      }
+    });
+  }
+}
+
+function statBox(label, value, color) {
+  return `<div style="background:var(--surface2);border-radius:10px;padding:12px">
+    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">${label}</div>
+    <div style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:${color}">${value}</div>
+  </div>`;
 }
 
 function toggleMap(mapId) {
