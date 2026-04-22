@@ -283,23 +283,61 @@ onAuthStateChanged(auth, user => {
   .mono{font-family:'Space Mono',monospace;}.bold{font-weight:700;}
 
   @media(max-width:768px){
-    .sidebar{width:56px;}
-    .logo-text span,.nav-item span,.nav-section,.user-info{display:none;}
-    .main{margin-left:56px;padding:16px;}
+    /* sidebar → bottom nav bar */
+    .sidebar{
+      position:fixed;left:0;right:0;bottom:0;top:auto;
+      width:100%;height:auto;
+      flex-direction:row;align-items:stretch;
+      border-right:none;border-top:1px solid var(--border);
+      z-index:200;overflow:visible;
+      padding:0;
+    }
+    .logo-area,.nav-section,.user-area{display:none;}
+    .nav{
+      display:flex;flex-direction:row;
+      width:100%;overflow-x:auto;
+      padding:0;
+      scrollbar-width:none;
+      -webkit-overflow-scrolling:touch;
+    }
+    .nav::-webkit-scrollbar{display:none;}
+    .nav-item{
+      flex:0 0 auto;
+      flex-direction:column;
+      align-items:center;justify-content:center;
+      gap:2px;
+      padding:7px 10px 6px;
+      border-left:none;border-top:2px solid transparent;
+      border-radius:0;margin:0;
+      min-width:56px;
+    }
+    .nav-item span:last-child{
+      display:block !important;
+      font-size:9px;color:var(--text3);
+      white-space:nowrap;
+    }
+    .nav-item.active{
+      border-left:none;border-top-color:var(--accent);
+      background:rgba(79,142,247,.07);
+    }
+    .nav-item.active span:last-child{color:var(--accent);}
+    .nav-item .icon{font-size:20px;width:auto;}
+
+    /* main เต็มจอ ไม่มี margin-left */
+    .main{
+      margin-left:0 !important;
+      padding:16px 14px;
+      padding-bottom:80px;
+      min-height:100vh;
+    }
     .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}
     h1{font-size:20px;}
     .stat-num{font-size:24px;}
-    .doc-preview-bg{display:none;}
-    .a4-sim{display:none;}
-  }
-  @media(max-width:480px){
-    .sidebar{width:48px;}
-    .main{margin-left:48px;padding:12px;}
-    .nav-item{padding:10px 14px;}
-    .nav-item .icon{font-size:18px;}
+    .doc-preview-bg,.a4-sim{display:none;}
     .card{padding:14px;}
     .btn{padding:8px 12px;font-size:13px;}
     .splits-wrap input{width:60px!important;}
+    #strava-week-strip{grid-template-columns:1fr 1fr !important;}
   }
 </style>
 </head>
@@ -1245,12 +1283,12 @@ window.calcAvgPace = function() {
 // WORKOUT CRUD
 // ═══════════════════════════════════════
 async function saveWorkout() {
-  const dist = parseFloat(document.getElementById('r-distance').value) || 0;
-  if (!dist) { showToast('กรุณาใส่ระยะทาง','error'); return; }
+  const type = document.getElementById('f-type').value||'run';
+  const dist = parseFloat(document.getElementById('r-distance')?.value) || 0;
+  if (type !== 'interval' && !dist) { showToast('กรุณาใส่ระยะทาง','error'); return; }
   const splits = [...document.querySelectorAll('#splits-area tbody tr')].map((row,i) => ({
     km:i+1, pace:row.querySelector('.sp-pace')?.value||'', hr:parseInt(row.querySelector('.sp-hr')?.value)||0
   })).filter(s => s.pace||s.hr);
-  const type = document.getElementById('f-type').value||'run';
   const avgPace = type==='interval' ? 0 : calcAvgPace();
   let intervalData=null, totalDist=dist;
   if (type==='interval') {
