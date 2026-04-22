@@ -1717,12 +1717,34 @@ async function stravaSync() {
   const oldHTML = btn?.innerHTML;
   if (btn) { btn.innerHTML = '⏳ กำลัง Sync...'; btn.disabled = true; }
   try {
-    const accessToken = await stravaGetValidToken();
-    if (!accessToken) return; // stravaGetValidToken จัดการ error แล้ว
-    const res = await fetch(`${STRAVA_API}/athlete/activities?per_page=30`, {
+    let accessToken = await stravaGetValidToken();
+    if (!accessToken) return;
+
+    let res = await fetch(`${STRAVA_API}/athlete/activities?per_page=30`, {
       headers: { 'Authorization': `Bearer ${accessToken}` }
     });
-    if (res.status === 401) { stravaTokenExpired(); return; }
+
+    // ถ้า 401 — force refresh แล้วลองอีกครั้ง
+    if (res.status === 401) {
+      showToast('🔄 Token หมด กำลัง Refresh...', 'info');
+      const tokenData = await window._fb.getData('strava_token');
+      if (!tokenData?.refresh_token) { stravaTokenExpired(); return; }
+      const cfg = await window._fb.getData('settings') || {};
+      const refreshed = await stravaRefreshTokenCall(
+        tokenData.refresh_token, cfg.stravaId, cfg.stravaSecret
+      );
+      await window._fb.setData('strava_token', {
+        ...tokenData,
+        access_token: refreshed.access_token,
+        refresh_token: refreshed.refresh_token || tokenData.refresh_token,
+        expires_at: refreshed.expires_at
+      });
+      accessToken = refreshed.access_token;
+      res = await fetch(`${STRAVA_API}/athlete/activities?per_page=30`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+    }
+
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const acts = await res.json();
     await window._fb.setData('strava_activities', acts);
@@ -1733,8 +1755,7 @@ async function stravaSync() {
 }
 
 function stravaTokenExpired() {
-  showToast('⚠️ Strava Token หมดอายุ — กรุณา Paste Token ใหม่', 'error');
-  // disconnect และแสดงฟอร์มใหม่
+  showToast('⚠️ Refresh Token ใช้ไม่ได้ — กรุณาเชื่อมต่อใหม่', 'error');
   window._fb.removeData('strava_token').catch(()=>{});
   renderStravaPage();
   setTimeout(() => stravaConnect(), 500);
