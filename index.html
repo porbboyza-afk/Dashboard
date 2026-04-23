@@ -1621,6 +1621,11 @@ function startRealtimeListeners() {
     window._coachPlan=data||null;
     if(document.getElementById('page-coach').classList.contains('active')) renderCoachTracking();
   });
+  window._fb.listen('strava_activities', data => {
+    if(!data) return;
+    const acts = Array.isArray(data) ? data : Object.values(data);
+    renderStravaActivities(acts);
+  });
 }
 
 // ── UI HELPERS ──
