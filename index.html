@@ -1696,9 +1696,13 @@ function renderTodayStats(){
 
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
   const recentEl=document.getElementById('today-recent-workouts');
-  if(recentEl) recentEl.innerHTML=window._workouts.length
-    ? window._workouts.slice(0,3).map(w=>`<div class="workout-row"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1"><div class="workout-title">${w.dist} km · ${w.time} min${w.hr?' · HR '+w.hr:''}</div><div class="workout-meta">${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}</div></div></div>`).join('')
-    : '<p class="text-sm c2">No activities yet — start logging!</p>';
+  // Show this week's activities from both Firebase + Strava
+  const allCombined=[...window._workouts,...(window._stravaWorkouts||[])];
+  const weekRecent=allCombined.filter(w=>(w.date||'')>=toLocalDateStr(cutoff)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+  const stravaTag='<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>';
+  if(recentEl) recentEl.innerHTML=weekRecent.length
+    ? weekRecent.map(w=>`<div class="workout-row"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1"><div class="workout-title">${w.dist} km · ${Math.round(w.time)} min${w.hr?' · HR '+w.hr:''}${w.source==='strava'?stravaTag:''}</div><div class="workout-meta">${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${w.name?' · '+w.name:''}</div></div></div>`).join('')
+    : '<p class="text-sm c2">ไม่มีกิจกรรมสัปดาห์นี้</p>';
 
   const hasKey=!!window._claudeKey;
   const statusEl=document.getElementById('today-status');
@@ -2089,7 +2093,7 @@ async function renderStravaPage(){
 }
 
 function renderStravaActivities(acts){
-  window._stravaWorkouts=(acts||[]).map(a=>({date:a.start_date_local?a.start_date_local.slice(0,10):'',dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava'}));
+  window._stravaWorkouts=(acts||[]).map(a=>({date:a.start_date_local?a.start_date_local.slice(0,10):'',dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava'}));
   if(document.getElementById('page-fitness-stats')?.classList.contains('active'))renderCurrentStatsView();
   renderTodayStats();matchWorkoutsToPlan(true);
   const strip=document.getElementById('strava-week-strip');
@@ -2261,37 +2265,55 @@ function showStatInfo(type) {
 
 // ── DASH ACTIVITIES MODAL ──
 function showDashActivities() {
-  const workouts = window._workouts || [];
+  // Get this week's activities from both Firebase + Strava
+  const cutoff = getThisWeekStart();
+  const cutoffStr = toLocalDateStr(cutoff);
+  const allActs = [...(window._workouts||[]), ...(window._stravaWorkouts||[])];
+  const weekActs = allActs
+    .filter(w => (w.date||'') >= cutoffStr)
+    .sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
   const overlay = document.createElement('div');
   overlay.id = 'dash-acts-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);padding:16px';
 
   const typeIcon = { run:'🏃', interval:'⚡', bike:'🚴', swim:'🏊', walk:'🚶' };
-  const rows = workouts.length === 0
-    ? '<div style="text-align:center;padding:28px;color:var(--text3)">ยังไม่มีกิจกรรม</div>'
-    : workouts.slice(0,30).map(w => {
+  const sourceTag = s => s==='strava' ? '<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>' : '';
+
+  const rows = weekActs.length === 0
+    ? '<div style="text-align:center;padding:28px;color:var(--text3)">ไม่มีกิจกรรมสัปดาห์นี้</div>'
+    : weekActs.map(w => {
         const icon = typeIcon[w.type] || '🏃';
-        const dist = w.distance ? `${parseFloat(w.distance).toFixed(2)} km` : '';
-        const time = w.time ? `${w.time} min` : '';
-        const pace = w.avgPace || '';
+        const dist = w.dist ? `${parseFloat(w.dist).toFixed(2)} km` : '';
+        const time = w.time ? `${Math.round(w.time)} min` : '';
+        const pace = w.avgPace ? formatPace(w.avgPace)+'/km' : '';
+        const name = w.name ? `<div style="font-size:12px;color:var(--text2);margin-top:1px">${w.name}</div>` : '';
         return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
           <div style="width:36px;height:36px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${icon}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600">${w.date||''} <span style="color:var(--text3);font-weight:400;text-transform:capitalize">${w.type||''}</span></div>
-            <div style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace">${[dist,time,pace?pace+'/km':''].filter(Boolean).join(' · ')}</div>
+            <div style="font-size:13px;font-weight:600">${w.date||''} ${sourceTag(w.source)}</div>
+            ${name}
+            <div style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace">${[dist,time,pace].filter(Boolean).join(' · ')}</div>
           </div>
           ${w.hr?`<div style="font-size:11px;color:var(--red);font-family:'JetBrains Mono',monospace;flex-shrink:0">❤️ ${w.hr}</div>`:''}
         </div>`;
       }).join('');
 
+  const weekLabel = (() => {
+    const days = getWeekDates(0);
+    const s = days[0].toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+    const e = days[6].toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+    return `${s} – ${e}`;
+  })();
+
   overlay.innerHTML = `
     <div style="background:var(--surface);border-radius:var(--r-xl);padding:20px;width:100%;max-width:480px;max-height:75vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div style="font-size:16px;font-weight:800">กิจกรรมทั้งหมด 💪</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:16px;font-weight:800">กิจกรรมสัปดาห์นี้ 💪</div>
         <button onclick="document.getElementById('dash-acts-overlay').remove()" style="background:var(--bg2);border:none;border-radius:8px;color:var(--text2);font-size:16px;cursor:pointer;padding:4px 10px;line-height:1">✕</button>
       </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px">${weekLabel} · ${weekActs.length} กิจกรรม</div>
       <div style="overflow-y:auto;flex:1">${rows}</div>
-      <button class="btn btn-primary w100" style="margin-top:14px" onclick="document.getElementById('dash-acts-overlay').remove();showPage('fitness-log')">+ เพิ่มกิจกรรม</button>
     </div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
