@@ -54,7 +54,14 @@ onAuthStateChanged(auth, user => {
     const nm = document.getElementById('user-name');
     if (av) av.src = user.photoURL || '';
     if (nm) nm.textContent = user.displayName || user.email;
-    if (window._appReady) window._appReady(user);
+    const tryReady = (attempts) => {
+      if (window._appReady) {
+        window._appReady(user);
+      } else if (attempts > 0) {
+        setTimeout(() => tryReady(attempts - 1), 50);
+      }
+    };
+    tryReady(40);
   } else {
     loginScreen.style.display = 'flex';
     appShell.style.display = 'none';
@@ -631,7 +638,4 @@ tbody tr:hover td { background: var(--bg); }
 .plan-day:hover { border-color: var(--border2); }
 .plan-day.done { border-color: rgba(52,199,89,.4); background: rgba(52,199,89,.03); }
 .plan-day.missed { border-color: rgba(255,59,48,.3); background: rgba(255,59,48,.03); }
-.plan-day.today-row { border-color: rgba(0,122,255,.5); background: rgba(0,122,255,.04); }
-
-.plan-day-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-.plan-day-date { font-size: 
+.plan-day.today-row { border-color: rgba(0,122,255,.5); back
