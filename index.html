@@ -143,7 +143,6 @@ body::before {
   overflow: hidden;
 }
 
-/* Ambient background blobs */
 #login-screen::before, #login-screen::after {
   content: '';
   position: absolute;
@@ -417,7 +416,6 @@ body::before {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Page header ── */
 .page-header { margin-bottom: 28px; }
 
 h1 {
@@ -444,7 +442,6 @@ h1 {
 .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
 .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
 
-/* Base card */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -469,7 +466,6 @@ h1 {
   margin-bottom: 14px;
 }
 
-/* Stat cards */
 .stat-card {
   position: relative;
   overflow: hidden;
@@ -511,7 +507,6 @@ h1 {
   font-weight: 400;
 }
 
-/* AI/gradient card */
 .card-ai {
   background: var(--grad-hero);
   border-color: var(--border-glow);
@@ -1061,7 +1056,6 @@ tbody tr:hover td { background: rgba(255,255,255,.02); }
 
 .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
-/* Tag / badge */
 .tag {
   display: inline-block;
   padding: 2px 9px;
@@ -1767,6 +1761,12 @@ tbody tr:hover td { background: rgba(255,255,255,.02); }
 <script>
 'use strict';
 
+// ── DATE HELPER — ใช้ local time ไม่ใช้ UTC ──
+function toLocalDateStr(date) {
+  const d = date || new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 const CF_WORKER = 'https://claude-proxy2.porbboyza.workers.dev';
 window._claudeKey = '';
 
@@ -1858,11 +1858,11 @@ function showPage(id) {
   document.getElementById('page-'+id)?.classList.add('active');
   document.querySelector(`.nav-item[data-page="${id}"]`)?.classList.add('active');
   if(id==='today') renderTodayStats();
-  if(id==='fitness-log') document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
+  if(id==='fitness-log') document.getElementById('f-date').value=toLocalDateStr();  // ✅ แก้แล้ว
   if(id==='fitness-stats'){initStatsNav();renderCurrentStatsView();}
   if(id==='doc-create') updateDocPreview();
   if(id==='strava') renderStravaPage();
-  if(id==='coach'){document.getElementById('coach-start-date').value=new Date().toISOString().slice(0,10);renderCoachTracking();}
+  if(id==='coach'){document.getElementById('coach-start-date').value=toLocalDateStr();renderCoachTracking();}  // ✅ แก้แล้ว
 }
 
 // ── WEEK HELPERS ──
@@ -1874,7 +1874,7 @@ function getThisWeekStart(){return getMondayOfWeek(new Date());}
 function renderTodayStats(){
   const cutoff=getThisWeekStart();
   const all=[...window._workouts,...(window._stravaWorkouts||[])];
-  const recent=all.filter(w=>new Date(w.date)>=cutoff);
+  const recent=all.filter(w=>new Date(w.date+'T00:00:00')>=cutoff);  // ✅ แก้แล้ว — force parse as local
   const totalDist=recent.reduce((s,w)=>s+parseFloat(w.dist||0),0);
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('t-distance',totalDist.toFixed(1));set('t-workouts',recent.length);
@@ -1934,7 +1934,7 @@ async function saveWorkout(){
   }
   showLoading('กำลังบันทึก...');
   try{
-    await window._fb.pushData('workouts',{date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10),dist:type==='interval'?totalDist:dist,time:type==='interval'?(intervalData?.totalTime||0):(parseFloat(document.getElementById('r-time').value)||0),hr:type==='interval'?(intervalData?.repHR||0):(parseInt(document.getElementById('r-hr').value)||0),cad:parseInt(document.getElementById('r-cad')?.value)||0,note:document.getElementById('r-note').value||'',type,avgPace,splits,...(intervalData?{interval:intervalData}:{}),createdAt:Date.now()});
+    await window._fb.pushData('workouts',{date:document.getElementById('f-date').value||toLocalDateStr(),dist:type==='interval'?totalDist:dist,time:type==='interval'?(intervalData?.totalTime||0):(parseFloat(document.getElementById('r-time').value)||0),hr:type==='interval'?(intervalData?.repHR||0):(parseInt(document.getElementById('r-hr').value)||0),cad:parseInt(document.getElementById('r-cad')?.value)||0,note:document.getElementById('r-note').value||'',type,avgPace,splits,...(intervalData?{interval:intervalData}:{}),createdAt:Date.now()});  // ✅ แก้แล้ว
     ['r-distance','r-time','r-hr','r-cad','r-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     const sa=document.getElementById('splits-area');if(sa)sa.innerHTML='<p class="text-sm text2" style="font-style:italic">กรอกระยะทางเพื่อสร้าง Splits</p>';
     showToast('✅ บันทึกขึ้น Cloud แล้ว');
@@ -1974,14 +1974,14 @@ const dayNamesTH=['จ','อ','พ','พฤ','ศ','ส','อา'];
 
 function renderWeekStats(){
   const days=getWeekDates(_statsWeekOffset);
-  const today=new Date().toISOString().slice(0,10);
+  const today=toLocalDateStr();  // ✅ แก้แล้ว
   const allWks=[...window._workouts,...(window._stravaWorkouts||[])];
   const label=document.getElementById('week-nav-label');
   if(label){const s=days[0].toLocaleDateString('th-TH',{day:'numeric',month:'short'});const e=days[6].toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit'});label.textContent=_statsWeekOffset===0?`THIS WEEK · จ ${s} – อา ${e}`:`จ ${s} – อา ${e}`;}
   document.getElementById('btn-week-next').disabled=_statsWeekOffset>=0;
   let labels=[],data=[],totalDist=0,totalTime=0,dayCount=0,hrSum=0,hrCnt=0,cadSum=0,cadCnt=0;
   days.forEach((d,i)=>{
-    const ds=d.toISOString().slice(0,10);
+    const ds=toLocalDateStr(d);  // ✅ แก้แล้ว
     labels.push(dayNamesTH[i]+'\n'+d.toLocaleDateString('th-TH',{day:'numeric'}));
     const dayWks=allWks.filter(w=>w.date===ds);
     const dist=dayWks.reduce((s,w)=>s+parseFloat(w.dist||0),0);
@@ -2002,12 +2002,12 @@ function renderWeekStats(){
   if(ctx){
     const gradient=ctx.createLinearGradient(0,0,0,200);
     gradient.addColorStop(0,'rgba(82,160,255,.4)');gradient.addColorStop(1,'rgba(82,160,255,.02)');
-    charts.week=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'กม.',data,backgroundColor:data.map((_,i)=>{const ds=days[i].toISOString().slice(0,10);return ds===today?'rgba(0,229,160,.7)':(data[i]>0?'rgba(82,160,255,.65)':'rgba(82,160,255,.1)');}),borderRadius:8,borderSkipped:false,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`${i.parsed.y} กม.`},backgroundColor:'rgba(13,21,38,.9)',borderColor:'rgba(82,160,255,.3)',borderWidth:1,padding:10,titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono'}}},scales:{y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#6b88b5',font:{family:'JetBrains Mono',size:10}},beginAtZero:true},x:{grid:{display:false},ticks:{color:'#6b88b5',font:{family:'JetBrains Mono',size:10}}}}}});
+    charts.week=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'กม.',data,backgroundColor:data.map((_,i)=>{const ds=toLocalDateStr(days[i]);return ds===today?'rgba(0,229,160,.7)':(data[i]>0?'rgba(82,160,255,.65)':'rgba(82,160,255,.1)');}),borderRadius:8,borderSkipped:false,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`${i.parsed.y} กม.`},backgroundColor:'rgba(13,21,38,.9)',borderColor:'rgba(82,160,255,.3)',borderWidth:1,padding:10,titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono'}}},scales:{y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#6b88b5',font:{family:'JetBrains Mono',size:10}},beginAtZero:true},x:{grid:{display:false},ticks:{color:'#6b88b5',font:{family:'JetBrains Mono',size:10}}}}}});  // ✅ แก้แล้ว
   }
 
   const bdEl=document.getElementById('week-day-breakdown');
   if(bdEl)bdEl.innerHTML=days.map((d,i)=>{
-    const ds=d.toISOString().slice(0,10);
+    const ds=toLocalDateStr(d);  // ✅ แก้แล้ว
     const dayWks=allWks.filter(w=>w.date===ds);
     const dist=dayWks.reduce((s,w)=>s+parseFloat(w.dist||0),0);
     const isToday=ds===today,isFuture=ds>today;
@@ -2031,14 +2031,14 @@ function renderMonthStats(){
   const label=document.getElementById('month-nav-label');
   if(label)label.textContent=_statsMonthOffset===0?`THIS MONTH · ${monthName}`:monthName;
   document.getElementById('btn-month-next').disabled=_statsMonthOffset>=0;
-  const monthWks=allWks.filter(w=>{if(!w.date)return false;const d=new Date(w.date);return d.getFullYear()===year&&d.getMonth()===month;});
+  const monthWks=allWks.filter(w=>{if(!w.date)return false;const d=new Date(w.date+'T00:00:00');return d.getFullYear()===year&&d.getMonth()===month;});  // ✅ แก้แล้ว — force local parse
   const totalDist=monthWks.reduce((s,w)=>s+parseFloat(w.dist||0),0);
   const totalTime=monthWks.reduce((s,w)=>s+parseFloat(w.time||0),0);
   const pace=totalDist>0?totalTime/totalDist:0;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('stat-mo-dist',totalDist.toFixed(1));set('stat-mo-count',monthWks.length);set('stat-mo-time',Math.round(totalTime));set('stat-mo-pace',pace>0?formatPace(pace):'—');
   const data=[0,0,0,0,0];
-  monthWks.forEach(w=>{const d=new Date(w.date);data[Math.min(4,Math.floor((d.getDate()-1)/7))]+=parseFloat(w.dist||0);});
+  monthWks.forEach(w=>{const d=new Date(w.date+'T00:00:00');data[Math.min(4,Math.floor((d.getDate()-1)/7))]+=parseFloat(w.dist||0);});  // ✅ แก้แล้ว
   if(charts.month)charts.month.destroy();
   const ctx=document.getElementById('chart-month-trend')?.getContext('2d');
   if(ctx)charts.month=new Chart(ctx,{type:'bar',data:{labels:['W1','W2','W3','W4','W5'],datasets:[{label:'กม.',data:data.map(v=>+v.toFixed(2)),backgroundColor:'rgba(0,229,160,.6)',borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(13,21,38,.9)',borderColor:'rgba(0,229,160,.3)',borderWidth:1,padding:10,titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono'}}},scales:{y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#6b88b5',font:{family:'JetBrains Mono',size:10}},beginAtZero:true},x:{grid:{display:false},ticks:{color:'#6b88b5',font:{family:'JetBrains Mono',size:10}}}}}});
@@ -2050,8 +2050,8 @@ function renderMonthStats(){
 async function analyzeFitnessAI(period='week'){
   const allWks=[...window._workouts,...(window._stravaWorkouts||[])];
   let wks=[],periodLabel='';
-  if(period==='week'){const days=getWeekDates(_statsWeekOffset);const ds0=days[0].toISOString().slice(0,10),ds6=days[6].toISOString().slice(0,10);wks=allWks.filter(w=>w.date>=ds0&&w.date<=ds6);periodLabel=`สัปดาห์ ${ds0} ถึง ${ds6}`;}
-  else{const{year,month}=getMonthBounds(_statsMonthOffset);wks=allWks.filter(w=>{if(!w.date)return false;const d=new Date(w.date);return d.getFullYear()===year&&d.getMonth()===month;});periodLabel=`เดือน ${new Date(year,month,1).toLocaleDateString('th-TH',{month:'long',year:'numeric'})}`;}
+  if(period==='week'){const days=getWeekDates(_statsWeekOffset);const ds0=toLocalDateStr(days[0]),ds6=toLocalDateStr(days[6]);wks=allWks.filter(w=>w.date>=ds0&&w.date<=ds6);periodLabel=`สัปดาห์ ${ds0} ถึง ${ds6}`;}  // ✅ แก้แล้ว
+  else{const{year,month}=getMonthBounds(_statsMonthOffset);wks=allWks.filter(w=>{if(!w.date)return false;const d=new Date(w.date+'T00:00:00');return d.getFullYear()===year&&d.getMonth()===month;});periodLabel=`เดือน ${new Date(year,month,1).toLocaleDateString('th-TH',{month:'long',year:'numeric'})}`;}  // ✅ แก้แล้ว
   const totalDist=wks.reduce((s,w)=>s+parseFloat(w.dist||0),0);
   const totalTime=wks.reduce((s,w)=>s+parseFloat(w.time||0),0);
   const avgPace=totalDist>0?totalTime/totalDist:0;
@@ -2069,7 +2069,7 @@ async function generateTrainingPlan(){
   if(!window._claudeKey){showToast('กรุณาตั้งค่า API Key ก่อน','error');showPage('settings');return;}
   const level=document.getElementById('coach-level')?.value;
   const days=document.getElementById('coach-days')?.value;
-  const startDate=document.getElementById('coach-start-date')?.value||new Date().toISOString().slice(0,10);
+  const startDate=document.getElementById('coach-start-date')?.value||toLocalDateStr();  // ✅ แก้แล้ว
   const history=window._workouts.slice(0,7).map(w=>`${w.date}:${w.dist}กม.${w.avgPace?' Pace'+formatPace(w.avgPace):''}`).join(', ');
   const out=document.getElementById('coach-output');
   if(out){out.style.color='var(--text2)';out.innerHTML='⏳ กำลังสร้างแผน...';}
@@ -2104,7 +2104,7 @@ function renderCoachTracking(){
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('coach-plan-goal-disp','🎯 '+(plan.goal||'—'));
   set('coach-plan-meta-disp',`START ${plan.startDate||'—'} · ${plan.totalWeeks||4} WKS · ${plan.sessions.length} SESSIONS`);
-  const today=new Date().toISOString().slice(0,10);
+  const today=toLocalDateStr();  // ✅ แก้แล้ว
   const completedDates=plan.completedDates||{};
   const workoutDates=new Set([...window._workouts.map(w=>w.date),...(window._stravaWorkouts||[]).map(w=>w.date)]);
   let doneCount=0,missCount=0,remainCount=0;
@@ -2130,7 +2130,7 @@ function renderCoachTracking(){
     else if(isMissed)badge='<span class="plan-day-badge badge-missed">❌ พลาด</span>';
     else if(isToday)badge='<span class="plan-day-badge badge-today">📍 วันนี้</span>';
     else badge='<span class="plan-day-badge badge-upcoming">⏳ รอ</span>';
-    const dateStr=new Date(s.date+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
+    const dateStr=new Date(s.date+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});  // ✅ แก้แล้ว — force local
     let actualLine='';
     if(actualWks.length){const aw=actualWks[0];actualLine=`<div class="plan-day-actual">📊 ${aw.dist}กม.${aw.avgPace?' · '+formatPace(aw.avgPace)+'/กม.':''}${aw.hr?' · ♥'+aw.hr:''}</div>`;if(s.targetDist>0&&aw.dist>0){const diff=((parseFloat(aw.dist)-s.targetDist)/s.targetDist*100).toFixed(0);const c=Math.abs(diff)<=10?'var(--green)':(diff>0?'var(--blue)':'var(--amber)');actualLine+=`<div style="font-size:10px;color:${c};margin-top:2px;font-family:'JetBrains Mono',monospace">${diff>0?'↑':'↓'} ${Math.abs(diff)}% จากเป้า</div>`;}}
     return `<div class="${cls}"><div class="plan-day-header"><div class="plan-day-date">${dateStr}</div>${badge}</div>
@@ -2147,7 +2147,7 @@ async function markDone(date){const plan=window._coachPlan;if(!plan)return;const
 async function clearCoachPlan(){if(!confirm('ลบแผนการซ้อมนี้?'))return;await window._fb.removeData('coach_plan');window._coachPlan=null;renderCoachTracking();showToast('ลบแผนแล้ว');}
 async function reviewPlanAI(){
   const plan=window._coachPlan;if(!plan?.sessions){showToast('ไม่มีแผน','error');return;}
-  const today=new Date().toISOString().slice(0,10);
+  const today=toLocalDateStr();  // ✅ แก้แล้ว
   const allWks=[...window._workouts,...(window._stravaWorkouts||[])];
   const completedDates=plan.completedDates||{};
   let summary=`แผน: ${plan.goal}\n\n`,doneCount=0,missCount=0;
@@ -2269,7 +2269,7 @@ function renderStravaActivities(acts){
   if(strip&&acts?.length){
     strip.style.display='grid';
     const cutoff=getThisWeekStart();
-    const cutoffStr=cutoff.toISOString().slice(0,10);
+    const cutoffStr=toLocalDateStr(cutoff);  // ✅ แก้แล้ว
     const wk=acts.filter(a=>(a.start_date_local||'').slice(0,10)>=cutoffStr);
     const wkDist=wk.reduce((s,a)=>s+a.distance/1000,0);
     const wkHR=wk.filter(a=>a.average_heartrate).map(a=>a.average_heartrate);
