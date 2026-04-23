@@ -1447,8 +1447,7 @@ function renderStravaActivities(acts){
   if(strip&&acts?.length){
     strip.style.display='grid';
     const cutoff=getThisWeekStart();
-    const cutoffStr=cutoff.toISOString().slice(0,10);
-    const wk=acts.filter(a=>(a.start_date_local||'').slice(0,10)>=cutoffStr);
+    const wk=acts.filter(a=>new Date(a.start_date_local.replace('Z',''))>=cutoff);
     const wkDist=wk.reduce((s,a)=>s+a.distance/1000,0);
     const wkHR=wk.filter(a=>a.average_heartrate).map(a=>a.average_heartrate);
     const wkPaceSec=wk.filter(a=>a.distance>0&&a.type==='Run').map(a=>a.moving_time/a.distance*1000);
