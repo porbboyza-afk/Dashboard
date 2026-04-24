@@ -1004,6 +1004,66 @@ tbody tr:hover td { background: var(--bg); }
         </div>
       </div>
 
+      <!-- Training Calendar inline -->
+      <div class="card mb-16">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card-label" style="margin:0">🗓️ Training Calendar</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="week-nav-btn" onclick="navCalMonth(-1)" style="width:28px;height:28px;font-size:14px">‹</button>
+            <div style="font-size:11px;font-weight:700;color:var(--text2)" id="cal-month-label">—</div>
+            <button class="week-nav-btn" id="btn-cal-next" onclick="navCalMonth(1)" style="width:28px;height:28px;font-size:14px" disabled>›</button>
+          </div>
+        </div>
+        <!-- Legend -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:10px;color:var(--text2)">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:3px"></span>วิ่ง</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:3px"></span>ปั่น</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:3px"></span>อื่นๆ</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">จ</div>
+          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">อ</div>
+          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">พ</div>
+          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">พฤ</div>
+          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">ศ</div>
+          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">ส</div>
+          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">อา</div>
+        </div>
+        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+        <!-- Monthly mini stats -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:12px">
+          <div style="text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px">
+            <div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace" id="cal-days">—</div>
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">วันวิ่ง</div>
+          </div>
+          <div style="text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px">
+            <div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace" id="cal-dist">—</div>
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">km</div>
+          </div>
+          <div style="text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px">
+            <div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace" id="cal-rest">—</div>
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">พักผ่อน</div>
+          </div>
+          <div style="text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px">
+            <div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace" id="cal-longest">—</div>
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">longest km</div>
+          </div>
+        </div>
+        <div id="cal-day-detail" style="display:none;margin-top:10px;background:var(--bg);border-radius:10px;padding:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px" id="cal-day-label">—</div>
+          <div id="cal-day-acts"></div>
+        </div>
+      </div>
+
+      <!-- Race Countdown inline -->
+      <div class="card mb-16">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card-label" style="margin:0">🏁 Race Countdown</div>
+          <button class="btn btn-ghost btn-sm" onclick="showRaceAddPanel()" style="font-size:11px">+ เพิ่ม</button>
+        </div>
+        <div id="race-list-container"><p class="text-sm c2" style="text-align:center;padding:12px">กำลังโหลด...</p></div>
+      </div>
+
       <!-- Goals + Streak + PR strip -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
         <!-- Weekly Goal -->
@@ -1225,6 +1285,22 @@ tbody tr:hover td { background: var(--bg); }
             <div id="stat-wk-cad" style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:800;color:var(--green)">—</div>
             <div style="font-size:11px;color:var(--text2);margin-top:6px">spm · target ≥ 170</div>
           </div>
+        </div>
+
+        <!-- Pace Trend (last 8 weeks) -->
+        <div class="card mb-16">
+          <div class="flex justify-between items-center mb-12">
+            <div class="card-label" style="margin:0">📈 Pace Trend (8 สัปดาห์ล่าสุด)</div>
+            <span id="pace-trend-badge" style="font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;background:var(--bg2)">—</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-pace-trend"></canvas></div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center">เพซต่ำ = วิ่งเร็วขึ้น ✅</div>
+        </div>
+
+        <!-- Effort Score this week -->
+        <div class="card mb-16">
+          <div class="card-label">⚡ Effort Score — สัปดาห์นี้</div>
+          <div id="effort-score-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
         </div>
 
         <div class="card" style="background:linear-gradient(135deg,rgba(0,122,255,.04),rgba(90,200,250,.03));border-color:rgba(0,122,255,.15)">
@@ -1725,6 +1801,8 @@ function renderTodayStats(){
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('t-workouts',recent.length);
   setTimeout(renderDashboardExtras, 100);
+  setTimeout(renderCalendar, 200);
+  setTimeout(loadRaces, 300);
 
   // Update ring
   const ringEl=document.getElementById('ring-num');
@@ -1837,7 +1915,7 @@ function goToCurrentMonth(){_statsMonthOffset=0;document.getElementById('btn-mon
 function renderCurrentStatsView(){if(document.getElementById('stats-week-view').style.display!=='none')renderWeekStats();else renderMonthStats();}
 function switchStatsTab(tab,el){document.querySelectorAll('#page-fitness-stats .seg-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('stats-week-view').style.display=tab==='week'?'block':'none';document.getElementById('stats-month-view').style.display=tab==='month'?'block':'none';if(tab==='week')renderWeekStats();else renderMonthStats();}
 
-const charts={hrzone:null};
+const charts={hrzone:null, paceTrend:null};
 const dayNamesTH=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 function getChartColors() {
@@ -2579,6 +2657,414 @@ function installPWA() {
   }
 }
 
+
+// ══════════════════════════════════════════════
+// PACE TREND (last 8 weeks)
+// ══════════════════════════════════════════════
+function renderPaceTrend() {
+  const all = [...window._workouts, ...(window._stravaWorkouts||[])].filter(w => w.avgPace > 0 && w.dist >= 1);
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) {
+    const days = getWeekDates(-i);
+    const ds0 = toLocalDateStr(days[0]), ds6 = toLocalDateStr(days[6]);
+    const wActs = all.filter(w => w.date >= ds0 && w.date <= ds6);
+    const avgPace = wActs.length ? wActs.reduce((s,w) => s + w.avgPace, 0) / wActs.length : null;
+    const label = days[0].toLocaleDateString('th-TH', {day:'numeric', month:'short'});
+    weeks.push({ label, avgPace, count: wActs.length });
+  }
+  const labels = weeks.map(w => w.label);
+  const paceData = weeks.map(w => w.avgPace ? +w.avgPace.toFixed(3) : null);
+  const validPaces = paceData.filter(p => p !== null);
+
+  // Badge: improving / same / declining
+  const badge = document.getElementById('pace-trend-badge');
+  if (badge && validPaces.length >= 2) {
+    const first3 = validPaces.slice(0, Math.floor(validPaces.length/2));
+    const last3  = validPaces.slice(-Math.floor(validPaces.length/2));
+    const avgF = first3.reduce((s,v)=>s+v,0)/first3.length;
+    const avgL = last3.reduce((s,v)=>s+v,0)/last3.length;
+    const diff = avgF - avgL; // positive = faster (lower pace)
+    if (diff > 0.05) { badge.textContent = '📈 เร็วขึ้น'; badge.style.background='rgba(52,199,89,.15)'; badge.style.color='var(--green)'; }
+    else if (diff < -0.05) { badge.textContent = '📉 ช้าลง'; badge.style.background='rgba(255,59,48,.1)'; badge.style.color='var(--red)'; }
+    else { badge.textContent = '➡️ คงที่'; badge.style.background='var(--bg2)'; badge.style.color='var(--text2)'; }
+  }
+
+  const ctx = document.getElementById('chart-pace-trend')?.getContext('2d');
+  if (!ctx) return;
+  if (charts.paceTrend) charts.paceTrend.destroy();
+  const c = getChartColors();
+  charts.paceTrend = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Avg Pace',
+        data: paceData,
+        borderColor: 'var(--accent)',
+        backgroundColor: 'rgba(0,122,255,.08)',
+        borderWidth: 2.5,
+        pointRadius: paceData.map(p => p !== null ? 5 : 0),
+        pointBackgroundColor: 'var(--accent)',
+        fill: true,
+        tension: 0.35,
+        spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: i => i.parsed.y ? formatPace(i.parsed.y) + '/km' : 'ไม่มีข้อมูล'
+          },
+          backgroundColor: c.tooltip, borderColor: c.tooltipBorder, borderWidth:1, padding:10,
+          titleColor: c.tooltipText, bodyColor: c.tooltipText,
+          titleFont:{family:'JetBrains Mono'}, bodyFont:{family:'JetBrains Mono'}
+        }
+      },
+      scales: {
+        y: {
+          reverse: true, // lower pace = faster = better = top of chart
+          grid: { color: c.grid },
+          ticks: {
+            color: c.tick, font:{family:'JetBrains Mono',size:10},
+            callback: v => formatPace(v)
+          }
+        },
+        x: { grid:{display:false}, ticks:{color:c.tick, font:{family:'JetBrains Mono',size:10}} }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════
+// EFFORT SCORE
+// ══════════════════════════════════════════════
+function calcEffortScore(w) {
+  const dist = parseFloat(w.dist || 0);
+  const time = parseFloat(w.time || 0);
+  const hr   = parseInt(w.hr || 0);
+  if (!dist || !time) return 0;
+  // Base: dist × time (TSS-like)
+  let score = dist * (time / 60);
+  // HR multiplier: Z1=0.8, Z2=1.0, Z3=1.3, Z4=1.6, Z5=2.0
+  if (hr) {
+    const mult = hr < 130 ? 0.8 : hr < 145 ? 1.0 : hr < 159 ? 1.3 : hr < 174 ? 1.6 : 2.0;
+    score *= mult;
+  }
+  return Math.round(score * 10) / 10;
+}
+
+function effortLabel(score) {
+  if (score < 5)  return { label:'เบามาก', color:'var(--green)' };
+  if (score < 12) return { label:'ปานกลาง', color:'var(--orange)' };
+  if (score < 20) return { label:'หนัก', color:'#FF6B00' };
+  return { label:'หนักมาก', color:'var(--red)' };
+}
+
+function renderEffortScore(weekActs) {
+  const el = document.getElementById('effort-score-list');
+  if (!el) return;
+  if (!weekActs.length) { el.innerHTML = '<p class="text-sm c2">ไม่มีกิจกรรมสัปดาห์นี้</p>'; return; }
+  const em = {run:'🏃', interval:'⚡', bike:'🚴', swim:'🏊', walk:'🚶'};
+  const sorted = [...weekActs].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const maxScore = Math.max(...sorted.map(calcEffortScore), 1);
+  el.innerHTML = sorted.map(w => {
+    const score = calcEffortScore(w);
+    const { label, color } = effortLabel(score);
+    const pct = Math.min(100, (score / maxScore) * 100);
+    return `<div style="background:var(--bg);border-radius:10px;padding:10px 12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:12px;font-weight:600">${em[w.type]||'🏅'} ${w.date} ${w.name?'· '+w.name:''}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:${color}">${score} <span style="font-size:9px;color:${color};font-weight:700">${label}</span></div>
+      </div>
+      <div style="height:5px;background:var(--bg2);border-radius:99px;overflow:hidden">
+        <div style="height:100%;border-radius:99px;background:${color};width:${pct}%;transition:width .5s ease"></div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${parseFloat(w.dist||0).toFixed(2)} km · ${Math.round(w.time)} min${w.hr?' · HR '+w.hr:''}</div>
+    </div>`;
+  }).join('');
+}
+
+// Hook into renderWeekStats
+const _origRenderWeekStats = typeof renderWeekStats === 'function' ? renderWeekStats : null;
+
+// ══════════════════════════════════════════════
+// TRAINING CALENDAR
+// ══════════════════════════════════════════════
+let _calOffset = 0;
+function navCalMonth(dir) { _calOffset += dir; document.getElementById('btn-cal-next').disabled = _calOffset >= 0; renderCalendar(); }
+function goToCalToday() { _calOffset = 0; document.getElementById('btn-cal-next').disabled = true; renderCalendar(); }
+
+function renderCalendar() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth() + _calOffset;
+  const targetDate = new Date(y, m, 1);
+  const year = targetDate.getFullYear(), month = targetDate.getMonth();
+  const monthName = targetDate.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+  const label = document.getElementById('cal-month-label');
+  if (label) label.textContent = monthName.toUpperCase();
+
+  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  const todayStr = toLocalDateStr(new Date());
+
+  // Group activities by date
+  const byDate = {};
+  all.forEach(w => {
+    if (!w.date) return;
+    const d = new Date(w.date + 'T00:00:00');
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      if (!byDate[w.date]) byDate[w.date] = [];
+      byDate[w.date].push(w);
+    }
+  });
+
+  // Build grid: find Monday of the week containing the 1st
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month + 1, 0);
+  const startMon = new Date(firstDay);
+  startMon.setDate(startMon.getDate() - ((firstDay.getDay() + 6) % 7));
+
+  const typeColor = { run:'var(--accent)', bike:'var(--green)', swim:'#5AC8FA', walk:'var(--text2)', interval:'var(--orange)' };
+  const cells = [];
+  let d = new Date(startMon);
+  while (d <= lastDay || cells.length % 7 !== 0) {
+    const ds = toLocalDateStr(d);
+    const inMonth = d.getMonth() === month;
+    const isToday = ds === todayStr;
+    const acts = byDate[ds] || [];
+    const dots = acts.slice(0,3).map(w =>
+      `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${typeColor[w.type]||'var(--orange)'};margin:0 1px"></span>`
+    ).join('');
+    const totalDist = acts.reduce((s,w) => s + parseFloat(w.dist||0), 0);
+
+    cells.push(`<div onclick="showCalDay('${ds}')" style="
+      aspect-ratio:1;border-radius:8px;padding:4px;cursor:${acts.length?'pointer':'default'};
+      background:${isToday?'rgba(0,122,255,.1)':'transparent'};
+      border:${isToday?'1.5px solid var(--accent)':'1.5px solid transparent'};
+      opacity:${inMonth?1:0.25};
+      transition:background .15s;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    " onmouseover="if(${acts.length})this.style.background='var(--bg)'" onmouseout="this.style.background='${isToday?'rgba(0,122,255,.1)':'transparent'}'">
+      <div style="font-size:11px;font-weight:${isToday?'800':'500'};color:${isToday?'var(--accent)':acts.length?'var(--text)':'var(--text3)'}">${d.getDate()}</div>
+      ${acts.length ? `<div style="font-size:8px;font-weight:700;color:var(--text2);line-height:1">${totalDist.toFixed(1)}</div>` : '<div></div>'}
+      <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:1px;min-height:8px">${dots}</div>
+    </div>`);
+    d.setDate(d.getDate() + 1);
+    if (d > lastDay && cells.length % 7 === 0) break;
+  }
+
+  const grid = document.getElementById('cal-grid');
+  if (grid) grid.innerHTML = cells.join('');
+
+  // Monthly stats
+  const monthActs = Object.values(byDate).flat();
+  const totalDist = monthActs.reduce((s,w) => s + parseFloat(w.dist||0), 0);
+  const activeDays = Object.keys(byDate).length;
+  const daysInMonth = lastDay.getDate();
+  const longest = monthActs.reduce((max,w) => Math.max(max, parseFloat(w.dist||0)), 0);
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('cal-days', activeDays);
+  set('cal-dist', totalDist.toFixed(1));
+  set('cal-rest', daysInMonth - activeDays);
+  set('cal-longest', longest.toFixed(2));
+
+  // Hide day detail
+  const detail = document.getElementById('cal-day-detail');
+  if (detail) detail.style.display = 'none';
+}
+
+function showCalDay(dateStr) {
+  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  const acts = all.filter(w => w.date === dateStr);
+  if (!acts.length) return;
+  const em = {run:'🏃', interval:'⚡', bike:'🚴', swim:'🏊', walk:'🚶'};
+  const detail = document.getElementById('cal-day-detail');
+  const lbl = document.getElementById('cal-day-label');
+  const actsEl = document.getElementById('cal-day-acts');
+  if (!detail) return;
+  const d = new Date(dateStr + 'T00:00:00');
+  if (lbl) lbl.textContent = d.toLocaleDateString('th-TH', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  if (actsEl) actsEl.innerHTML = acts.map(w => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="showActivityDetail(${JSON.stringify(JSON.stringify(w)).slice(1,-1)})">
+      <span style="font-size:18px">${em[w.type]||'🏅'}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${parseFloat(w.dist||0).toFixed(2)} km · ${Math.round(w.time||0)} min${w.hr?' · HR '+w.hr:''}</div>
+        <div style="font-size:11px;color:var(--text2)">${w.name||''}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}</div>
+      </div>
+      <span style="color:var(--text3)">›</span>
+    </div>`).join('');
+  detail.style.display = 'block';
+  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ══════════════════════════════════════════════
+// RACE COUNTDOWN + READINESS
+// ══════════════════════════════════════════════
+let _races = [];
+
+async function loadRaces() {
+  try {
+    const data = await window._fb.getData('races');
+    _races = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+    _races.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  } catch(e) { _races = []; }
+  renderRaceList();
+}
+
+async function addRace() {
+  const name = document.getElementById('race-name-in')?.value?.trim();
+  const date = document.getElementById('race-date-in')?.value;
+  const dist = document.getElementById('race-dist-in')?.value;
+  const goal = document.getElementById('race-goal-in')?.value?.trim();
+  if (!name || !date) { showToast('กรุณาใส่ชื่อและวันที่', 'error'); return; }
+  const race = { id: Date.now(), name, date, dist: parseFloat(dist)||10, goal, createdAt: Date.now() };
+  _races.push(race);
+  _races.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  await window._fb.setData('races', _races);
+  // Clear inputs
+  ['race-name-in','race-date-in','race-goal-in'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  showToast('บันทึกการแข่งขันแล้ว ✅');
+  renderRaceList();
+}
+
+async function deleteRace(id) {
+  _races = _races.filter(r => r.id !== id);
+  await window._fb.setData('races', _races);
+  renderRaceList();
+}
+
+function renderRaceList() {
+  const el = document.getElementById('race-list-container');
+  if (!el) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayStr = toLocalDateStr(today);
+  if (!_races.length) { el.innerHTML = '<p class="text-sm c2" style="text-align:center;padding:24px">ยังไม่มีการแข่งขัน — เพิ่มด้านบนได้เลย 🏁</p>'; return; }
+
+  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  el.innerHTML = _races.map(r => {
+    const raceDate = new Date(r.date + 'T00:00:00');
+    const daysLeft = Math.ceil((raceDate - today) / 86400000);
+    const isPast = daysLeft < 0;
+    const dist = parseFloat(r.dist) || 10;
+
+    // Readiness: based on recent 4-week avg distance vs race dist
+    const recentActs = all.filter(w => {
+      const d = new Date(w.date+'T00:00:00');
+      return (today - d) <= 28*86400000 && d <= today;
+    });
+    const avgWeeklyDist = recentActs.reduce((s,w) => s+parseFloat(w.dist||0),0) / 4;
+    const prs = computePR(all);
+
+    // Predict finish time from best pace
+    let predictedTime = null;
+    const bestPace = prs['10k']?.pace || prs['5k']?.pace;
+    if (bestPace) {
+      // Add ~5% fatigue factor per doubling of distance beyond 5K
+      const factor = 1 + Math.max(0, Math.log2(dist/5)) * 0.04;
+      predictedTime = bestPace * factor * dist;
+    }
+    const formatTime = mins => {
+      const h = Math.floor(mins/60), m = Math.floor(mins%60), s = Math.round((mins%1)*60);
+      return h>0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+    };
+
+    // Readiness score 0-100
+    const readiness = Math.min(100, Math.round((avgWeeklyDist / (dist * 0.6)) * 100));
+    const readColor = readiness >= 80 ? 'var(--green)' : readiness >= 50 ? 'var(--orange)' : 'var(--red)';
+    const readLabel = readiness >= 80 ? 'พร้อมมาก ✅' : readiness >= 50 ? 'พร้อมปานกลาง ⚡' : 'ยังต้องฝึกเพิ่ม ⚠️';
+
+    const countdownColor = isPast ? 'var(--text3)' : daysLeft <= 14 ? 'var(--red)' : daysLeft <= 30 ? 'var(--orange)' : 'var(--accent)';
+
+    return `<div class="card mb-16" style="border-left:4px solid ${countdownColor}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:16px;font-weight:800">${r.name}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:3px">${new Date(r.date+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'long',year:'numeric'})} · ${dist}K</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="text-align:right">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:800;line-height:1;color:${countdownColor}">${isPast ? 'เสร็จแล้ว' : daysLeft}</div>
+            ${!isPast ? `<div style="font-size:10px;color:var(--text3)">วันที่เหลือ</div>` : ''}
+          </div>
+          <button onclick="deleteRace(${r.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px">✕</button>
+        </div>
+      </div>
+      ${!isPast ? `
+      <!-- Readiness -->
+      <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">ความพร้อม</div>
+          <div style="font-size:12px;font-weight:700;color:${readColor}">${readLabel}</div>
+        </div>
+        <div style="height:8px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-bottom:6px">
+          <div style="height:100%;border-radius:99px;background:${readColor};width:${readiness}%;transition:width .5s"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3)">วิ่งเฉลี่ย ${avgWeeklyDist.toFixed(1)} km/สัปดาห์ (4 สัปดาห์ล่าสุด)</div>
+      </div>
+      <!-- Prediction -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        ${predictedTime ? `<div style="background:var(--bg);border-radius:10px;padding:10px 12px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:4px">เวลาที่คาดการณ์</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;color:var(--accent)">${formatTime(predictedTime)}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px">จาก PR ปัจจุบัน</div>
+        </div>` : ''}
+        ${r.goal ? `<div style="background:var(--bg);border-radius:10px;padding:10px 12px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:4px">เป้าหมาย</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:800;color:var(--orange)">${r.goal}</div>
+        </div>` : ''}
+      </div>` : `<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">งานแข่งขันผ่านไปแล้ว</div>`}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// HOOK into showPage + renderWeekStats
+// ══════════════════════════════════════════════
+// Calendar+Race are inline on dashboard, no separate page needed
+
+// Patch renderWeekStats to also render pace trend + effort
+const _origRWS = renderWeekStats;
+renderWeekStats = function() {
+  _origRWS.apply(this, arguments);
+  // Render pace trend (uses all-time data)
+  setTimeout(renderPaceTrend, 100);
+  // Render effort score for the selected week
+  const days = getWeekDates(_statsWeekOffset);
+  const ds0 = toLocalDateStr(days[0]), ds6 = toLocalDateStr(days[6]);
+  const wActs = [...window._workouts,...(window._stravaWorkouts||[])].filter(w => (w.date||'') >= ds0 && (w.date||'') <= ds6);
+  setTimeout(() => renderEffortScore(wActs), 100);
+};
+
+
+function showRaceAddPanel() {
+  if (document.getElementById('race-add-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'race-add-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:910;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--r-xl);padding:22px;width:100%;max-width:400px;box-shadow:var(--shadow-lg)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:16px;font-weight:800">🏁 เพิ่มการแข่งขัน</div>
+        <button onclick="document.getElementById('race-add-overlay').remove()" style="background:var(--bg2);border:none;border-radius:8px;color:var(--text2);font-size:16px;cursor:pointer;padding:4px 10px">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="form-group" style="margin:0"><label>ชื่องานแข่ง</label><input id="race-name-in" type="text" placeholder="เช่น Bangkok Marathon 2026"></div>
+        <div class="form-group" style="margin:0"><label>วันที่แข่ง</label><input id="race-date-in" type="date"></div>
+        <div class="form-group" style="margin:0"><label>ระยะทาง</label>
+          <select id="race-dist-in" style="width:100%;padding:10px 12px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:14px">
+            <option value="5">5K</option><option value="10" selected>10K</option>
+            <option value="21.1">Half Marathon (21.1K)</option><option value="42.2">Full Marathon (42.2K)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0"><label>เป้าเวลา (ไม่บังคับ)</label><input id="race-goal-in" type="text" placeholder="เช่น 50:00"></div>
+      </div>
+      <button class="btn btn-primary w100" style="margin-top:16px" onclick="addRace();document.getElementById('race-add-overlay')?.remove()">💾 บันทึก</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+// ── END CALENDAR/RACE/TREND ──
 // ── END NEW FEATURES ──
 // ── STAT INFO MODAL ──
 function showStatInfo(type) {
