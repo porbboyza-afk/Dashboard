@@ -880,6 +880,12 @@ tbody tr:hover td { background: var(--bg); }
   .week-nav-label { min-width: 130px; font-size: 10px; }
 }
 </style>
+  <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22MyDash%22%2C%22short_name%22%3A%22MyDash%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F5F5F5%22%2C%22theme_color%22%3A%22%23007AFF%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fvia.placeholder.com%2F192x192%2F007AFF%2Fffffff%3Ftext%3DMD%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MyDash">
+  <meta name="theme-color" content="#007AFF">
 </head>
 <body>
 
@@ -995,6 +1001,31 @@ tbody tr:hover td { background: var(--bg); }
               <div style="font-size:28px;font-weight:800;letter-spacing:-1px;font-family:'JetBrains Mono',monospace" id="t-docs">—</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Goals + Streak + PR strip -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <!-- Weekly Goal -->
+        <div class="card" style="padding:14px;cursor:pointer" onclick="showGoalSetting()">
+          <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">🎯 เป้าสัปดาห์</div>
+          <div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace" id="goal-display">—</div>
+          <div style="font-size:9px;color:var(--text3);margin:6px 0 4px" id="goal-sub">กด ตั้งเป้า</div>
+          <div style="height:4px;background:var(--bg2);border-radius:99px;overflow:hidden">
+            <div id="goal-bar" style="height:100%;border-radius:99px;background:var(--accent);width:0%;transition:width .5s ease"></div>
+          </div>
+        </div>
+        <!-- Streak -->
+        <div class="card" style="padding:14px">
+          <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">🔥 Streak</div>
+          <div style="font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1" id="streak-num">0</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:4px" id="streak-label">วัน</div>
+        </div>
+        <!-- PR -->
+        <div class="card" style="padding:14px;cursor:pointer" onclick="showPRPanel()">
+          <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">🏆 PR</div>
+          <div style="font-size:12px;font-weight:700;color:var(--orange);font-family:'JetBrains Mono',monospace" id="pr-5k-disp">5K —</div>
+          <div style="font-size:12px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-top:4px" id="pr-10k-disp">10K —</div>
         </div>
       </div>
 
@@ -1227,6 +1258,14 @@ tbody tr:hover td { background: var(--bg); }
 
         <div class="grid g2 mb-16">
           <div class="card"><div class="card-label">Weekly Mileage</div><div class="chart-wrap"><canvas id="chart-month-trend"></canvas></div></div>
+          <!-- HR Zone Pie -->
+          <div class="card" style="margin-bottom:12px">
+            <div class="card-label">HR Zone Distribution (เดือนนี้)</div>
+            <div style="display:flex;align-items:center;gap:16px;margin-top:8px">
+              <div style="position:relative;width:110px;height:110px;flex-shrink:0"><canvas id="chart-hr-zone"></canvas></div>
+              <div id="hr-zone-legend" style="flex:1;display:flex;flex-direction:column;gap:5px;font-size:11px"></div>
+            </div>
+          </div>
           <div class="card"><div class="card-label">All Activities</div><div id="month-activity-list" style="overflow-y:auto;max-height:220px;display:flex;flex-direction:column;gap:4px"></div></div>
         </div>
 
@@ -1685,6 +1724,7 @@ function renderTodayStats(){
   const totalDist=recent.reduce((s,w)=>s+parseFloat(w.dist||0),0);
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('t-workouts',recent.length);
+  setTimeout(renderDashboardExtras, 100);
 
   // Update ring
   const ringEl=document.getElementById('ring-num');
@@ -1797,7 +1837,7 @@ function goToCurrentMonth(){_statsMonthOffset=0;document.getElementById('btn-mon
 function renderCurrentStatsView(){if(document.getElementById('stats-week-view').style.display!=='none')renderWeekStats();else renderMonthStats();}
 function switchStatsTab(tab,el){document.querySelectorAll('#page-fitness-stats .seg-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('stats-week-view').style.display=tab==='week'?'block':'none';document.getElementById('stats-month-view').style.display=tab==='month'?'block':'none';if(tab==='week')renderWeekStats();else renderMonthStats();}
 
-const charts={};
+const charts={hrzone:null};
 const dayNamesTH=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 function getChartColors() {
@@ -1874,15 +1914,42 @@ function renderMonthStats(){
   const pace=totalDist>0?totalTime/totalDist:0;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('stat-mo-dist',totalDist.toFixed(2));set('stat-mo-count',monthWks.length);set('stat-mo-time',Math.round(totalTime));set('stat-mo-pace',pace>0?formatPace(pace):'—');
-  const wkData=[0,0,0,0,0];
-  monthWks.forEach(w=>{const d=new Date(w.date+'T00:00:00');wkData[Math.min(4,Math.floor((d.getDate()-1)/7))]+=parseFloat(w.dist||0);});
+
+  // Build real Mon-Sun week buckets that overlap with this month
+  const monthEnd=new Date(year,month+1,0); // last day of month
+  // Find Monday on or before the 1st of month
+  const firstMon=new Date(start);
+  const dow=firstMon.getDay(); // 0=Sun,1=Mon,...
+  firstMon.setDate(firstMon.getDate()-((dow+6)%7)); // roll back to Monday
+  const weekBuckets=[];
+  let wStart=new Date(firstMon);
+  while(wStart<=monthEnd){
+    const wEnd=new Date(wStart);wEnd.setDate(wEnd.getDate()+6);
+    weekBuckets.push({start:new Date(wStart),end:new Date(wEnd),dist:0});
+    wStart.setDate(wStart.getDate()+7);
+  }
+  monthWks.forEach(w=>{
+    if(!w.date)return;
+    const d=new Date(w.date+'T00:00:00');
+    const bucket=weekBuckets.find(b=>d>=b.start&&d<=b.end);
+    if(bucket)bucket.dist+=parseFloat(w.dist||0);
+  });
+  // Labels: "d/M" of Monday of each week
+  const fmt=d=>`${d.getDate()}/${d.getMonth()+1}`;
+  const wkLabels=weekBuckets.map(b=>fmt(b.start));
+  const wkData=weekBuckets.map(b=>+b.dist.toFixed(2));
+  const maxDist=Math.max(...wkData,1);
+
   if(charts.month)charts.month.destroy();
   const ctx=document.getElementById('chart-month-trend')?.getContext('2d');
   const c=getChartColors();
-  if(ctx)charts.month=new Chart(ctx,{type:'bar',data:{labels:['W1','W2','W3','W4','W5'],datasets:[{label:'km',data:wkData.map(v=>+v.toFixed(2)),backgroundColor:'rgba(52,199,89,.65)',borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:c.tooltip,borderColor:c.tooltipBorder,borderWidth:1,padding:10,titleColor:c.tooltipText,bodyColor:c.tooltipText,titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono'}}},scales:{y:{grid:{color:c.grid},ticks:{color:c.tick,font:{family:'JetBrains Mono',size:10}},beginAtZero:true},x:{grid:{display:false},ticks:{color:c.tick,font:{family:'JetBrains Mono',size:10}}}}}});
+  if(ctx)charts.month=new Chart(ctx,{type:'bar',data:{labels:wkLabels,datasets:[{label:'km',data:wkData,backgroundColor:wkData.map(v=>v>0?'rgba(52,199,89,.7)':'rgba(52,199,89,.15)'),borderRadius:8,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`${i.parsed.y.toFixed(2)} km`,title:ts=>`สัปดาห์ ${ts[0]}`},backgroundColor:c.tooltip,borderColor:c.tooltipBorder,borderWidth:1,padding:10,titleColor:c.tooltipText,bodyColor:c.tooltipText,titleFont:{family:'JetBrains Mono'},bodyFont:{family:'JetBrains Mono'}}},scales:{y:{grid:{color:c.grid},ticks:{color:c.tick,font:{family:'JetBrains Mono',size:10},callback:v=>v+'km'},beginAtZero:true},x:{grid:{display:false},ticks:{color:c.tick,font:{family:'JetBrains Mono',size:10}}}}}});
+
+  renderHRZoneChart(monthWks);
   const listEl=document.getElementById('month-activity-list');
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
-  if(listEl){listEl.innerHTML=monthWks.length?[...monthWks].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(w=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="font-size:15px">${em[w.type]||'🏅'}</span><div style="flex:1"><div style="font-size:12px;font-weight:600">${w.dist}km${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}</div><div style="font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace">${w.date}</div></div>${w.hr?`<span style="font-size:11px;color:var(--red)">♥${w.hr}</span>`:''}</div>`).join(''):'<p class="text-sm c2">No activities this month</p>';}
+  const strTag=s=>s==='strava'?'<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>':'';
+  if(listEl){listEl.innerHTML=monthWks.length?[...monthWks].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(w=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background .15s" onclick="showActivityDetail(encodeURIComponent(JSON.stringify(${JSON.stringify(JSON.stringify(w))})))" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'"><span style="font-size:15px">${em[w.type]||'🏅'}</span><div style="flex:1"><div style="font-size:12px;font-weight:600">${parseFloat(w.dist||0).toFixed(2)} km${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${strTag(w.source)}</div><div style="font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace">${w.date}${w.name?' · '+w.name:''}</div></div>${w.hr?`<span style="font-size:11px;color:var(--red)">♥${w.hr}</span>`:''}<span style="color:var(--text3);font-size:14px">›</span></div>`).join(''):'<p class="text-sm c2">ไม่มีกิจกรรมเดือนนี้</p>';}
 }
 
 async function analyzeFitnessAI(period='week'){
@@ -2241,6 +2308,241 @@ function showActivityDetail(wEncoded) {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
+
+// ══════════════════════════════════════════════
+// STREAK
+// ══════════════════════════════════════════════
+function computeStreak(allActs) {
+  if (!allActs.length) return 0;
+  const days = new Set(allActs.map(w => w.date));
+  let streak = 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(today);
+  // allow today or yesterday as start
+  const todayStr = toLocalDateStr(today);
+  const yest = new Date(today); yest.setDate(yest.getDate()-1);
+  const yestStr = toLocalDateStr(yest);
+  if (!days.has(todayStr) && !days.has(yestStr)) return 0;
+  if (!days.has(todayStr)) d.setDate(d.getDate()-1);
+  while (days.has(toLocalDateStr(d))) {
+    streak++;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+
+// ══════════════════════════════════════════════
+// PERSONAL RECORDS
+// ══════════════════════════════════════════════
+function computePR(allActs) {
+  const prs = { '5k': null, '10k': null, 'longest': null };
+  allActs.forEach(w => {
+    const dist = parseFloat(w.dist || 0);
+    const pace = parseFloat(w.avgPace || 0); // min/km
+    if (dist >= 4.9 && pace > 0) {
+      if (!prs['5k'] || pace < prs['5k'].pace)
+        prs['5k'] = { pace, date: w.date, dist };
+    }
+    if (dist >= 9.8 && pace > 0) {
+      if (!prs['10k'] || pace < prs['10k'].pace)
+        prs['10k'] = { pace, date: w.date, dist };
+    }
+    if (!prs.longest || dist > prs.longest.dist)
+      prs.longest = { dist, date: w.date, pace };
+  });
+  return prs;
+}
+
+function renderDashboardExtras() {
+  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+
+  // Streak
+  const streak = computeStreak(all);
+  const sEl = document.getElementById('streak-num');
+  const sLbl = document.getElementById('streak-label');
+  if (sEl) sEl.textContent = streak;
+  if (sLbl) sLbl.textContent = streak === 0 ? 'วัน — เริ่มเลย!' : streak >= 7 ? 'วัน 🔥🔥' : 'วัน';
+
+  // PR
+  const prs = computePR(all);
+  const p5 = document.getElementById('pr-5k-disp');
+  const p10 = document.getElementById('pr-10k-disp');
+  if (p5) p5.textContent = prs['5k'] ? `5K  ${formatPace(prs['5k'].pace)}/km` : '5K  —';
+  if (p10) p10.textContent = prs['10k'] ? `10K ${formatPace(prs['10k'].pace)}/km` : '10K —';
+
+  // Weekly goal
+  renderGoalDisplay(all);
+}
+
+function renderGoalDisplay(all) {
+  const goal = parseFloat(localStorage.getItem('weeklyGoalKm') || '0');
+  const cutoff = getThisWeekStart();
+  const weekDist = all.filter(w => (w.date||'') >= toLocalDateStr(cutoff))
+                      .reduce((s,w) => s + parseFloat(w.dist||0), 0);
+  const gEl = document.getElementById('goal-display');
+  const gSub = document.getElementById('goal-sub');
+  const gBar = document.getElementById('goal-bar');
+  if (!gEl) return;
+  if (!goal) {
+    gEl.textContent = '—';
+    if (gSub) gSub.textContent = 'กด ตั้งเป้า';
+    if (gBar) gBar.style.width = '0%';
+    return;
+  }
+  const pct = Math.min(1, weekDist / goal);
+  gEl.textContent = weekDist.toFixed(1) + '/' + goal + ' km';
+  if (gSub) gSub.textContent = pct >= 1 ? '✅ ถึงเป้าแล้ว!' : `${(pct*100).toFixed(0)}% ของเป้า`;
+  if (gBar) {
+    gBar.style.width = (pct*100) + '%';
+    gBar.style.background = pct >= 1 ? 'var(--green)' : 'var(--accent)';
+  }
+}
+
+function showGoalSetting() {
+  const cur = localStorage.getItem('weeklyGoalKm') || '';
+  const overlay = document.createElement('div');
+  overlay.id = 'goal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:910;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--r-xl);padding:24px;width:100%;max-width:340px;box-shadow:var(--shadow-lg)">
+      <div style="font-size:17px;font-weight:800;margin-bottom:16px">🎯 ตั้งเป้าระยะทางสัปดาห์</div>
+      <input id="goal-input" type="number" min="1" max="300" step="0.5" value="${cur}"
+        placeholder="เช่น 30 (กิโลเมตร)"
+        style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:15px;font-family:'JetBrains Mono',monospace;box-sizing:border-box;outline:none;margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:16px">ระยะทาง km ต่อสัปดาห์ที่ต้องการวิ่ง</div>
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('goal-overlay').remove()" class="btn btn-ghost" style="flex:1">ยกเลิก</button>
+        <button onclick="saveGoal()" class="btn btn-primary" style="flex:1">บันทึก</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  setTimeout(() => document.getElementById('goal-input')?.focus(), 100);
+}
+function saveGoal() {
+  const val = parseFloat(document.getElementById('goal-input')?.value || '0');
+  if (val > 0) { localStorage.setItem('weeklyGoalKm', val); showToast(`ตั้งเป้า ${val} km/สัปดาห์ แล้ว ✅`); }
+  else { localStorage.removeItem('weeklyGoalKm'); }
+  document.getElementById('goal-overlay')?.remove();
+  renderGoalDisplay([...window._workouts,...(window._stravaWorkouts||[])]);
+}
+
+function showPRPanel() {
+  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  const prs = computePR(all);
+  const overlay = document.createElement('div');
+  overlay.id = 'pr-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:910;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
+  const row = (label, pr, color) => pr
+    ? `<div style="background:var(--bg);border-radius:12px;padding:14px 16px;border-left:3px solid ${color}">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${color};margin-bottom:6px">${label}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:${color}">${formatPace(pr.pace)}<span style="font-size:12px;color:var(--text2)">/km</span></div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">${pr.date} · ${parseFloat(pr.dist).toFixed(2)} km</div>
+       </div>`
+    : `<div style="background:var(--bg);border-radius:12px;padding:14px 16px;opacity:.5">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3)">${label}</div>
+        <div style="font-size:13px;color:var(--text3);margin-top:6px">ยังไม่มีข้อมูล</div>
+       </div>`;
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--r-xl);padding:22px;width:100%;max-width:380px;box-shadow:var(--shadow-lg)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div style="font-size:17px;font-weight:800">🏆 Personal Records</div>
+        <button onclick="document.getElementById('pr-overlay').remove()" style="background:var(--bg2);border:none;border-radius:8px;color:var(--text2);font-size:16px;cursor:pointer;padding:4px 10px">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${row('🥇 5K Best Pace', prs['5k'], 'var(--orange)')}
+        ${row('🥈 10K Best Pace', prs['10k'], 'var(--accent)')}
+        ${prs.longest ? `<div style="background:var(--bg);border-radius:12px;padding:14px 16px;border-left:3px solid var(--green)">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:6px">📏 Longest Run</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:var(--green)">${parseFloat(prs.longest.dist).toFixed(2)} <span style="font-size:12px;color:var(--text2)">km</span></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px">${prs.longest.date}</div>
+        </div>` : ''}
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:14px;text-align:center">คำนวณจาก Firebase + Strava ทั้งหมด</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ══════════════════════════════════════════════
+// HR ZONE CHART (Monthly)
+// ══════════════════════════════════════════════
+function renderHRZoneChart(monthWks) {
+  const zones = [
+    { label:'Z1 วอร์มอัพ', min:117, max:130, color:'#34C759' },
+    { label:'Z2 ง่าย',     min:131, max:144, color:'#30D158' },
+    { label:'Z3 แอโรบิค', min:145, max:158, color:'#FF9F0A' },
+    { label:'Z4 Threshold',min:159, max:173, color:'#FF6B00' },
+    { label:'Z5 สูงสุด',   min:174, max:999, color:'#FF3B30' },
+  ];
+  const counts = zones.map(() => 0);
+  let total = 0;
+  monthWks.forEach(w => {
+    const hr = parseInt(w.hr || 0);
+    if (!hr) return;
+    const zi = zones.findIndex(z => hr >= z.min && hr <= z.max);
+    if (zi >= 0) { counts[zi]++; total++; }
+  });
+  if (total === 0) {
+    const leg = document.getElementById('hr-zone-legend');
+    if (leg) leg.innerHTML = '<span style="color:var(--text3)">ไม่มีข้อมูล HR</span>';
+    return;
+  }
+  const ctx = document.getElementById('chart-hr-zone')?.getContext('2d');
+  if (!ctx) return;
+  if (charts.hrzone) charts.hrzone.destroy();
+  charts.hrzone = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: zones.map(z => z.label),
+      datasets: [{ data: counts, backgroundColor: zones.map(z => z.color), borderWidth: 0 }]
+    },
+    options: {
+      cutout: '65%', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: { label: i => `${i.label}: ${i.raw} ครั้ง (${(i.raw/total*100).toFixed(0)}%)` }
+      }}
+    }
+  });
+  const legEl = document.getElementById('hr-zone-legend');
+  if (legEl) legEl.innerHTML = zones.map((z,i) => counts[i] > 0
+    ? `<div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:${z.color};flex-shrink:0"></span><span style="color:var(--text2)">${z.label}</span><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-weight:700;color:${z.color}">${(counts[i]/total*100).toFixed(0)}%</span></div>`
+    : '').filter(Boolean).join('');
+}
+
+// ══════════════════════════════════════════════
+// PWA Install Prompt
+// ══════════════════════════════════════════════
+let _pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  // Show install button in Quick Actions if not installed
+  const qaBtns = document.querySelector('#page-today .btn-ghost:last-child');
+  const existingBtn = document.getElementById('btn-pwa-install');
+  if (!existingBtn) {
+    const btn = document.createElement('button');
+    btn.id = 'btn-pwa-install';
+    btn.className = 'btn btn-primary btn-sm';
+    btn.textContent = '📲 ติดตั้งแอป';
+    btn.onclick = installPWA;
+    qaBtns?.parentElement?.appendChild(btn);
+  }
+});
+function installPWA() {
+  if (_pwaPrompt) {
+    _pwaPrompt.prompt();
+    _pwaPrompt.userChoice.then(r => {
+      if (r.outcome === 'accepted') { showToast('ติดตั้งแอปสำเร็จ! 🎉'); }
+      _pwaPrompt = null;
+      document.getElementById('btn-pwa-install')?.remove();
+    });
+  } else {
+    showToast('เปิดใน Chrome แล้วกด ⋮ → "เพิ่มในหน้าจอหลัก"', 'info');
+  }
+}
+
+// ── END NEW FEATURES ──
 // ── STAT INFO MODAL ──
 function showStatInfo(type) {
   const atlVal = document.getElementById('stat-atl')?.textContent || '—';
