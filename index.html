@@ -1006,6 +1006,18 @@ tbody tr:hover td { background: var(--bg); }
         </div>
       </div>
 
+      <!-- ── MINI WEEK STRIP ── -->
+      <div id="mini-week-strip" class="card mb-16" style="padding:12px 14px;cursor:pointer" onclick="expandWeekToMonth()" title="กดเพื่อดูเต็มเดือน">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">📅 สัปดาห์นี้</div>
+          <div style="font-size:10px;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:3px" id="mini-week-label">
+            <span></span>
+            <span style="font-size:11px">↗ ดูเต็มเดือน</span>
+          </div>
+        </div>
+        <div id="mini-week-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px"></div>
+      </div>
+
       <!-- Training Calendar — compact heatmap -->
       <div class="card mb-16" style="padding:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2474,8 +2486,87 @@ function computePR(allActs) {
   return prs;
 }
 
+// ── MINI WEEK STRIP ──
+function renderMiniWeekStrip() {
+  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  const days = getWeekDates(0); // Mon–Sun of this week
+  const todayStr = toLocalDateStr(new Date());
+
+  const typeColor = { run:'0,122,255', interval:'255,149,0', bike:'52,199,89', swim:'90,200,250', walk:'142,142,147' };
+  const dayLabel = ['จ','อ','พ','พฤ','ศ','ส','อา'];
+  const typeIcon = { run:'🏃', interval:'⚡', bike:'🚴', swim:'🏊', walk:'🚶' };
+
+  // Label: Mon – Sun
+  const lEl = document.getElementById('mini-week-label');
+  if (lEl) {
+    const s = days[0].toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+    const e = days[6].toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+    lEl.querySelector('span:first-child').textContent = `${s}–${e}`;
+  }
+
+  const container = document.getElementById('mini-week-days');
+  if (!container) return;
+
+  container.innerHTML = days.map((day, i) => {
+    const ds = toLocalDateStr(day);
+    const isToday = ds === todayStr;
+    const isFuture = ds > todayStr;
+    const acts = all.filter(w => w.date === ds);
+    const totalDist = acts.reduce((s,w) => s + parseFloat(w.dist||0), 0);
+    const domAct = acts.sort((a,b) => parseFloat(b.dist||0) - parseFloat(a.dist||0))[0];
+    const domType = domAct?.type;
+    const rgb = domType ? (typeColor[domType] || '0,122,255') : null;
+    const hasActivity = acts.length > 0;
+
+    // Dot colors for multiple types
+    const uniqueTypes = [...new Set(acts.map(a => a.type))];
+    const dots = uniqueTypes.slice(0,3).map(t => {
+      const c = typeColor[t] || '0,122,255';
+      return `<div style="width:5px;height:5px;border-radius:50%;background:rgb(${c});flex-shrink:0"></div>`;
+    }).join('');
+
+    const bg = hasActivity
+      ? `rgba(${rgb},0.15)`
+      : isToday ? 'rgba(0,122,255,.07)' : 'var(--bg)';
+
+    const borderStyle = isToday
+      ? '1.5px solid var(--accent)'
+      : hasActivity ? `1.5px solid rgba(${rgb},.35)` : '1.5px solid transparent';
+
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:10px;padding:8px 4px;background:${bg};border:${borderStyle};position:relative;transition:transform .15s" 
+      title="${ds}${totalDist>0?' · '+totalDist.toFixed(1)+'km':isFuture?'':' · พักผ่อน'}"
+      ${hasActivity ? `onclick="event.stopPropagation();showCalDay('${ds}')"` : ''}>
+      <div style="font-size:8px;font-weight:700;color:${isToday?'var(--accent)':'var(--text3)'};letter-spacing:.3px">${dayLabel[i]}</div>
+      <div style="font-size:8px;font-weight:${isToday?800:600};color:${isToday?'var(--accent)':'var(--text2)'}">${day.getDate()}</div>
+      ${hasActivity
+        ? `<div style="font-size:13px;line-height:1">${typeIcon[domType]||'🏅'}</div>
+           <div style="font-size:7px;font-family:'JetBrains Mono',monospace;font-weight:700;color:rgb(${rgb})">${totalDist.toFixed(1)}</div>
+           <div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:28px">${dots}</div>`
+        : isFuture
+          ? `<div style="width:5px;height:5px;border-radius:50%;background:var(--border2);margin-top:2px"></div>`
+          : `<div style="width:5px;height:5px;border-radius:50%;background:var(--bg2);margin-top:2px;border:1px solid var(--border2)"></div>`
+      }
+    </div>`;
+  }).join('');
+}
+
+function expandWeekToMonth() {
+  // Scroll to calendar card and flash it
+  const calCard = document.getElementById('cal-grid')?.closest('.card');
+  if (!calCard) return;
+  calCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Highlight animation
+  const orig = calCard.style.boxShadow;
+  calCard.style.boxShadow = '0 0 0 3px var(--accent)';
+  calCard.style.transition = 'box-shadow .2s';
+  setTimeout(() => { calCard.style.boxShadow = orig; }, 1200);
+}
+
 function renderDashboardExtras() {
   const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+
+  // Mini week strip
+  renderMiniWeekStrip();
 
   // Streak
   const streak = computeStreak(all);
