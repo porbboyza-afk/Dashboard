@@ -837,112 +837,50 @@ tbody tr:hover td { background: var(--bg); }
    MOBILE
 ══════════════════════════ */
 @media (max-width: 768px) {
-  /* Hide sidebar completely on mobile */
-  .sidebar { display: none !important; }
-
-  /* Hamburger button */
-  #mob-menu-btn {
-    display: flex;
+  .sidebar {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 300;
-    width: 54px; height: 54px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: none;
-    cursor: pointer;
-    align-items: center; justify-content: center;
-    box-shadow: 0 4px 20px rgba(0,122,255,.4);
-    font-size: 22px;
-    color: #fff;
-    transition: transform .15s, box-shadow .15s;
+    left: 0; right: 0; bottom: 0; top: auto;
+    width: 100%; height: 60px;
+    flex-direction: row;
+    border-right: none; border-top: 1px solid var(--border);
+    z-index: 200; overflow: visible; padding: 0;
+    backdrop-filter: blur(20px);
+    background: rgba(255,255,255,.85);
   }
-  #mob-menu-btn:active { transform: translateX(-50%) scale(.93); }
+  [data-theme="dark"] .sidebar { background: rgba(28,28,30,.9); }
 
-  /* Drawer overlay */
-  #mob-drawer-overlay {
-    display: none;
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,.45);
-    z-index: 400;
-    backdrop-filter: blur(4px);
-  }
-  #mob-drawer-overlay.open { display: block; }
+  .nav-section-label, .sidebar-bottom, .logo-row, .sidebar-top > :not(.nav) { display: none !important; }
+  .sidebar-top { padding: 0 !important; overflow: visible !important; }
 
-  /* Drawer panel */
-  #mob-drawer {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--surface);
-    border-radius: 22px 22px 0 0;
-    z-index: 500;
-    padding: 12px 16px 36px;
-    transform: translateY(100%);
-    transition: transform .28s cubic-bezier(.32,1,.32,1);
-    max-height: 80vh;
-    overflow-y: auto;
+  .nav {
+    display: flex; flex-direction: row; align-items: stretch;
+    width: 100%; overflow-x: auto; padding: 0 4px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
   }
-  #mob-drawer.open { transform: translateY(0); }
+  .nav::-webkit-scrollbar { display: none; }
 
-  .mob-drawer-handle {
-    width: 36px; height: 4px;
-    border-radius: 99px;
-    background: var(--border2);
-    margin: 0 auto 16px;
+  .nav-item {
+    flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; padding: 6px 10px;
+    min-width: 56px;
+    border-radius: 0; margin: 0;
+    border-top: 2px solid transparent;
   }
+  .nav-item.active { background: transparent; border-top-color: var(--accent); }
+  .nav-item span:not(.nav-icon) { font-size: 8px; color: var(--text3); white-space: nowrap; overflow: hidden; max-width: 60px; text-overflow: ellipsis; letter-spacing: .3px; text-transform: uppercase; font-weight: 600; }
+  .nav-item.active span:not(.nav-icon) { color: var(--accent); }
+  .nav-icon { width: 26px; height: 26px; font-size: 14px; background: transparent; }
+  .nav-item.active .nav-icon { background: transparent; }
+  .nav-badge { display: none; }
 
-  .mob-nav-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-
-  .mob-nav-item {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 5px; padding: 12px 6px;
-    border-radius: 14px;
-    background: var(--bg);
-    cursor: pointer;
-    border: 1.5px solid transparent;
-    transition: all .15s;
-  }
-  .mob-nav-item.active {
-    background: var(--accent-light);
-    border-color: rgba(0,122,255,.2);
-  }
-  .mob-nav-item .mob-nav-icon { font-size: 20px; line-height: 1; }
-  .mob-nav-item .mob-nav-label {
-    font-size: 9px; font-weight: 700; letter-spacing: .4px;
-    text-transform: uppercase; color: var(--text3);
-    text-align: center; white-space: nowrap;
-  }
-  .mob-nav-item.active .mob-nav-label { color: var(--accent); }
-
-  .mob-drawer-section {
-    font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
-    text-transform: uppercase; color: var(--text3);
-    padding: 12px 4px 6px;
-  }
-
-  .mob-user-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 4px 4px;
-    border-top: 1px solid var(--border);
-    margin-top: 8px;
-  }
-
-  .main { margin-left: 0; padding: 20px 16px 90px; }
+  .main { margin-left: 0; padding: 20px 16px 80px; }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
   .page-title { font-size: 24px; }
   .hero-ring-card { flex-direction: column; }
   .doc-preview-bg, .a4-sim { display: none; }
   .week-nav-label { min-width: 130px; font-size: 10px; }
-}
-
-@media (min-width: 769px) {
-  #mob-menu-btn, #mob-drawer-overlay, #mob-drawer { display: none !important; }
 }
 </style>
   <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22MyDash%22%2C%22short_name%22%3A%22MyDash%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F5F5F5%22%2C%22theme_color%22%3A%22%23007AFF%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fvia.placeholder.com%2F192x192%2F007AFF%2Fffffff%3Ftext%3DMD%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
@@ -1081,7 +1019,7 @@ tbody tr:hover td { background: var(--bg); }
           </div>
         </div>
         <!-- Day headers -->
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px;max-width:480px">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px">
           <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">จ</div>
           <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">อ</div>
           <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">พ</div>
@@ -1091,7 +1029,7 @@ tbody tr:hover td { background: var(--bg); }
           <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">อา</div>
         </div>
         <!-- Heatmap grid -->
-        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;max-width:480px"></div>
+        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
         <!-- Inline day detail -->
         <div id="cal-day-detail" style="display:none;margin-top:10px;padding:10px;background:var(--bg);border-radius:10px">
           <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px" id="cal-day-label"></div>
@@ -1118,8 +1056,14 @@ tbody tr:hover td { background: var(--bg); }
         </div>
       </div>
 
-      <!-- Race Banner — shows only when race is set -->
-      <div id="dash-race-banner" style="display:none;margin-bottom:16px"></div>
+      <!-- Race Countdown inline -->
+      <div class="card mb-16">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card-label" style="margin:0">🏁 Race Countdown</div>
+          <button class="btn btn-ghost btn-sm" onclick="showRaceAddPanel()" style="font-size:11px">+ เพิ่ม</button>
+        </div>
+        <div id="race-list-container"><p class="text-sm c2" style="text-align:center;padding:12px">กำลังโหลด...</p></div>
+      </div>
 
       <!-- Goals + Streak + PR strip -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
@@ -1425,7 +1369,6 @@ tbody tr:hover td { background: var(--bg); }
       <div class="seg-tabs">
         <div class="seg-tab active" onclick="switchCoachTab('create',this)">✨ Create Plan</div>
         <div class="seg-tab" onclick="switchCoachTab('track',this)">📋 Track Plan</div>
-        <div class="seg-tab" onclick="switchCoachTab('race',this)">🏁 Race</div>
       </div>
 
       <div id="coach-create-tab">
@@ -1460,6 +1403,7 @@ tbody tr:hover td { background: var(--bg); }
       </div>
 
       <div id="coach-track-tab" style="display:none">
+        <div id="coach-no-plan" style="text-align:center;padding:48px;color:var(--text2)">
           <div style="font-size:48px;margin-bottom:16px">📋</div>
           <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)">No Training Plan</div>
           <div style="font-size:13px;margin-bottom:20px">Go to "Create Plan" tab to generate your schedule</div>
@@ -1492,18 +1436,6 @@ tbody tr:hover td { background: var(--bg); }
           <div id="coach-plan-days"></div>
         </div>
       </div>
-
-      <!-- Race Tab -->
-      <div id="coach-race-tab" style="display:none">
-        <div class="card mb-16">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <div class="card-label" style="margin:0">🏁 การแข่งขันของฉัน</div>
-            <button class="btn btn-primary btn-sm" onclick="showRaceAddPanel()">+ เพิ่มงานแข่ง</button>
-          </div>
-          <div id="race-list-container"><p class="text-sm c2" style="text-align:center;padding:24px">กำลังโหลด...</p></div>
-        </div>
-      </div>
-
     </div>
 
     <!-- ════════════ STRAVA ════════════ -->
@@ -1876,7 +1808,7 @@ function renderTodayStats(){
   set('t-workouts',recent.length);
   setTimeout(renderDashboardExtras, 100);
   setTimeout(renderCalendar, 200);
-  setTimeout(renderDashRaceBanner, 300);
+  setTimeout(loadRaces, 300);
 
   // Update ring
   const ringEl=document.getElementById('ring-num');
@@ -2147,14 +2079,10 @@ async function generateTrainingPlan(){
 function switchCoachTab(tab,el){
   document.querySelectorAll('#page-coach .seg-tab').forEach(t=>t.classList.remove('active'));
   const tabs=document.querySelectorAll('#page-coach .seg-tab');
-  if(tab==='create')tabs[0]?.classList.add('active');
-  else if(tab==='track')tabs[1]?.classList.add('active');
-  else if(tab==='race')tabs[2]?.classList.add('active');
+  if(tab==='create')tabs[0]?.classList.add('active');else tabs[1]?.classList.add('active');
   document.getElementById('coach-create-tab').style.display=tab==='create'?'block':'none';
   document.getElementById('coach-track-tab').style.display=tab==='track'?'block':'none';
-  document.getElementById('coach-race-tab').style.display=tab==='race'?'block':'none';
   if(tab==='track')renderCoachTracking();
-  if(tab==='race')loadRaces();
 }
 
 function renderCoachTracking(){
@@ -2546,40 +2474,6 @@ function computePR(allActs) {
   return prs;
 }
 
-// ── DASHBOARD RACE BANNER ──
-async function renderDashRaceBanner() {
-  const banner = document.getElementById('dash-race-banner');
-  if (!banner) return;
-  try {
-    const data = await window._fb.getData('races');
-    const races = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
-    const today = new Date(); today.setHours(0,0,0,0);
-    const upcoming = races
-      .filter(r => r.date && new Date(r.date+'T00:00:00') >= today)
-      .sort((a,b) => (a.date||'').localeCompare(b.date||''));
-    if (!upcoming.length) { banner.style.display = 'none'; return; }
-    const next = upcoming[0];
-    const daysLeft = Math.ceil((new Date(next.date+'T00:00:00') - today) / 86400000);
-    const urgencyColor = daysLeft <= 14 ? 'var(--red)' : daysLeft <= 30 ? 'var(--orange)' : 'var(--accent)';
-    const urgencyBg = daysLeft <= 14 ? 'rgba(255,59,48,.08)' : daysLeft <= 30 ? 'rgba(255,149,0,.08)' : 'rgba(0,122,255,.06)';
-    banner.style.display = 'block';
-    banner.innerHTML = `<div style="background:${urgencyBg};border:1.5px solid ${urgencyColor};border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer" onclick="showPage('coach');switchCoachTab('race',null)">
-      <div style="font-size:28px;line-height:1">🏁</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${next.name}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${new Date(next.date+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})} · ${next.dist||10}K</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;line-height:1;color:${urgencyColor}">${daysLeft}</div>
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">วันที่เหลือ</div>
-      </div>
-    </div>
-    ${upcoming.length > 1 ? `<div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:right">+ อีก ${upcoming.length-1} งาน · <span style="color:var(--accent);cursor:pointer" onclick="showPage('coach');switchCoachTab('race',null)">ดูทั้งหมด →</span></div>` : ''}`;
-  } catch(e) { banner.style.display = 'none'; }
-}
-
-// ── MINI WEEK STRIP (removed) ──
-
 function renderDashboardExtras() {
   const all = [...window._workouts, ...(window._stravaWorkouts||[])];
 
@@ -2956,7 +2850,7 @@ function renderCalendar() {
       ? `rgba(${rgb},${intensity})`
       : isToday ? 'rgba(0,122,255,.08)' : 'var(--bg2)';
     const textColor = acts.length && intensity > 0.55 ? '#fff' : isToday ? 'var(--accent)' : 'var(--text3)';
-    cells.push(`<div onclick="showCalDay('${ds}')" title="${ds}${totalDist>0?' · '+totalDist.toFixed(1)+'km':''}" style="height:38px;border-radius:5px;cursor:${acts.length?'pointer':'default'};background:${bg};border:${isToday?'1.5px solid var(--accent)':'1.5px solid transparent'};opacity:${inMonth?1:0.2};position:relative;transition:transform .1s" onmouseover="this.style.transform='scale(1.1)';this.style.zIndex=2" onmouseout="this.style.transform='scale(1)';this.style.zIndex=1"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:${isToday?800:500};color:${textColor}">${d.getDate()}</div></div>`);
+    cells.push(`<div onclick="showCalDay('${ds}')" title="${ds}${totalDist>0?' · '+totalDist.toFixed(1)+'km':''}" style="aspect-ratio:1;border-radius:5px;cursor:${acts.length?'pointer':'default'};background:${bg};border:${isToday?'1.5px solid var(--accent)':'1.5px solid transparent'};opacity:${inMonth?1:0.2};position:relative;transition:transform .1s" onmouseover="this.style.transform='scale(1.2)';this.style.zIndex=2" onmouseout="this.style.transform='scale(1)';this.style.zIndex=1"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:${isToday?800:500};color:${textColor}">${d.getDate()}</div></div>`);
     d.setDate(d.getDate() + 1);
     if (d > lastDay && cells.length % 7 === 0) break;
   }
@@ -3341,92 +3235,6 @@ async function saveStravaSettings(){showLoading('Saving...');try{const cfg=await
 
 // ── INIT ──
 document.getElementById('today-date-label').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-
-// ── MOBILE DRAWER ──
-(function() {
-  const navPages = [
-    { page:'today',         icon:'🏠', label:'Dashboard' },
-    { page:'fitness-log',   icon:'💪', label:'Activity' },
-    { page:'fitness-stats', icon:'📊', label:'Statistics' },
-    { page:'coach',         icon:'🤖', label:'AI Coach' },
-    { page:'strava',        icon:'🚴', label:'Strava' },
-    { page:'doc-summary',   icon:'📑', label:'AI Summary' },
-    { page:'doc-create',    icon:'📝', label:'Create Doc' },
-    { page:'doc-list',      icon:'📁', label:'Registry' },
-    { page:'news',          icon:'💬', label:'AI Q&A' },
-    { page:'settings',      icon:'⚙️', label:'Settings' },
-  ];
-
-  // Inject button + drawer into body
-  const btn = document.createElement('button');
-  btn.id = 'mob-menu-btn';
-  btn.innerHTML = '☰';
-  btn.title = 'เมนู';
-  document.body.appendChild(btn);
-
-  const overlay = document.createElement('div');
-  overlay.id = 'mob-drawer-overlay';
-  document.body.appendChild(overlay);
-
-  const drawer = document.createElement('div');
-  drawer.id = 'mob-drawer';
-  drawer.innerHTML = `
-    <div class="mob-drawer-handle"></div>
-    <div class="mob-drawer-section">Navigation</div>
-    <div class="mob-nav-grid" id="mob-nav-grid"></div>
-    <div class="mob-user-row">
-      <img id="mob-user-av" src="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--accent)" onerror="this.style.display='none'">
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="mob-user-name">—</div>
-        <div style="font-size:11px;color:var(--green)">● Synced</div>
-      </div>
-      <button onclick="window._fb.logout();closeMobDrawer()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;border-radius:8px">⏻</button>
-    </div>`;
-  document.body.appendChild(drawer);
-
-  // Populate nav grid
-  function buildNav(activePage) {
-    const grid = document.getElementById('mob-nav-grid');
-    if (!grid) return;
-    grid.innerHTML = navPages.map(n => `
-      <div class="mob-nav-item${activePage===n.page?' active':''}" onclick="mobNav('${n.page}')">
-        <div class="mob-nav-icon">${n.icon}</div>
-        <div class="mob-nav-label">${n.label}</div>
-      </div>`).join('');
-    // Sync user info
-    const uav = document.getElementById('mob-user-av');
-    const unm = document.getElementById('mob-user-name');
-    const srcAv = document.getElementById('user-avatar');
-    const srcNm = document.getElementById('user-name');
-    if (uav && srcAv) uav.src = srcAv.src;
-    if (unm && srcNm) unm.textContent = srcNm.textContent;
-  }
-
-  window.openMobDrawer = function(activePage) {
-    buildNav(activePage || document.querySelector('.page.active')?.id?.replace('page-','') || 'today');
-    overlay.classList.add('open');
-    drawer.classList.add('open');
-  };
-  window.closeMobDrawer = function() {
-    overlay.classList.remove('open');
-    drawer.classList.remove('open');
-  };
-  window.mobNav = function(page) {
-    closeMobDrawer();
-    setTimeout(() => showPage(page), 120);
-  };
-
-  btn.addEventListener('click', () => openMobDrawer());
-  overlay.addEventListener('click', closeMobDrawer);
-
-  // Update button icon when page changes — patch showPage
-  const _origShowPage = window.showPage;
-  window.showPage = function(id) {
-    _origShowPage(id);
-    if (btn) btn.innerHTML = navPages.find(n => n.page===id)?.icon || '☰';
-  };
-})();
-
 </script>
 </body>
 </html>
