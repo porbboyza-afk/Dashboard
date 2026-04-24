@@ -851,9 +851,10 @@ tbody tr:hover td { background: var(--bg); }
 
   .nav {
     display: flex; flex-direction: row; align-items: stretch;
-    width: 100%; overflow-x: auto; padding: 0;
+    width: 100%; overflow-x: auto; padding: 0 4px;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
   }
   .nav::-webkit-scrollbar { display: none; }
 
@@ -985,12 +986,9 @@ tbody tr:hover td { background: var(--bg); }
           <div style="font-size:22px;font-weight:800;margin-bottom:4px">Weekly Summary</div>
           <div style="font-size:13px;color:var(--text2);margin-bottom:20px">ข้อมูลจาก Firebase + Strava</div>
           <div class="grid g2" style="gap:12px">
-            <div style="background:var(--bg);border-radius:12px;padding:14px;cursor:pointer;transition:box-shadow .2s" onclick="showDashActivities()" onmouseover="this.style.boxShadow='var(--shadow)'" onmouseout="this.style.boxShadow='none'" title="ดูกิจกรรมทั้งหมด">
+            <div style="background:var(--bg);border-radius:12px;padding:14px">
               <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Activities</div>
-              <div style="display:flex;align-items:baseline;gap:6px">
-                <div style="font-size:28px;font-weight:800;letter-spacing:-1px;font-family:'JetBrains Mono',monospace" id="t-workouts">—</div>
-                <div style="font-size:10px;color:var(--accent);font-weight:700">▶ ดู</div>
-              </div>
+              <div style="font-size:28px;font-weight:800;letter-spacing:-1px;font-family:'JetBrains Mono',monospace" id="t-workouts">—</div>
             </div>
             <div style="background:var(--bg);border-radius:12px;padding:14px">
               <div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Documents</div>
@@ -1690,7 +1688,7 @@ function renderTodayStats(){
 
   // Update ring
   const ringEl=document.getElementById('ring-num');
-  if(ringEl)ringEl.textContent=totalDist.toFixed(1);
+  if(ringEl)ringEl.textContent=totalDist.toFixed(2);
   const fill=document.getElementById('ring-fill-km');
   if(fill){const circ=364.4;const goal=40;const pct=Math.min(1,totalDist/goal);fill.style.strokeDashoffset=circ*(1-pct);}
 
@@ -1701,7 +1699,17 @@ function renderTodayStats(){
   const weekRecent=allCombined.filter(w=>(w.date||'')>=toLocalDateStr(cutoff)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
   const stravaTag='<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>';
   if(recentEl) recentEl.innerHTML=weekRecent.length
-    ? weekRecent.map(w=>`<div class="workout-row"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1"><div class="workout-title">${w.dist} km · ${Math.round(w.time)} min${w.hr?' · HR '+w.hr:''}${w.source==='strava'?stravaTag:''}</div><div class="workout-meta">${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${w.name?' · '+w.name:''}</div></div></div>`).join('')
+    ? weekRecent.map(w=>{
+        const wData=encodeURIComponent(JSON.stringify(w));
+        return `<div class="workout-row" style="cursor:pointer;border-radius:10px;padding:10px 8px;transition:background .15s" onclick="showActivityDetail(${wData})" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+          <div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div>
+          <div style="flex:1">
+            <div class="workout-title">${w.dist} km · ${Math.round(w.time)} min${w.hr?' · HR '+w.hr:''}${w.source==='strava'?stravaTag:''}</div>
+            <div class="workout-meta">${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${w.name?' · '+w.name:''}</div>
+          </div>
+          <div style="color:var(--text3);font-size:16px;padding-left:4px">›</div>
+        </div>`;
+      }).join('')
     : '<p class="text-sm c2">ไม่มีกิจกรรมสัปดาห์นี้</p>';
 
   const hasKey=!!window._claudeKey;
@@ -1823,7 +1831,7 @@ function renderWeekStats(){
   });
   const pace=totalDist>0?totalTime/totalDist:0;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  set('stat-wk-dist',totalDist.toFixed(1));set('stat-wk-count',dayCount);set('stat-wk-time',Math.round(totalTime));set('stat-wk-pace',pace>0?formatPace(pace):'—');
+  set('stat-wk-dist',totalDist.toFixed(2));set('stat-wk-count',dayCount);set('stat-wk-time',Math.round(totalTime));set('stat-wk-pace',pace>0?formatPace(pace):'—');
   set('stat-wk-hr',hrCnt>0?Math.round(hrSum/hrCnt):'—');set('stat-wk-cad',cadCnt>0?Math.round(cadSum/cadCnt):'—');
   const atl=Math.min(100,Math.round(totalDist/0.7));set('stat-atl',atl);
   const atlFill=document.getElementById('atl-bar-fill');if(atlFill)atlFill.style.width=atl+'%';
@@ -1847,7 +1855,7 @@ function renderWeekStats(){
     return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:${bg};border-radius:9px;border:1.5px solid ${borderColor}">
       <div style="font-size:10px;font-weight:700;color:${textColor};width:26px;text-align:center;font-family:'JetBrains Mono',monospace">${dayNamesTH[i].slice(0,2)}</div>
       <div style="font-size:10px;color:var(--text3);width:56px;font-family:'JetBrains Mono',monospace">${d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>
-      ${dist>0?`<div style="flex:1;font-size:13px;font-weight:700;color:var(--green)">${dist.toFixed(1)} <span style="font-size:10px;font-weight:500;color:var(--text2)">km</span></div>${dayWks[0]?.avgPace?`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2)">${formatPace(dayWks[0].avgPace)}</div>`:''}`:`<div style="flex:1;font-size:11px;color:var(--text3);opacity:${isFuture?'.5':'.4'}">${isFuture?'—':'Rest'}</div>`}
+      ${dist>0?`<div style="flex:1;font-size:13px;font-weight:700;color:var(--green)">${dist.toFixed(2)} <span style="font-size:10px;font-weight:500;color:var(--text2)">km</span></div>${dayWks[0]?.avgPace?`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2)">${formatPace(dayWks[0].avgPace)}</div>`:''}`:`<div style="flex:1;font-size:11px;color:var(--text3);opacity:${isFuture?'.5':'.4'}">${isFuture?'—':'Rest'}</div>`}
     </div>`;
   }).join('');
 }
@@ -1865,7 +1873,7 @@ function renderMonthStats(){
   const totalTime=monthWks.reduce((s,w)=>s+parseFloat(w.time||0),0);
   const pace=totalDist>0?totalTime/totalDist:0;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  set('stat-mo-dist',totalDist.toFixed(1));set('stat-mo-count',monthWks.length);set('stat-mo-time',Math.round(totalTime));set('stat-mo-pace',pace>0?formatPace(pace):'—');
+  set('stat-mo-dist',totalDist.toFixed(2));set('stat-mo-count',monthWks.length);set('stat-mo-time',Math.round(totalTime));set('stat-mo-pace',pace>0?formatPace(pace):'—');
   const wkData=[0,0,0,0,0];
   monthWks.forEach(w=>{const d=new Date(w.date+'T00:00:00');wkData[Math.min(4,Math.floor((d.getDate()-1)/7))]+=parseFloat(w.dist||0);});
   if(charts.month)charts.month.destroy();
@@ -1887,7 +1895,7 @@ async function analyzeFitnessAI(period='week'){
   const avgPace=totalDist>0?totalTime/totalDist:0;
   const avgHR=wks.filter(w=>w.hr).length?Math.round(wks.filter(w=>w.hr).reduce((s,w)=>s+w.hr,0)/wks.filter(w=>w.hr).length):0;
   const summary=wks.length>0?wks.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(w=>`[${w.date}] ${w.type||'run'} ${w.dist}km ${w.time}min${w.hr?' HR'+w.hr:''}${w.avgPace?' Pace'+formatPace(w.avgPace):''}`).join('\n'):'No data in this period';
-  const statsLine=wks.length>0?`\n\nSummary: ${wks.length} sessions · ${totalDist.toFixed(1)}km · ${Math.round(totalTime)}min · Pace ${formatPace(avgPace)}${avgHR?' · HR '+avgHR+' bpm':''}`:'' ;
+  const statsLine=wks.length>0?`\n\nSummary: ${wks.length} sessions · ${totalDist.toFixed(2)}km · ${Math.round(totalTime)}min · Pace ${formatPace(avgPace)}${avgHR?' · HR '+avgHR+' bpm':''}`:'' ;
   const prompt=`Activity data for ${periodLabel}:\n${summary}${statsLine}\n\n${wks.length===0?'No data available. Please log activities or sync Strava.':'Analyze:\n1. Training Load\n2. Consistency\n3. Strengths and risks\n4. 3 specific recommendations'}`;
   await askClaude(prompt,'คุณคือนักสรีรวิทยาและโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย ตรงประเด็น',period==='week'?'btn-analyze-wk':'btn-analyze-mo',period==='week'?'ai-stats-output':'ai-month-output');
 }
@@ -2105,7 +2113,7 @@ function renderStravaActivities(acts){
     const wkHR=wk.filter(a=>a.average_heartrate).map(a=>a.average_heartrate);
     const wkPaceSec=wk.filter(a=>a.distance>0&&a.type==='Run').map(a=>a.moving_time/a.distance*1000);
     const avgPace=wkPaceSec.length?wkPaceSec.reduce((s,p)=>s+p,0)/wkPaceSec.length:0;
-    document.getElementById('sv-dist').textContent=wkDist.toFixed(1);
+    document.getElementById('sv-dist').textContent=wkDist.toFixed(2);
     document.getElementById('sv-count').textContent=wk.length;
     document.getElementById('sv-pace').textContent=avgPace>0?formatPace(avgPace/60):'—';
     document.getElementById('sv-hr').textContent=wkHR.length?Math.round(wkHR.reduce((s,h)=>s+h,0)/wkHR.length):'—';
@@ -2178,6 +2186,61 @@ function loadLeaflet(cb){if(_leafletLoaded){cb();return;}const css=document.crea
 function decodePolyline(encoded){const coords=[];let index=0,lat=0,lng=0;while(index<encoded.length){let b,shift=0,result=0;do{b=encoded.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);lat+=(result&1)?~(result>>1):(result>>1);shift=0;result=0;do{b=encoded.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);lng+=(result&1)?~(result>>1):(result>>1);coords.push([lat/1e5,lng/1e5]);}return coords;}
 async function stravaAnalyze(){const cached=await window._fb.getData('strava_activities');const acts=cached?(Array.isArray(cached)?cached:Object.values(cached)):[];if(!acts.length){showToast('Please sync first','error');return;}const summary=acts.slice(0,15).map(a=>`[${new Date(a.start_date_local).toLocaleDateString('en-GB')}] ${a.type} ${(a.distance/1000).toFixed(2)}km ${Math.floor(a.moving_time/60)}min${a.average_heartrate?' HR'+Math.round(a.average_heartrate):''}`).join('\n');await askClaude(`Strava (${acts.length} activities):\n${summary}\n\nวิเคราะห์ Training Load จุดแข็งและคำแนะนำ 3 ข้อ`,'คุณคือโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย','btn-strava-analyze','strava-ai-output');document.getElementById('strava-ai-output').style.display='block';}
 
+
+// ── ACTIVITY DETAIL POPUP ──
+function showActivityDetail(wEncoded) {
+  let w;
+  try { w = typeof wEncoded === 'string' ? JSON.parse(decodeURIComponent(wEncoded)) : wEncoded; }
+  catch(e) { return; }
+  const existing = document.getElementById('act-detail-overlay');
+  if (existing) existing.remove();
+
+  const em = {run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
+  const icon = em[w.type] || '🏅';
+  const typeLabel = {run:'วิ่ง',interval:'Interval',bike:'ปั่นจักรยาน',swim:'ว่ายน้ำ',walk:'เดิน'};
+  const stravaTag = w.source==='strava' ? '<span style="font-size:10px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:5px;padding:2px 7px;font-weight:700">STRAVA</span>' : '<span style="font-size:10px;background:var(--accent-light);color:var(--accent);border-radius:5px;padding:2px 7px;font-weight:700">FIREBASE</span>';
+
+  const row = (label, val, color='var(--text)') => val ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3)">${label}</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:${color}">${val}</div>
+    </div>` : '';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'act-detail-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:910;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--r-xl);padding:20px;width:100%;max-width:420px;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:40px;height:40px;border-radius:12px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:20px">${icon}</div>
+          <div>
+            <div style="font-size:15px;font-weight:800">${w.name || typeLabel[w.type] || w.type}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:2px">${w.date} &nbsp;${stravaTag}</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('act-detail-overlay').remove()" style="background:var(--bg2);border:none;border-radius:8px;color:var(--text2);font-size:16px;cursor:pointer;padding:4px 10px;line-height:1">✕</button>
+      </div>
+      <div style="background:var(--bg);border-radius:var(--r);padding:14px 16px;margin-bottom:12px">
+        ${row('ระยะทาง', w.dist ? w.dist+' km' : null, 'var(--accent)')}
+        ${row('เวลา', w.time ? Math.round(w.time)+' นาที' : null, 'var(--green)')}
+        ${row('เพซเฉลี่ย', w.avgPace ? formatPace(w.avgPace)+' /km' : null, 'var(--orange)')}
+        ${row('HR เฉลี่ย', w.hr ? w.hr+' bpm' : null, 'var(--red)')}
+        ${row('Cadence', w.cad ? w.cad+' spm' : null, 'var(--green)')}
+        ${row('ระดับความสูง', w.elev ? '+'+w.elev+' m' : null, 'var(--teal)')}
+        ${w.note ? `<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">หมายเหตุ</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${w.note}</div></div>` : ''}
+      </div>
+      ${w.interval ? `
+        <div style="background:var(--accent-light);border-radius:var(--r);padding:12px 14px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">⚡ Interval Detail</div>
+          <div style="font-size:13px;color:var(--text2)">${w.interval.reps} รอบ × ${w.interval.repDist} km @ ${w.interval.repPace||'—'} · พัก ${w.interval.restTime} นาที</div>
+        </div>` : ''}
+      ${w.source==='strava' && w.stravaId ? `<a href="https://www.strava.com/activities/${w.stravaId}" target="_blank" class="btn btn-strava btn-sm w100" style="text-decoration:none;display:block;text-align:center;margin-top:4px">🔗 ดูบน Strava</a>` : ''}
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
 // ── STAT INFO MODAL ──
 function showStatInfo(type) {
   const atlVal = document.getElementById('stat-atl')?.textContent || '—';
@@ -2234,7 +2297,7 @@ function showStatInfo(type) {
 
   const overlay = document.createElement('div');
   overlay.id = 'stat-info-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);padding:16px';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
   overlay.innerHTML = `
     <div style="background:var(--surface);border-radius:var(--r-xl);padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -2275,7 +2338,7 @@ function showDashActivities() {
 
   const overlay = document.createElement('div');
   overlay.id = 'dash-acts-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);padding:16px';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
 
   const typeIcon = { run:'🏃', interval:'⚡', bike:'🚴', swim:'🏊', walk:'🚶' };
   const sourceTag = s => s==='strava' ? '<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>' : '';
@@ -2331,7 +2394,7 @@ function switchDocTab(type,el){currentDocType=type;document.querySelectorAll('#p
 function updateDocPreview(){
   let html='';
   if(currentDocType==='out'){html=`<div style="text-align:center;margin-bottom:4pt">${garudaHtml('lg')}</div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4pt"><div>ที่&nbsp;&nbsp;${v('do-num')||'..........'}</div><div style="text-align:right;white-space:pre-wrap">${v('do-dept')||'ชื่อหน่วยงาน'}</div></div><div style="text-align:right;margin-bottom:10pt">${v('do-date')||'วันที่'}</div>${v('do-attach')?`<div style="margin-bottom:4pt">สิ่งที่ส่งมาด้วย&nbsp;&nbsp;${v('do-attach')}</div>`:''}<div style="margin-bottom:4pt">เรื่อง&nbsp;&nbsp;${v('do-subject')||'...'}</div><div style="margin-bottom:12pt">เรียน&nbsp;&nbsp;${v('do-to')||'...'}</div><hr style="border:none;border-top:.5pt solid #000;margin-bottom:12pt"><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body')||'ด้วย ...'}</div><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion')||'จึงเรียนมาเพื่อโปรดพิจารณา'}</div><div style="margin-left:9cm;text-align:center;line-height:2"><div style="margin-bottom:3cm">ขอแสดงความนับถือ</div><div>(${v('do-signer')||'...'})</div><div>${v('do-pos')||'ตำแหน่ง'}</div></div><div style="margin-top:auto;padding-top:10pt;font-size:14pt;border-top:.5pt solid #ccc;line-height:1.8">${v('do-contact-name')?`<div>${v('do-contact-name')}</div>`:''}${v('do-contact-phone')?`<div>โทร. ${v('do-contact-phone')}</div>`:''}${v('do-slogan')?`<div style="text-align:center;margin-top:8pt;font-weight:bold">${v('do-slogan')}</div>`:''}</div>`;}
-  else{html=`<div style="display:flex;align-items:flex-end;gap:12pt;margin-bottom:8pt">${garudaHtml('sm')}<div style="font-size:22pt;font-weight:bold;padding-bottom:2pt">บันทึกข้อความ</div></div><table style="width:100%;border-collapse:collapse;font-size:16pt;margin-bottom:8pt"><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:3cm">ส่วนราชการ</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-dept')}</td></tr><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">ที่</td><td style="border:1px solid #000;padding:3pt 6pt;width:5cm">${v('do-num')||'&nbsp;'}</td><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:1.5cm">วันที่</td><td style="border:1px solid #000;padding:3pt 6pt">${v('do-date')}</td></tr><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรื่อง</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-subject')}</td></tr><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรียน</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-to')}</td></tr></table><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body')||'ด้วย ...'}</div><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion')||'จึงเรียนมาเพื่อโปรดทราบ'}</div><div style="margin-left:9cm;text-align:center;line-height:2"><div style="margin-bottom:2.5cm"></div><div>(${v('do-signer')||'...'})</div><div>${v('do-pos')||'ตำแหน่ง'}</div></div>`;}
+  else{html=`<div style="display:flex;align-items:center;gap:12pt;margin-bottom:8pt">${garudaHtml('sm')}<div style="font-size:22pt;font-weight:bold;padding-bottom:2pt">บันทึกข้อความ</div></div><table style="width:100%;border-collapse:collapse;font-size:16pt;margin-bottom:8pt"><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:3cm">ส่วนราชการ</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-dept')}</td></tr><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">ที่</td><td style="border:1px solid #000;padding:3pt 6pt;width:5cm">${v('do-num')||'&nbsp;'}</td><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:1.5cm">วันที่</td><td style="border:1px solid #000;padding:3pt 6pt">${v('do-date')}</td></tr><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรื่อง</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-subject')}</td></tr><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรียน</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-to')}</td></tr></table><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body')||'ด้วย ...'}</div><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion')||'จึงเรียนมาเพื่อโปรดทราบ'}</div><div style="margin-left:9cm;text-align:center;line-height:2"><div style="margin-bottom:2.5cm"></div><div>(${v('do-signer')||'...'})</div><div>${v('do-pos')||'ตำแหน่ง'}</div></div>`;}
   const area=document.getElementById('doc-render-area');if(area)area.innerHTML=html;
 }
 function printDoc(){const content=document.getElementById('doc-render-area')?.innerHTML||'';const win=window.open('','_blank');win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>@font-face{font-family:'TH Sarabun New';src:local('TH Sarabun New');}@page{size:A4;margin:0;}body{margin:0;}.p{width:210mm;min-height:297mm;padding:2.5cm 2cm 2cm 3cm;font-family:'TH Sarabun New',serif;font-size:16pt;color:#000;display:flex;flex-direction:column;box-sizing:border-box;}</style></head><body><div class="p">${content}</div><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close();};<\/script></body></html>`);win.document.close();}
