@@ -59,11 +59,12 @@ window._fb = {
 
 if (auth) onAuthStateChanged(auth, user => {
   currentUser = user;
-  const loginScreen = document.getElementById('login-screen');
+  const loginBanner = document.getElementById('login-banner');
   const appShell = document.getElementById('app-shell');
+  // App shell always visible — just show/hide the login banner
+  if (appShell) appShell.style.display = 'flex';
   if (user) {
-    loginScreen.style.display = 'none';
-    appShell.style.display = 'flex';
+    if (loginBanner) loginBanner.style.display = 'none';
     const av = document.getElementById('user-avatar');
     const nm = document.getElementById('user-name');
     if (av) av.src = user.photoURL || '';
@@ -77,8 +78,14 @@ if (auth) onAuthStateChanged(auth, user => {
     };
     tryReady(40);
   } else {
-    loginScreen.style.display = 'flex';
-    appShell.style.display = 'none';
+    if (loginBanner) loginBanner.style.display = 'block';
+    // Show placeholder data on dashboard even when not logged in
+    const greet = document.getElementById('greeting-name');
+    if (greet) greet.textContent = 'Guest';
+    const dateEl = document.getElementById('today-date');
+    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    if (window._appReady) window._appReady(null);
+    else setTimeout(() => { if(window._appReady) window._appReady(null); }, 500);
   }
 });
 </script>
@@ -167,11 +174,7 @@ body {
 /* ══════════════════════════
    LOGIN
 ══════════════════════════ */
-#login-screen {
-  position: fixed; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--bg); z-index: 999;
-}
+/* login-screen removed — using inline banner instead */
 
 .login-card {
   background: var(--surface);
@@ -895,27 +898,8 @@ tbody tr:hover td { background: var(--bg); }
 </div>
 <div id="toast" class="toast"></div>
 
-<!-- LOGIN -->
-<div id="login-screen" style="display:flex">
-  <div class="login-card">
-    <div class="login-icon">🏃</div>
-    <div class="login-title">MyDash</div>
-    <div class="login-sub">Personal Health & Productivity Cloud</div>
-    <button class="btn-google" onclick="window._fb.loginGoogle()">
-      <svg width="18" height="18" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
-      Continue with Google
-    </button>
-    <div class="login-note">ข้อมูลเชื่อมกับ Google Account · ปลอดภัย<br>หาก Login ไม่ได้: Firebase Console → Auth → Authorized domains</div>
-  </div>
-</div>
-
-<!-- APP SHELL -->
-<div id="app-shell" style="display:none">
+<!-- APP SHELL — always visible, login banner shown if not authenticated -->
+<div id="app-shell" style="display:flex">
 
   <!-- SIDEBAR -->
   <nav class="sidebar">
@@ -966,6 +950,24 @@ tbody tr:hover td { background: var(--bg); }
 
     <!-- ════════════ DASHBOARD ════════════ -->
     <div class="page active" id="page-today">
+      <!-- Login Banner (shown when not logged in) -->
+      <div id="login-banner" style="display:none;background:linear-gradient(135deg,var(--accent),#5856D6);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:20px;color:#fff">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:16px;font-weight:800;margin-bottom:4px">👋 ยินดีต้อนรับสู่ MyDash</div>
+            <div style="font-size:12px;opacity:.85">เข้าสู่ระบบเพื่อซิงค์ข้อมูลกับ Firebase + Strava</div>
+          </div>
+          <button onclick="window._fb.loginGoogle()" style="display:flex;align-items:center;gap:8px;background:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;font-size:13px;font-weight:700;color:#333;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.15)">
+            <svg width="16" height="16" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Sign in with Google
+          </button>
+        </div>
+      </div>
       <div class="flex justify-between items-center mb-20 flex-wrap gap-12">
         <div>
           <div class="page-title">Good day 👋</div>
@@ -1004,54 +1006,53 @@ tbody tr:hover td { background: var(--bg); }
         </div>
       </div>
 
-      <!-- Training Calendar inline -->
-      <div class="card mb-16">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div class="card-label" style="margin:0">🗓️ Training Calendar</div>
+      <!-- Training Calendar — compact heatmap -->
+      <div class="card mb-16" style="padding:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
           <div style="display:flex;align-items:center;gap:8px">
-            <button class="week-nav-btn" onclick="navCalMonth(-1)" style="width:28px;height:28px;font-size:14px">‹</button>
-            <div style="font-size:11px;font-weight:700;color:var(--text2)" id="cal-month-label">—</div>
-            <button class="week-nav-btn" id="btn-cal-next" onclick="navCalMonth(1)" style="width:28px;height:28px;font-size:14px" disabled>›</button>
+            <div class="card-label" style="margin:0">🗓️ Training Calendar</div>
+            <span id="cal-month-label" style="font-size:11px;color:var(--text3);font-weight:600"></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="week-nav-btn" onclick="navCalMonth(-1)" style="width:24px;height:24px;font-size:12px;padding:0">‹</button>
+            <button class="week-nav-btn" id="btn-cal-next" onclick="navCalMonth(1)" style="width:24px;height:24px;font-size:12px;padding:0" disabled>›</button>
           </div>
         </div>
-        <!-- Legend -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:10px;color:var(--text2)">
-          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:3px"></span>วิ่ง</span>
-          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:3px"></span>ปั่น</span>
-          <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:3px"></span>อื่นๆ</span>
+        <!-- Day headers -->
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px">
+          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">จ</div>
+          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">อ</div>
+          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">พ</div>
+          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">พฤ</div>
+          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">ศ</div>
+          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">ส</div>
+          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">อา</div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
-          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">จ</div>
-          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">อ</div>
-          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">พ</div>
-          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">พฤ</div>
-          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">ศ</div>
-          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">ส</div>
-          <div style="text-align:center;font-size:9px;font-weight:700;color:var(--text3);padding:2px 0">อา</div>
-        </div>
-        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
-        <!-- Monthly mini stats -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:12px">
-          <div style="text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px">
-            <div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace" id="cal-days">—</div>
-            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">วันวิ่ง</div>
-          </div>
-          <div style="text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px">
-            <div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace" id="cal-dist">—</div>
-            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">km</div>
-          </div>
-          <div style="text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px">
-            <div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace" id="cal-rest">—</div>
-            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">พักผ่อน</div>
-          </div>
-          <div style="text-align:center;background:var(--bg);border-radius:8px;padding:8px 4px">
-            <div style="font-size:16px;font-weight:800;font-family:'JetBrains Mono',monospace" id="cal-longest">—</div>
-            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">longest km</div>
-          </div>
-        </div>
-        <div id="cal-day-detail" style="display:none;margin-top:10px;background:var(--bg);border-radius:10px;padding:10px">
-          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px" id="cal-day-label">—</div>
+        <!-- Heatmap grid -->
+        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
+        <!-- Inline day detail -->
+        <div id="cal-day-detail" style="display:none;margin-top:10px;padding:10px;background:var(--bg);border-radius:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px" id="cal-day-label"></div>
           <div id="cal-day-acts"></div>
+        </div>
+        <!-- Bottom stats row -->
+        <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="text-align:center">
+            <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--accent)" id="cal-days">—</div>
+            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">วันวิ่ง</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--green)" id="cal-dist">—</div>
+            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">km</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text2)" id="cal-rest">—</div>
+            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">พักผ่อน</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--orange)" id="cal-longest">—</div>
+            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">longest</div>
+          </div>
         </div>
       </div>
 
@@ -1736,6 +1737,11 @@ window._workouts=[];window._docs=[];window._stravaWorkouts=[];window._stravaActs
 
 // ── APP READY ──
 window._appReady = async (user) => {
+  if (!user) {
+    // Guest mode — show empty dashboard, hide data-dependent elements
+    document.getElementById('loading-overlay').style.display = 'none';
+    return;
+  }
   hideLoading(); showPage('today');
   try {
     const cfg = await window._fb.getData('settings')||{};
@@ -2826,7 +2832,9 @@ function renderCalendar() {
   const startMon = new Date(firstDay);
   startMon.setDate(startMon.getDate() - ((firstDay.getDay() + 6) % 7));
 
-  const typeColor = { run:'var(--accent)', bike:'var(--green)', swim:'#5AC8FA', walk:'var(--text2)', interval:'var(--orange)' };
+  const typeColor = { run:'accent', bike:'green', swim:'teal', walk:'text2', interval:'orange' };
+  const colorMap = { accent:'0,122,255', green:'52,199,89', teal:'90,200,250', orange:'255,159,10', text2:'142,142,147' };
+  const maxDist = Math.max(...Object.values(byDate).map(a => a.reduce((s,w)=>s+parseFloat(w.dist||0),0)), 1);
   const cells = [];
   let d = new Date(startMon);
   while (d <= lastDay || cells.length % 7 !== 0) {
@@ -2834,22 +2842,15 @@ function renderCalendar() {
     const inMonth = d.getMonth() === month;
     const isToday = ds === todayStr;
     const acts = byDate[ds] || [];
-    const dots = acts.slice(0,3).map(w =>
-      `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${typeColor[w.type]||'var(--orange)'};margin:0 1px"></span>`
-    ).join('');
     const totalDist = acts.reduce((s,w) => s + parseFloat(w.dist||0), 0);
-
-    cells.push(`<div onclick="showCalDay('${ds}')" style="
-      aspect-ratio:1;border-radius:8px;padding:4px;cursor:${acts.length?'pointer':'default'};
-      background:${isToday?'rgba(0,122,255,.1)':'transparent'};
-      border:${isToday?'1.5px solid var(--accent)':'1.5px solid transparent'};
-      opacity:${inMonth?1:0.25};
-      transition:background .15s;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
-    " onmouseover="if(${acts.length})this.style.background='var(--bg)'" onmouseout="this.style.background='${isToday?'rgba(0,122,255,.1)':'transparent'}'">
-      <div style="font-size:11px;font-weight:${isToday?'800':'500'};color:${isToday?'var(--accent)':acts.length?'var(--text)':'var(--text3)'}">${d.getDate()}</div>
-      ${acts.length ? `<div style="font-size:8px;font-weight:700;color:var(--text2);line-height:1">${totalDist.toFixed(1)}</div>` : '<div></div>'}
-      <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:1px;min-height:8px">${dots}</div>
-    </div>`);
+    const intensity = acts.length ? Math.max(0.2, totalDist / maxDist) : 0;
+    const domType = acts.length ? acts.sort((a,b)=>parseFloat(b.dist||0)-parseFloat(a.dist||0))[0].type : null;
+    const rgb = domType ? (colorMap[typeColor[domType]]||'0,122,255') : null;
+    const bg = acts.length
+      ? `rgba(${rgb},${intensity})`
+      : isToday ? 'rgba(0,122,255,.08)' : 'var(--bg2)';
+    const textColor = acts.length && intensity > 0.55 ? '#fff' : isToday ? 'var(--accent)' : 'var(--text3)';
+    cells.push(`<div onclick="showCalDay('${ds}')" title="${ds}${totalDist>0?' · '+totalDist.toFixed(1)+'km':''}" style="aspect-ratio:1;border-radius:5px;cursor:${acts.length?'pointer':'default'};background:${bg};border:${isToday?'1.5px solid var(--accent)':'1.5px solid transparent'};opacity:${inMonth?1:0.2};position:relative;transition:transform .1s" onmouseover="this.style.transform='scale(1.2)';this.style.zIndex=2" onmouseout="this.style.transform='scale(1)';this.style.zIndex=1"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:${isToday?800:500};color:${textColor}">${d.getDate()}</div></div>`);
     d.setDate(d.getDate() + 1);
     if (d > lastDay && cells.length % 7 === 0) break;
   }
