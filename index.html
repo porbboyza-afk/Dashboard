@@ -1738,13 +1738,13 @@ function renderTodayStats(){
   const allCombined=[...window._workouts,...(window._stravaWorkouts||[])];
   const weekRecent=allCombined.filter(w=>(w.date||'')>=toLocalDateStr(cutoff)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
   const stravaTag='<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>';
+  window._dashWeekActs = weekRecent;
   if(recentEl) recentEl.innerHTML=weekRecent.length
-    ? weekRecent.map(w=>{
-        const wData=encodeURIComponent(JSON.stringify(w));
-        return `<div class="workout-row" style="cursor:pointer;border-radius:10px;padding:10px 8px;transition:background .15s" onclick="showActivityDetail(${wData})" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+    ? weekRecent.map((w,i)=>{
+        return `<div class="workout-row" style="cursor:pointer;border-radius:10px;padding:10px 8px;transition:background .15s" onclick="showActivityDetail(window._dashWeekActs[${i}])" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
           <div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div>
           <div style="flex:1">
-            <div class="workout-title">${w.dist} km · ${Math.round(w.time)} min${w.hr?' · HR '+w.hr:''}${w.source==='strava'?stravaTag:''}</div>
+            <div class="workout-title">${parseFloat(w.dist||0).toFixed(2)} km · ${Math.round(w.time)} min${w.hr?' · HR '+w.hr:''}${w.source==='strava'?stravaTag:''}</div>
             <div class="workout-meta">${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${w.name?' · '+w.name:''}</div>
           </div>
           <div style="color:var(--text3);font-size:16px;padding-left:4px">›</div>
@@ -2199,21 +2199,53 @@ function renderStravaActivities(acts){
     const cad=a.average_cadence?Math.round(a.average_cadence*2):0;
     const dateStr=new Date(a.start_date_local).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
     const color=typeCol[a.type]||'var(--text2)';
-    return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:all .2s;cursor:pointer" onclick="openStravaDetail(${idx})" onmouseover="this.style.borderColor='var(--border2)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
-      <div style="padding:18px">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
-          <div><div style="font-size:10px;color:var(--text3);margin-bottom:4px;letter-spacing:.5px">${dateStr} · ${em[a.type]||'🏅'} <span style="color:${color};font-weight:700">${a.type.toUpperCase()}</span></div><div style="font-size:15px;font-weight:700">${a.name}</div></div>
-          <span style="color:var(--text3);font-size:16px">›</span>
+    // Map thumbnail: use Leaflet mini-map or static placeholder with polyline
+    const hasMap = !!(a.map?.summary_polyline);
+    const mapThumb = hasMap
+      ? `<div id="smap-${idx}" style="width:130px;min-width:130px;height:100%;min-height:120px;background:var(--bg2);border-left:1px solid var(--border);position:relative;overflow:hidden;flex-shrink:0">
+           <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:var(--text3);font-size:11px">
+             <span style="font-size:22px">🗺️</span><span>แตะดูแผนที่</span>
+           </div>
+         </div>`
+      : `<div style="width:110px;min-width:110px;background:var(--bg2);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.35">
+           <span style="font-size:28px">🏃</span>
+         </div>`;
+    return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:all .2s;cursor:pointer;display:flex" onclick="openStravaDetail(${idx})" onmouseover="this.style.borderColor='var(--border2)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+      <div style="padding:16px;flex:1;min-width:0">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+          <div style="min-width:0"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;letter-spacing:.5px">${dateStr} · ${em[a.type]||'🏅'} <span style="color:${color};font-weight:700">${a.type.toUpperCase()}</span></div><div style="font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</div></div>
+          <span style="color:var(--text3);font-size:16px;flex-shrink:0;margin-left:8px">›</span>
         </div>
-        <div style="display:grid;grid-template-columns:${dist>0?'1fr':''}${pace?' 1fr':''}1fr${elev?' 1fr':''};gap:14px">
-          ${dist>0?`<div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Distance</div><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:${color}">${dist}<span style="font-size:11px;color:var(--text2);margin-left:2px">km</span></div></div>`:'' }
-          ${pace?`<div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Pace</div><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--green)">${pace}<span style="font-size:11px;color:var(--text2);margin-left:2px">/km</span></div></div>`:''}
-          <div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Time</div><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700">${mins}<span style="font-size:11px;color:var(--text2);margin-left:2px">m</span></div></div>
-          ${elev?`<div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">↑ Elev</div><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--orange)">${elev}<span style="font-size:11px;color:var(--text2);margin-left:2px">m</span></div></div>`:''}
+        <div style="display:grid;grid-template-columns:${dist>0?'1fr':''}${pace?' 1fr':''}1fr${elev?' 1fr':''};gap:10px">
+          ${dist>0?`<div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:3px">Distance</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${color}">${dist}<span style="font-size:10px;color:var(--text2);margin-left:2px">km</span></div></div>`:'' }
+          ${pace?`<div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:3px">Pace</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green)">${pace}<span style="font-size:10px;color:var(--text2);margin-left:2px">/km</span></div></div>`:''}
+          <div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:3px">Time</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700">${mins}<span style="font-size:10px;color:var(--text2);margin-left:2px">m</span></div></div>
+          ${elev?`<div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:3px">↑ Elev</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--orange)">${elev}<span style="font-size:10px;color:var(--text2);margin-left:2px">m</span></div></div>`:''}
         </div>
-        ${hr||cad?`<div style="display:flex;gap:12px;margin-top:10px">${hr?`<span style="font-size:11px;color:var(--red);font-family:'JetBrains Mono',monospace">♥ ${hr} bpm</span>`:''} ${cad?`<span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace">👟 ${cad} spm</span>`:''}</div>`:''}
-      </div></div>`;
+        ${hr||cad?`<div style="display:flex;gap:12px;margin-top:8px">${hr?`<span style="font-size:11px;color:var(--red);font-family:'JetBrains Mono',monospace">♥ ${hr} bpm</span>`:''} ${cad?`<span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace">👟 ${cad} spm</span>`:''}</div>`:''}
+      </div>
+      ${mapThumb}
+    </div>`;
   }).join('');
+  // Load mini Leaflet maps for each card with polyline
+  loadLeaflet(() => {
+    acts.slice(0,20).forEach((a, idx) => {
+      if (!a.map?.summary_polyline) return;
+      const el = document.getElementById(`smap-${idx}`);
+      if (!el) return;
+      el.innerHTML = '';
+      try {
+        const coords = decodePolyline(a.map.summary_polyline);
+        if (!coords.length) return;
+        const miniMap = L.map(el, { zoomControl:false, attributionControl:false, dragging:false, scrollWheelZoom:false, doubleClickZoom:false, touchZoom:false });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(miniMap);
+        const line = L.polyline(coords, { color:'#FC4C02', weight:3 }).addTo(miniMap);
+        miniMap.fitBounds(line.getBounds(), { padding:[8,8] });
+        L.circleMarker(coords[0], { radius:5, color:'#34C759', fillColor:'#34C759', fillOpacity:1, weight:2 }).addTo(miniMap);
+        L.circleMarker(coords[coords.length-1], { radius:5, color:'#FF3B30', fillColor:'#FF3B30', fillOpacity:1, weight:2 }).addTo(miniMap);
+      } catch(e) { console.warn('minimap error', e); }
+    });
+  });
 }
 
 function openStravaDetail(idx){
@@ -2257,8 +2289,13 @@ async function stravaAnalyze(){const cached=await window._fb.getData('strava_act
 // ── ACTIVITY DETAIL POPUP ──
 function showActivityDetail(wEncoded) {
   let w;
-  try { w = typeof wEncoded === 'string' ? JSON.parse(decodeURIComponent(wEncoded)) : wEncoded; }
-  catch(e) { return; }
+  try {
+    if (typeof wEncoded === 'object' && wEncoded !== null) { w = wEncoded; }
+    else if (typeof wEncoded === 'string') {
+      try { w = JSON.parse(decodeURIComponent(wEncoded)); }
+      catch(e) { w = JSON.parse(wEncoded); }
+    } else { return; }
+  } catch(e) { console.error('showActivityDetail parse error:', e); return; }
   const existing = document.getElementById('act-detail-overlay');
   if (existing) existing.remove();
 
