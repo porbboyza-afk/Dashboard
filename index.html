@@ -3811,20 +3811,13 @@ function renderShareCanvas() {
   ctx.fillStyle = barGrad;
   ctx.fillRect(0, 0, W, 8);
 
-  // Logo + title
+  // Header — show period label big, no "MyDash"
   ctx.fillStyle = st.text;
-  ctx.font = 'bold 48px system-ui, -apple-system, sans-serif';
-  ctx.fillText('MyDash', 80, 100);
+  ctx.font = 'bold 64px system-ui, -apple-system, sans-serif';
+  ctx.fillText(data.label, 80, 110);
   ctx.fillStyle = st.strava;
   ctx.font = 'bold 32px system-ui';
-  ctx.fillText('● Strava', 80, 148);
-
-  // Period label
-  ctx.fillStyle = st.sub;
-  ctx.font = '500 36px system-ui';
-  ctx.textAlign = 'right';
-  ctx.fillText(data.label, W-80, 118);
-  ctx.textAlign = 'left';
+  ctx.fillText('● Strava', 80, 158);
 
   // ── Big stats row ──
   const statsY = 220;
@@ -3896,18 +3889,6 @@ function renderShareCanvas() {
     ctx.fillText(m.label, bx+barW/2, chartY+chartH+32);
     ctx.textAlign = 'left';
   });
-
-  // ── Footer ──
-  const footY = H - 60;
-  ctx.fillStyle = st.sub;
-  ctx.font = '400 28px system-ui';
-  ctx.fillText('porbboyza-afk.github.io/Dashboard', 80, footY);
-
-  const totalH = `${Math.floor(data.totalTime/60)}h ${data.totalTime%60}m`;
-  ctx.textAlign = 'right';
-  ctx.fillStyle = st.sub;
-  ctx.fillText(`⏱ ${totalH} รวม`, W-80, footY);
-  ctx.textAlign = 'left';
 
   // Accent bottom bar
   ctx.fillStyle = barGrad;
