@@ -788,6 +788,23 @@ tbody tr:hover td { background: var(--bg); }
 ══════════════════════════ */
 .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
+/* ── Calendar + Stats 2-col ── */
+.cal-stats-row { display:grid; grid-template-columns:1fr 220px; gap:16px; align-items:start; }
+.cal-col { min-width:0; }
+.stats-col { display:flex; flex-direction:column; gap:0; min-width:0; }
+
+/* ── Global overflow fix ── */
+body { overflow-x:hidden; }
+.main { overflow-x:hidden; box-sizing:border-box; }
+img,video,iframe,canvas,svg { max-width:100%; }
+* { box-sizing:border-box; }
+
+/* ── Strava card mobile fix ── */
+#strava-activities-list > div { max-width:100%; overflow:hidden; }
+#strava-activities-list .smap-thumb { flex-shrink:0; width:100px !important; min-width:100px !important; }
+#strava-activities-list .act-stats { display:grid !important; grid-template-columns:1fr 1fr !important; gap:8px !important; }
+#strava-activities-list .act-name { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+
 /* ══════════════════════════
    UTILS
 ══════════════════════════ */
@@ -837,50 +854,116 @@ tbody tr:hover td { background: var(--bg); }
    MOBILE
 ══════════════════════════ */
 @media (max-width: 768px) {
-  .sidebar {
+  /* Hide sidebar completely on mobile */
+  .sidebar { display: none !important; }
+
+  /* Hamburger button */
+  #mob-menu-btn {
+    display: flex;
     position: fixed;
-    left: 0; right: 0; bottom: 0; top: auto;
-    width: 100%; height: 60px;
-    flex-direction: row;
-    border-right: none; border-top: 1px solid var(--border);
-    z-index: 200; overflow: visible; padding: 0;
-    backdrop-filter: blur(20px);
-    background: rgba(255,255,255,.85);
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 300;
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,122,255,.4);
+    font-size: 22px;
+    color: #fff;
+    transition: transform .15s, box-shadow .15s;
   }
-  [data-theme="dark"] .sidebar { background: rgba(28,28,30,.9); }
+  #mob-menu-btn:active { transform: translateX(-50%) scale(.93); }
 
-  .nav-section-label, .sidebar-bottom, .logo-row, .sidebar-top > :not(.nav) { display: none !important; }
-  .sidebar-top { padding: 0 !important; overflow: visible !important; }
-
-  .nav {
-    display: flex; flex-direction: row; align-items: stretch;
-    width: 100%; overflow-x: auto; padding: 0 4px;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
+  /* Drawer overlay */
+  #mob-drawer-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 400;
+    backdrop-filter: blur(4px);
   }
-  .nav::-webkit-scrollbar { display: none; }
+  #mob-drawer-overlay.open { display: block; }
 
-  .nav-item {
-    flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px; padding: 6px 10px;
-    min-width: 56px;
-    border-radius: 0; margin: 0;
-    border-top: 2px solid transparent;
+  /* Drawer panel */
+  #mob-drawer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-radius: 22px 22px 0 0;
+    z-index: 500;
+    padding: 12px 16px 36px;
+    transform: translateY(100%);
+    transition: transform .28s cubic-bezier(.32,1,.32,1);
+    max-height: 80vh;
+    overflow-y: auto;
   }
-  .nav-item.active { background: transparent; border-top-color: var(--accent); }
-  .nav-item span:not(.nav-icon) { font-size: 8px; color: var(--text3); white-space: nowrap; overflow: hidden; max-width: 60px; text-overflow: ellipsis; letter-spacing: .3px; text-transform: uppercase; font-weight: 600; }
-  .nav-item.active span:not(.nav-icon) { color: var(--accent); }
-  .nav-icon { width: 26px; height: 26px; font-size: 14px; background: transparent; }
-  .nav-item.active .nav-icon { background: transparent; }
-  .nav-badge { display: none; }
+  #mob-drawer.open { transform: translateY(0); }
 
-  .main { margin-left: 0; padding: 20px 16px 80px; }
+  .mob-drawer-handle {
+    width: 36px; height: 4px;
+    border-radius: 99px;
+    background: var(--border2);
+    margin: 0 auto 16px;
+  }
+
+  .mob-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .mob-nav-item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 5px; padding: 12px 6px;
+    border-radius: 14px;
+    background: var(--bg);
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all .15s;
+  }
+  .mob-nav-item.active {
+    background: var(--accent-light);
+    border-color: rgba(0,122,255,.2);
+  }
+  .mob-nav-item .mob-nav-icon { font-size: 20px; line-height: 1; }
+  .mob-nav-item .mob-nav-label {
+    font-size: 9px; font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; color: var(--text3);
+    text-align: center; white-space: nowrap;
+  }
+  .mob-nav-item.active .mob-nav-label { color: var(--accent); }
+
+  .mob-drawer-section {
+    font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--text3);
+    padding: 12px 4px 6px;
+  }
+
+  .mob-user-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 4px 4px;
+    border-top: 1px solid var(--border);
+    margin-top: 8px;
+  }
+
+  .main { margin-left: 0; padding: 20px 16px 90px; }
+  .cal-stats-row { grid-template-columns:1fr; }
+  .stats-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+  .stats-col > * { margin-bottom:0 !important; }
+  #strava-activities-list .smap-thumb { width:80px !important; min-width:80px !important; }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
   .page-title { font-size: 24px; }
   .hero-ring-card { flex-direction: column; }
   .doc-preview-bg, .a4-sim { display: none; }
   .week-nav-label { min-width: 130px; font-size: 10px; }
+}
+
+@media (min-width: 769px) {
+  #mob-menu-btn, #mob-drawer-overlay, #mob-drawer { display: none !important; }
 }
 </style>
   <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22MyDash%22%2C%22short_name%22%3A%22MyDash%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F5F5F5%22%2C%22theme_color%22%3A%22%23007AFF%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fvia.placeholder.com%2F192x192%2F007AFF%2Fffffff%3Ftext%3DMD%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
@@ -1006,87 +1089,83 @@ tbody tr:hover td { background: var(--bg); }
         </div>
       </div>
 
-      <!-- Training Calendar — compact heatmap -->
-      <div class="card mb-16" style="padding:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="card-label" style="margin:0">🗓️ Training Calendar</div>
-            <span id="cal-month-label" style="font-size:11px;color:var(--text3);font-weight:600"></span>
+      <!-- Calendar + Stats: side-by-side on desktop -->
+      <div class="cal-stats-row mb-16">
+        <!-- Training Calendar — compact heatmap -->
+        <div class="card cal-col" style="padding:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="card-label" style="margin:0">🗓️ Training Calendar</div>
+              <span id="cal-month-label" style="font-size:11px;color:var(--text3);font-weight:600"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <button class="week-nav-btn" onclick="navCalMonth(-1)" style="width:24px;height:24px;font-size:12px;padding:0">‹</button>
+              <button class="week-nav-btn" id="btn-cal-next" onclick="navCalMonth(1)" style="width:24px;height:24px;font-size:12px;padding:0" disabled>›</button>
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px">
-            <button class="week-nav-btn" onclick="navCalMonth(-1)" style="width:24px;height:24px;font-size:12px;padding:0">‹</button>
-            <button class="week-nav-btn" id="btn-cal-next" onclick="navCalMonth(1)" style="width:24px;height:24px;font-size:12px;padding:0" disabled>›</button>
+          <!-- Day headers -->
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px">
+            <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">จ</div>
+            <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">อ</div>
+            <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">พ</div>
+            <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">พฤ</div>
+            <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">ศ</div>
+            <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">ส</div>
+            <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">อา</div>
+          </div>
+          <!-- Heatmap grid -->
+          <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
+          <!-- Inline day detail -->
+          <div id="cal-day-detail" style="display:none;margin-top:10px;padding:10px;background:var(--bg);border-radius:10px">
+            <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px" id="cal-day-label"></div>
+            <div id="cal-day-acts"></div>
+          </div>
+          <!-- Bottom stats row -->
+          <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+            <div style="text-align:center">
+              <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--accent)" id="cal-days">—</div>
+              <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">วันวิ่ง</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--green)" id="cal-dist">—</div>
+              <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">km</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text2)" id="cal-rest">—</div>
+              <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">พักผ่อน</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--orange)" id="cal-longest">—</div>
+              <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">longest</div>
+            </div>
           </div>
         </div>
-        <!-- Day headers -->
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px">
-          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">จ</div>
-          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">อ</div>
-          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">พ</div>
-          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">พฤ</div>
-          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">ศ</div>
-          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">ส</div>
-          <div style="text-align:center;font-size:9px;color:var(--text3);font-weight:700">อา</div>
-        </div>
-        <!-- Heatmap grid -->
-        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
-        <!-- Inline day detail -->
-        <div id="cal-day-detail" style="display:none;margin-top:10px;padding:10px;background:var(--bg);border-radius:10px">
-          <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px" id="cal-day-label"></div>
-          <div id="cal-day-acts"></div>
-        </div>
-        <!-- Bottom stats row -->
-        <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
-          <div style="text-align:center">
-            <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--accent)" id="cal-days">—</div>
-            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">วันวิ่ง</div>
-          </div>
-          <div style="text-align:center">
-            <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--green)" id="cal-dist">—</div>
-            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">km</div>
-          </div>
-          <div style="text-align:center">
-            <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text2)" id="cal-rest">—</div>
-            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">พักผ่อน</div>
-          </div>
-          <div style="text-align:center">
-            <div style="font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--orange)" id="cal-longest">—</div>
-            <div style="font-size:8px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">longest</div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Race Countdown inline -->
-      <div class="card mb-16">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div class="card-label" style="margin:0">🏁 Race Countdown</div>
-          <button class="btn btn-ghost btn-sm" onclick="showRaceAddPanel()" style="font-size:11px">+ เพิ่ม</button>
-        </div>
-        <div id="race-list-container"><p class="text-sm c2" style="text-align:center;padding:12px">กำลังโหลด...</p></div>
-      </div>
-
-      <!-- Goals + Streak + PR strip -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
-        <!-- Weekly Goal -->
-        <div class="card" style="padding:14px;cursor:pointer" onclick="showGoalSetting()">
-          <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">🎯 เป้าสัปดาห์</div>
-          <div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace" id="goal-display">—</div>
-          <div style="font-size:9px;color:var(--text3);margin:6px 0 4px" id="goal-sub">กด ตั้งเป้า</div>
-          <div style="height:4px;background:var(--bg2);border-radius:99px;overflow:hidden">
-            <div id="goal-bar" style="height:100%;border-radius:99px;background:var(--accent);width:0%;transition:width .5s ease"></div>
+        <!-- Right column: Race Banner + Goals + Streak + PR -->
+        <div class="stats-col">
+          <!-- Race Banner -->
+          <div id="dash-race-banner" style="display:none;margin-bottom:12px"></div>
+          <!-- Goals -->
+          <div class="card mb-12" style="padding:14px;cursor:pointer" onclick="showGoalSetting()">
+            <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">🎯 เป้าสัปดาห์</div>
+            <div style="font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace" id="goal-display">—</div>
+            <div style="font-size:9px;color:var(--text3);margin:6px 0 4px" id="goal-sub">กด ตั้งเป้า</div>
+            <div style="height:4px;background:var(--bg2);border-radius:99px;overflow:hidden">
+              <div id="goal-bar" style="height:100%;border-radius:99px;background:var(--accent);width:0%;transition:width .5s ease"></div>
+            </div>
           </div>
-        </div>
-        <!-- Streak -->
-        <div class="card" style="padding:14px">
-          <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">🔥 Streak</div>
-          <div style="font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1" id="streak-num">0</div>
-          <div style="font-size:10px;color:var(--text2);margin-top:4px" id="streak-label">วัน</div>
-        </div>
-        <!-- PR -->
-        <div class="card" style="padding:14px;cursor:pointer" onclick="showPRPanel()">
-          <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">🏆 PR</div>
-          <div style="font-size:12px;font-weight:700;color:var(--orange);font-family:'JetBrains Mono',monospace" id="pr-5k-disp">5K —</div>
-          <div style="font-size:12px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-top:4px" id="pr-10k-disp">10K —</div>
+          <!-- Streak -->
+          <div class="card mb-12" style="padding:14px">
+            <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">🔥 Streak</div>
+            <div style="font-size:28px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1" id="streak-num">0</div>
+            <div style="font-size:10px;color:var(--text2);margin-top:4px" id="streak-label">วัน</div>
+          </div>
+          <!-- PR -->
+          <div class="card" style="padding:14px;cursor:pointer" onclick="showPRPanel()">
+            <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">🏆 PR</div>
+            <div style="font-size:12px;font-weight:700;color:var(--orange);font-family:'JetBrains Mono',monospace" id="pr-5k-disp">5K —</div>
+            <div style="font-size:12px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-top:4px" id="pr-10k-disp">10K —</div>
+          </div>
         </div>
       </div>
 
@@ -1369,6 +1448,7 @@ tbody tr:hover td { background: var(--bg); }
       <div class="seg-tabs">
         <div class="seg-tab active" onclick="switchCoachTab('create',this)">✨ Create Plan</div>
         <div class="seg-tab" onclick="switchCoachTab('track',this)">📋 Track Plan</div>
+        <div class="seg-tab" onclick="switchCoachTab('race',this)">🏁 Race</div>
       </div>
 
       <div id="coach-create-tab">
@@ -1390,6 +1470,27 @@ tbody tr:hover td { background: var(--bg); }
               </select>
             </div>
             <div class="form-group"><label>Start Date</label><input type="date" id="coach-start-date"></div>
+            <div class="form-group">
+              <label>Training Duration</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div>
+                  <div style="font-size:10px;color:var(--text3);margin-bottom:4px">จำนวนสัปดาห์</div>
+                  <select id="coach-weeks" onchange="updateCoachEndDate()">
+                    <option value="4">4 สัปดาห์</option>
+                    <option value="6">6 สัปดาห์</option>
+                    <option value="8" selected>8 สัปดาห์</option>
+                    <option value="10">10 สัปดาห์</option>
+                    <option value="12">12 สัปดาห์</option>
+                    <option value="16">16 สัปดาห์</option>
+                    <option value="custom">กำหนดเอง</option>
+                  </select>
+                </div>
+                <div>
+                  <div style="font-size:10px;color:var(--text3);margin-bottom:4px">วันสิ้นสุด / วันแข่ง</div>
+                  <input type="date" id="coach-end-date" onchange="updateCoachWeeksFromEnd()">
+                </div>
+              </div>
+            </div>
             <button class="btn btn-primary w100" id="btn-coach" onclick="generateTrainingPlan()">✨ Generate Plan + Save to Firebase</button>
             <div style="background:var(--accent-light);border:1.5px solid rgba(0,122,255,.2);border-radius:var(--r);padding:12px;margin-top:12px;font-size:12px;color:var(--text2);line-height:1.8">
               💡 ระบบจะ <strong style="color:var(--text)">จับคู่อัตโนมัติ</strong> กับกิจกรรมที่บันทึก / Sync Strava ทุกวัน
@@ -1403,7 +1504,6 @@ tbody tr:hover td { background: var(--bg); }
       </div>
 
       <div id="coach-track-tab" style="display:none">
-        <div id="coach-no-plan" style="text-align:center;padding:48px;color:var(--text2)">
           <div style="font-size:48px;margin-bottom:16px">📋</div>
           <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)">No Training Plan</div>
           <div style="font-size:13px;margin-bottom:20px">Go to "Create Plan" tab to generate your schedule</div>
@@ -1436,6 +1536,18 @@ tbody tr:hover td { background: var(--bg); }
           <div id="coach-plan-days"></div>
         </div>
       </div>
+
+      <!-- Race Tab -->
+      <div id="coach-race-tab" style="display:none">
+        <div class="card mb-16">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="card-label" style="margin:0">🏁 การแข่งขันของฉัน</div>
+            <button class="btn btn-primary btn-sm" onclick="showRaceAddPanel()">+ เพิ่มงานแข่ง</button>
+          </div>
+          <div id="race-list-container"><p class="text-sm c2" style="text-align:center;padding:24px">กำลังโหลด...</p></div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ════════════ STRAVA ════════════ -->
@@ -1790,7 +1902,12 @@ function showPage(id) {
   if(id==='fitness-stats'){initStatsNav();renderCurrentStatsView();}
   if(id==='doc-create') updateDocPreview();
   if(id==='strava') renderStravaPage();
-  if(id==='coach'){document.getElementById('coach-start-date').value=toLocalDateStr();renderCoachTracking();}
+  if(id==='coach'){
+    const sd = document.getElementById('coach-start-date');
+    if(sd) { sd.value=toLocalDateStr(); sd.addEventListener('change', updateCoachEndDate, {once:false}); }
+    updateCoachEndDate();
+    renderCoachTracking();
+  }
 }
 
 // ── WEEK HELPERS ──
@@ -1808,7 +1925,7 @@ function renderTodayStats(){
   set('t-workouts',recent.length);
   setTimeout(renderDashboardExtras, 100);
   setTimeout(renderCalendar, 200);
-  setTimeout(loadRaces, 300);
+  setTimeout(renderDashRaceBanner, 300);
 
   // Update ring
   const ringEl=document.getElementById('ring-num');
@@ -2051,6 +2168,28 @@ async function analyzeFitnessAI(period='week'){
   await askClaude(prompt,'คุณคือนักสรีรวิทยาและโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย ตรงประเด็น',period==='week'?'btn-analyze-wk':'btn-analyze-mo',period==='week'?'ai-stats-output':'ai-month-output');
 }
 
+// ── AI COACH DATE HELPERS ──
+function updateCoachEndDate() {
+  const start = document.getElementById('coach-start-date')?.value;
+  const weeksEl = document.getElementById('coach-weeks');
+  const endEl = document.getElementById('coach-end-date');
+  if (!start || !weeksEl || !endEl) return;
+  const w = parseInt(weeksEl.value);
+  if (!w || isNaN(w)) return;
+  const d = new Date(start + 'T00:00:00');
+  d.setDate(d.getDate() + w * 7);
+  endEl.value = toLocalDateStr(d);
+}
+function updateCoachWeeksFromEnd() {
+  const start = document.getElementById('coach-start-date')?.value;
+  const end = document.getElementById('coach-end-date')?.value;
+  const weeksEl = document.getElementById('coach-weeks');
+  if (!start || !end || !weeksEl) return;
+  const diff = Math.round((new Date(end+'T00:00:00') - new Date(start+'T00:00:00')) / (7*86400000));
+  if (diff > 0) weeksEl.value = 'custom';
+  document.getElementById('coach-weeks-custom-display') && (document.getElementById('coach-weeks-custom-display').textContent = diff + ' สัปดาห์');
+}
+
 // ── AI COACH ──
 async function generateTrainingPlan(){
   const goal=document.getElementById('coach-goal')?.value?.trim();
@@ -2059,12 +2198,20 @@ async function generateTrainingPlan(){
   const level=document.getElementById('coach-level')?.value;
   const days=document.getElementById('coach-days')?.value;
   const startDate=document.getElementById('coach-start-date')?.value||toLocalDateStr();
+  const endDate=document.getElementById('coach-end-date')?.value||'';
+  // Compute weeks: prefer end-start, else selector
+  let totalWeeks = parseInt(document.getElementById('coach-weeks')?.value) || 8;
+  if (endDate && endDate > startDate) {
+    const diff = Math.round((new Date(endDate+'T00:00:00') - new Date(startDate+'T00:00:00')) / (7*86400000));
+    if (diff > 0) totalWeeks = diff;
+  }
+  const endInfo = endDate ? `\nRace/Goal Date: ${endDate}` : '';
   const history=window._workouts.slice(0,7).map(w=>`${w.date}:${w.dist}km${w.avgPace?' Pace'+formatPace(w.avgPace):''}`).join(', ');
   const out=document.getElementById('coach-output');
   if(out){out.style.color='var(--text2)';out.innerHTML='⏳ Creating plan...';}
   const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='⏳ Generating...';btn.disabled=true;}
   try{
-    const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':window._claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,system:'คุณเป็นโค้ชวิ่ง IAAF ตอบเป็น JSON ONLY ไม่มี markdown',messages:[{role:'user',content:`Goal:${goal}\nLevel:${level}\nDays:${days}/week\nStart:${startDate}\nHistory:${history||'none'}\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","totalWeeks":4,"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"..."}]}\nCreate ${parseInt(days)*4} sessions starting ${startDate}`}]})});
+    const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':window._claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,system:'คุณเป็นโค้ชวิ่ง IAAF ตอบเป็น JSON ONLY ไม่มี markdown',messages:[{role:'user',content:`Goal:${goal}\nLevel:${level}\nDays:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nHistory:${history||'none'}\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"..."}]}\nCreate exactly ${parseInt(days)*totalWeeks} sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}`}]})}); 
     const data=await res.json();const rawText=data?.content?.[0]?.text||'';
     let plan=null;
     try{plan=JSON.parse(rawText.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim());}
@@ -2079,10 +2226,14 @@ async function generateTrainingPlan(){
 function switchCoachTab(tab,el){
   document.querySelectorAll('#page-coach .seg-tab').forEach(t=>t.classList.remove('active'));
   const tabs=document.querySelectorAll('#page-coach .seg-tab');
-  if(tab==='create')tabs[0]?.classList.add('active');else tabs[1]?.classList.add('active');
+  if(tab==='create')tabs[0]?.classList.add('active');
+  else if(tab==='track')tabs[1]?.classList.add('active');
+  else if(tab==='race')tabs[2]?.classList.add('active');
   document.getElementById('coach-create-tab').style.display=tab==='create'?'block':'none';
   document.getElementById('coach-track-tab').style.display=tab==='track'?'block':'none';
+  document.getElementById('coach-race-tab').style.display=tab==='race'?'block':'none';
   if(tab==='track')renderCoachTracking();
+  if(tab==='race')loadRaces();
 }
 
 function renderCoachTracking(){
@@ -2286,27 +2437,26 @@ function renderStravaActivities(acts){
     // Map thumbnail: use Leaflet mini-map or static placeholder with polyline
     const hasMap = !!(a.map?.summary_polyline);
     const mapThumb = hasMap
-      ? `<div id="smap-${idx}" style="width:130px;min-width:130px;height:100%;min-height:120px;background:var(--bg2);border-left:1px solid var(--border);position:relative;overflow:hidden;flex-shrink:0">
+      ? `<div id="smap-${idx}" class="smap-thumb" style="width:100px;min-width:100px;height:100%;min-height:110px;background:var(--bg2);border-left:1px solid var(--border);position:relative;overflow:hidden;flex-shrink:0">
            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;color:var(--text3);font-size:11px">
              <span style="font-size:22px">🗺️</span><span>แตะดูแผนที่</span>
            </div>
          </div>`
-      : `<div style="width:110px;min-width:110px;background:var(--bg2);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.35">
+      : `<div class="smap-thumb" style="width:70px;min-width:70px;background:var(--bg2);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.35">
            <span style="font-size:28px">🏃</span>
          </div>`;
-    return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:all .2s;cursor:pointer;display:flex" onclick="openStravaDetail(${idx})" onmouseover="this.style.borderColor='var(--border2)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
-      <div style="padding:16px;flex:1;min-width:0">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
-          <div style="min-width:0"><div style="font-size:10px;color:var(--text3);margin-bottom:4px;letter-spacing:.5px">${dateStr} · ${em[a.type]||'🏅'} <span style="color:${color};font-weight:700">${a.type.toUpperCase()}</span></div><div style="font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</div></div>
-          <span style="color:var(--text3);font-size:16px;flex-shrink:0;margin-left:8px">›</span>
+    return `<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:all .2s;cursor:pointer;display:flex;max-width:100%" onclick="openStravaDetail(${idx})" onmouseover="this.style.borderColor='var(--border2)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+      <div style="padding:12px;flex:1;min-width:0;overflow:hidden">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+          <div style="min-width:0;flex:1"><div style="font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:.5px">${dateStr} · ${em[a.type]||'🏅'} <span style="color:${color};font-weight:700">${a.type.toUpperCase()}</span></div><div class="act-name" style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</div></div>
+          <span style="color:var(--text3);font-size:16px;flex-shrink:0;margin-left:6px">›</span>
         </div>
-        <div style="display:grid;grid-template-columns:${dist>0?'1fr':''}${pace?' 1fr':''}1fr${elev?' 1fr':''};gap:10px">
-          ${dist>0?`<div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:3px">Distance</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:${color}">${dist}<span style="font-size:10px;color:var(--text2);margin-left:2px">km</span></div></div>`:'' }
-          ${pace?`<div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:3px">Pace</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--green)">${pace}<span style="font-size:10px;color:var(--text2);margin-left:2px">/km</span></div></div>`:''}
-          <div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:3px">Time</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700">${mins}<span style="font-size:10px;color:var(--text2);margin-left:2px">m</span></div></div>
-          ${elev?`<div><div style="font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:3px">↑ Elev</div><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--orange)">${elev}<span style="font-size:10px;color:var(--text2);margin-left:2px">m</span></div></div>`:''}
+        <div class="act-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          ${dist>0?`<div><div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:2px">Dist</div><div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:${color}">${dist}<span style="font-size:9px;color:var(--text2);margin-left:2px">km</span></div></div>`:''}
+          ${pace?`<div><div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:2px">Pace</div><div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--green)">${pace}<span style="font-size:9px;color:var(--text2);margin-left:2px">/km</span></div></div>`:''}
+          <div><div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:2px">Time</div><div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${mins}<span style="font-size:9px;color:var(--text2);margin-left:2px">m</span></div></div>
+          ${hr?`<div><div style="font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:2px">HR</div><div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;color:var(--red)">${hr}<span style="font-size:9px;color:var(--text2);margin-left:2px">bpm</span></div></div>`:''}
         </div>
-        ${hr||cad?`<div style="display:flex;gap:12px;margin-top:8px">${hr?`<span style="font-size:11px;color:var(--red);font-family:'JetBrains Mono',monospace">♥ ${hr} bpm</span>`:''} ${cad?`<span style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace">👟 ${cad} spm</span>`:''}</div>`:''}
       </div>
       ${mapThumb}
     </div>`;
@@ -2473,6 +2623,40 @@ function computePR(allActs) {
   });
   return prs;
 }
+
+// ── DASHBOARD RACE BANNER ──
+async function renderDashRaceBanner() {
+  const banner = document.getElementById('dash-race-banner');
+  if (!banner) return;
+  try {
+    const data = await window._fb.getData('races');
+    const races = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    const upcoming = races
+      .filter(r => r.date && new Date(r.date+'T00:00:00') >= today)
+      .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    if (!upcoming.length) { banner.style.display = 'none'; return; }
+    const next = upcoming[0];
+    const daysLeft = Math.ceil((new Date(next.date+'T00:00:00') - today) / 86400000);
+    const urgencyColor = daysLeft <= 14 ? 'var(--red)' : daysLeft <= 30 ? 'var(--orange)' : 'var(--accent)';
+    const urgencyBg = daysLeft <= 14 ? 'rgba(255,59,48,.08)' : daysLeft <= 30 ? 'rgba(255,149,0,.08)' : 'rgba(0,122,255,.06)';
+    banner.style.display = 'block';
+    banner.innerHTML = `<div style="background:${urgencyBg};border:1.5px solid ${urgencyColor};border-radius:var(--r-lg);padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer" onclick="showPage('coach');switchCoachTab('race',null)">
+      <div style="font-size:28px;line-height:1">🏁</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${next.name}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${new Date(next.date+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})} · ${next.dist||10}K</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:800;line-height:1;color:${urgencyColor}">${daysLeft}</div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">วันที่เหลือ</div>
+      </div>
+    </div>
+    ${upcoming.length > 1 ? `<div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:right">+ อีก ${upcoming.length-1} งาน · <span style="color:var(--accent);cursor:pointer" onclick="showPage('coach');switchCoachTab('race',null)">ดูทั้งหมด →</span></div>` : ''}`;
+  } catch(e) { banner.style.display = 'none'; }
+}
+
+// ── MINI WEEK STRIP (removed) ──
 
 function renderDashboardExtras() {
   const all = [...window._workouts, ...(window._stravaWorkouts||[])];
@@ -2850,7 +3034,7 @@ function renderCalendar() {
       ? `rgba(${rgb},${intensity})`
       : isToday ? 'rgba(0,122,255,.08)' : 'var(--bg2)';
     const textColor = acts.length && intensity > 0.55 ? '#fff' : isToday ? 'var(--accent)' : 'var(--text3)';
-    cells.push(`<div onclick="showCalDay('${ds}')" title="${ds}${totalDist>0?' · '+totalDist.toFixed(1)+'km':''}" style="aspect-ratio:1;border-radius:5px;cursor:${acts.length?'pointer':'default'};background:${bg};border:${isToday?'1.5px solid var(--accent)':'1.5px solid transparent'};opacity:${inMonth?1:0.2};position:relative;transition:transform .1s" onmouseover="this.style.transform='scale(1.2)';this.style.zIndex=2" onmouseout="this.style.transform='scale(1)';this.style.zIndex=1"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:${isToday?800:500};color:${textColor}">${d.getDate()}</div></div>`);
+    cells.push(`<div onclick="showCalDay('${ds}')" title="${ds}${totalDist>0?' · '+totalDist.toFixed(1)+'km':''}" style="height:38px;border-radius:5px;cursor:${acts.length?'pointer':'default'};background:${bg};border:${isToday?'1.5px solid var(--accent)':'1.5px solid transparent'};opacity:${inMonth?1:0.2};position:relative;transition:transform .1s" onmouseover="this.style.transform='scale(1.1)';this.style.zIndex=2" onmouseout="this.style.transform='scale(1)';this.style.zIndex=1"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:${isToday?800:500};color:${textColor}">${d.getDate()}</div></div>`);
     d.setDate(d.getDate() + 1);
     if (d > lastDay && cells.length % 7 === 0) break;
   }
@@ -3235,6 +3419,96 @@ async function saveStravaSettings(){showLoading('Saving...');try{const cfg=await
 
 // ── INIT ──
 document.getElementById('today-date-label').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// ── MOBILE DRAWER ──
+(function() {
+  const navPages = [
+    { page:'today',         icon:'🏠', label:'Dashboard' },
+    { page:'fitness-log',   icon:'💪', label:'Activity' },
+    { page:'fitness-stats', icon:'📊', label:'Statistics' },
+    { page:'coach',         icon:'🤖', label:'AI Coach' },
+    { page:'strava',        icon:'🚴', label:'Strava' },
+    { page:'doc-summary',   icon:'📑', label:'AI Summary' },
+    { page:'doc-create',    icon:'📝', label:'Create Doc' },
+    { page:'doc-list',      icon:'📁', label:'Registry' },
+    { page:'news',          icon:'💬', label:'AI Q&A' },
+    { page:'settings',      icon:'⚙️', label:'Settings' },
+  ];
+
+  // Inject button + drawer into body
+  const btn = document.createElement('button');
+  btn.id = 'mob-menu-btn';
+  btn.innerHTML = '☰';
+  btn.title = 'เมนู';
+  document.body.appendChild(btn);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'mob-drawer-overlay';
+  document.body.appendChild(overlay);
+
+  const drawer = document.createElement('div');
+  drawer.id = 'mob-drawer';
+  drawer.innerHTML = `
+    <div class="mob-drawer-handle"></div>
+    <div class="mob-drawer-section">Navigation</div>
+    <div class="mob-nav-grid" id="mob-nav-grid"></div>
+    <div class="mob-user-row">
+      <img id="mob-user-av" src="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid var(--accent)" onerror="this.style.display='none'">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="mob-user-name">—</div>
+        <div style="font-size:11px;color:var(--green)">● Synced</div>
+      </div>
+      <button onclick="window._fb.logout();closeMobDrawer()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:4px;border-radius:8px">⏻</button>
+    </div>`;
+  document.body.appendChild(drawer);
+
+  // Populate nav grid
+  function buildNav(activePage) {
+    const grid = document.getElementById('mob-nav-grid');
+    if (!grid) return;
+    grid.innerHTML = navPages.map(n => `
+      <div class="mob-nav-item${activePage===n.page?' active':''}" onclick="mobNav('${n.page}')">
+        <div class="mob-nav-icon">${n.icon}</div>
+        <div class="mob-nav-label">${n.label}</div>
+      </div>`).join('');
+    // Sync user info
+    const uav = document.getElementById('mob-user-av');
+    const unm = document.getElementById('mob-user-name');
+    const srcAv = document.getElementById('user-avatar');
+    const srcNm = document.getElementById('user-name');
+    if (uav && srcAv) uav.src = srcAv.src;
+    if (unm && srcNm) unm.textContent = srcNm.textContent;
+  }
+
+  window.openMobDrawer = function(activePage) {
+    buildNav(activePage || document.querySelector('.page.active')?.id?.replace('page-','') || 'today');
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+  };
+  window.closeMobDrawer = function() {
+    overlay.classList.remove('open');
+    drawer.classList.remove('open');
+  };
+  window.mobNav = function(page) {
+    closeMobDrawer();
+    setTimeout(() => showPage(page), 120);
+  };
+
+  btn.addEventListener('click', () => openMobDrawer());
+  overlay.addEventListener('click', closeMobDrawer);
+
+  // Patch showPage safely — defer to ensure original is defined
+  function patchShowPage() {
+    const orig = window.showPage;
+    if (typeof orig !== 'function') { setTimeout(patchShowPage, 100); return; }
+    window.showPage = function(id) {
+      try { orig(id); } catch(e) { console.warn('showPage error', e); }
+      if (btn) btn.innerHTML = navPages.find(n => n.page===id)?.icon || '☰';
+    };
+  }
+  patchShowPage();
+})();
+
 </script>
 </body>
 </html>
