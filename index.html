@@ -1812,11 +1812,12 @@ function rebuildCharts() {
 }
 
 const CF_WORKER = 'https://claude-proxy2.porbboyza.workers.js';
-window._claudeKey = '';
+// Note: _claudeKey is managed by AppState — see defineProperties below
 
 // ── CLAUDE API ──
 async function askClaude(userPrompt, systemMsg='', btnId='', outId='') {
-  if (!window._claudeKey) { showToast('กรุณาตั้งค่า Claude API Key ก่อน','error'); showPage('settings'); return null; }
+  const key = AppState.get('claudeKey');
+  if (!key) { showToast('กรุณาตั้งค่า Claude API Key ก่อน','error'); showPage('settings'); return null; }
   const btn = btnId ? document.getElementById(btnId) : null;
   const out = outId ? document.getElementById(outId) : null;
   const oldHTML = btn?.innerHTML;
@@ -1825,7 +1826,7 @@ async function askClaude(userPrompt, systemMsg='', btnId='', outId='') {
   try {
     const res = await fetch('https://claude-proxy2.porbboyza.workers.dev', {
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':window._claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2048,system:systemMsg||'คุณคือผู้ช่วยอัจฉริยะ ตอบเป็นภาษาไทย กระชับ ตรงประเด็น',messages:[{role:'user',content:userPrompt}]})
     });
     if (!res.ok) { const e=await res.json().catch(()=>{}); throw new Error(e?.error?.message||`HTTP ${res.status}`); }
@@ -1850,26 +1851,89 @@ function mdToHtml(text) {
 }
 
 async function askClaudeVision(imageBase64, mimeType, promptText) {
-  if (!window._claudeKey) { showToast('กรุณาตั้งค่า API Key ก่อน','error'); return null; }
-  const res = await fetch('https://claude-proxy2.porbboyza.workers.dev', {method:'POST',headers:{'Content-Type':'application/json','x-api-key':window._claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:512,system:'Extract fitness data from image. Return ONLY valid JSON: {distance:number,time:number,hr:number|null,cadence:number|null,splits:[{km:number,pace:string,hr:number}]|null,type:"run"|"bike"|"swim"|"walk"}',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mimeType,data:imageBase64}},{type:'text',text:promptText}]}]})});
+  const key = AppState.get('claudeKey');
+  if (!key) { showToast('กรุณาตั้งค่า API Key ก่อน','error'); return null; }
+  const res = await fetch('https://claude-proxy2.porbboyza.workers.dev', {method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:512,system:'Extract fitness data from image. Return ONLY valid JSON: {distance:number,time:number,hr:number|null,cadence:number|null,splits:[{km:number,pace:string,hr:number}]|null,type:"run"|"bike"|"swim"|"walk"}',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mimeType,data:imageBase64}},{type:'text',text:promptText}]}]})});
   const data = await res.json();
   return data?.content?.[0]?.text||null;
 }
 
-// ── DATA ──
-window._workouts=[];window._docs=[];window._stravaWorkouts=[];window._stravaActs=[];window._coachPlan=null;
+// ══════════════════════════════════════════════════
+//  APP STATE — centralized state with subscriptions
+// ══════════════════════════════════════════════════
+const AppState = (() => {
+  const _data = {
+    workouts:       [],
+    stravaWorkouts: [],
+    stravaActs:     [],
+    coachPlan:      null,
+    docs:           [],
+    claudeKey:      '',
+    appReady:       false,
+  };
+  const _listeners = {};
+  // Pending flags — prevent duplicate concurrent updates
+  const _pending = {};
+
+  return {
+    get(key) {
+      return _data[key];
+    },
+
+    set(key, value) {
+      // Skip if identical reference (arrays/objects still update)
+      _data[key] = value;
+      if (_listeners[key]) {
+        _listeners[key].forEach(cb => {
+          try { cb(value); } catch(e) { console.warn(`AppState[${key}] subscriber error:`, e); }
+        });
+      }
+    },
+
+    // Subscribe to state changes. Returns unsubscribe function.
+    subscribe(key, cb) {
+      if (!_listeners[key]) _listeners[key] = [];
+      _listeners[key].push(cb);
+      return () => {
+        _listeners[key] = _listeners[key].filter(fn => fn !== cb);
+      };
+    },
+
+    // Guard against concurrent async ops on same key
+    isPending(key) { return !!_pending[key]; },
+    setPending(key, val) { _pending[key] = val; },
+
+    // Debug helper — shows current state in console
+    debug() { console.table(Object.fromEntries(Object.entries(_data).map(([k,v])=>[k, Array.isArray(v)?`Array(${v.length})`:v]))); }
+  };
+})();
+
+// ── Backward-compatible window._ proxies ──
+// Existing code using window._workouts etc. still works unchanged.
+Object.defineProperties(window, {
+  _workouts:       { get: () => AppState.get('workouts'),       set: v => AppState.set('workouts', v),       configurable:true },
+  _stravaWorkouts: { get: () => AppState.get('stravaWorkouts'), set: v => AppState.set('stravaWorkouts', v), configurable:true },
+  _stravaActs:     { get: () => AppState.get('stravaActs'),     set: v => AppState.set('stravaActs', v),     configurable:true },
+  _coachPlan:      { get: () => AppState.get('coachPlan'),      set: v => AppState.set('coachPlan', v),      configurable:true },
+  _docs:           { get: () => AppState.get('docs'),           set: v => AppState.set('docs', v),           configurable:true },
+  _claudeKey:      { get: () => AppState.get('claudeKey'),      set: v => AppState.set('claudeKey', v),      configurable:true },
+  _appReady:       { get: () => AppState.get('appReady'),       set: v => AppState.set('appReady', v),       configurable:true },
+});
 
 // ── APP READY ──
 window._appReady = async (user) => {
   if (!user) {
-    // Guest mode — show empty dashboard, hide data-dependent elements
     document.getElementById('loading-overlay').style.display = 'none';
     return;
   }
   hideLoading(); showPage('today');
   try {
     const cfg = await window._fb.getData('settings')||{};
-    if (cfg.claudeKey) { window._claudeKey=cfg.claudeKey; const k=document.getElementById('set-claude-key'); if(k)k.value=cfg.claudeKey; const s=document.getElementById('claude-key-status'); if(s)s.innerHTML='<span style="color:var(--green)">✓ Ready</span>'; }
+    if (cfg.claudeKey) {
+      AppState.set('claudeKey', cfg.claudeKey);
+      const k=document.getElementById('set-claude-key'); if(k)k.value=cfg.claudeKey;
+      const s=document.getElementById('claude-key-status'); if(s)s.innerHTML='<span style="color:var(--green)">✓ Ready</span>';
+    }
     const safe=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
     safe('set-strava-id',cfg.stravaId);safe('set-strava-secret',cfg.stravaSecret);safe('set-strava-redirect',cfg.stravaRedirect);
     if(cfg.garudaImg){window._garudaB64=cfg.garudaImg;const t=document.getElementById('garuda-preview-thumb');if(t)t.innerHTML=`<img src="${cfg.garudaImg}" style="width:100%;height:100%;object-fit:contain">`;}
@@ -1879,25 +1943,53 @@ window._appReady = async (user) => {
 
 function startRealtimeListeners() {
   window._fb.listen('workouts', data => {
-    window._workouts = data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.date||'').localeCompare(a.date||'')) : [];
-    renderRecentWorkouts(); renderTodayStats();
-    if(document.getElementById('page-fitness-stats').classList.contains('active')) renderCurrentStatsView();
-    matchWorkoutsToPlan(true);
+    AppState.set('workouts',
+      data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.date||'').localeCompare(a.date||'')) : []
+    );
   });
   window._fb.listen('docs', data => {
-    window._docs = data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)) : [];
-    renderDocList(); const el=document.getElementById('t-docs'); if(el)el.textContent=window._docs.length;
+    AppState.set('docs',
+      data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)) : []
+    );
   });
   window._fb.listen('coach_plan', data => {
-    window._coachPlan=data||null;
-    if(document.getElementById('page-coach').classList.contains('active')) renderCoachTracking();
+    AppState.set('coachPlan', data || null);
   });
   window._fb.listen('strava_activities', data => {
-    if(!data) return;
+    if (!data) return;
     const acts = Array.isArray(data) ? data : Object.values(data);
     renderStravaActivities(acts);
   });
 }
+
+// ── AppState Subscribers — UI reacts to state changes automatically ──
+AppState.subscribe('workouts', () => {
+  renderRecentWorkouts();
+  renderTodayStats();
+  if (document.getElementById('page-fitness-stats')?.classList.contains('active')) renderCurrentStatsView();
+  matchWorkoutsToPlan(true);
+});
+
+AppState.subscribe('stravaWorkouts', () => {
+  renderTodayStats();
+  if (document.getElementById('page-fitness-stats')?.classList.contains('active')) renderCurrentStatsView();
+  matchWorkoutsToPlan(true);
+});
+
+AppState.subscribe('docs', () => {
+  renderDocList();
+  const el = document.getElementById('t-docs');
+  if (el) el.textContent = AppState.get('docs').length;
+});
+
+AppState.subscribe('coachPlan', () => {
+  if (document.getElementById('page-coach')?.classList.contains('active')) renderCoachTracking();
+});
+
+AppState.subscribe('claudeKey', key => {
+  // Sync to askClaude usage — no extra action needed since proxy handles it
+  if (key) console.info('[AppState] Claude API key loaded ✓');
+});
 
 // ── UI HELPERS ──
 function showLoading(msg='Loading'){document.getElementById('loading-msg').textContent=msg;document.getElementById('loading-overlay').classList.add('show');}
@@ -1969,7 +2061,7 @@ function renderTodayStats(){
       }).join('')
     : '<p class="text-sm c2">ไม่มีกิจกรรมสัปดาห์นี้</p>';
 
-  const hasKey=!!window._claudeKey;
+  const hasKey=!!AppState.get('claudeKey');
   const statusEl=document.getElementById('today-status');
   if(statusEl) statusEl.innerHTML=`
     <div class="pill pill-green"><span class="dot"></span>Firebase: Realtime sync</div>
@@ -2210,7 +2302,7 @@ function updateCoachWeeksFromEnd() {
 async function generateTrainingPlan(){
   const goal=document.getElementById('coach-goal')?.value?.trim();
   if(!goal){showToast('กรุณาใส่เป้าหมาย','error');return;}
-  if(!window._claudeKey){showToast('กรุณาตั้งค่า API Key ก่อน','error');showPage('settings');return;}
+  if(!AppState.get('claudeKey')){showToast('กรุณาตั้งค่า API Key ก่อน','error');showPage('settings');return;}
   const level=document.getElementById('coach-level')?.value;
   const days=document.getElementById('coach-days')?.value;
   const startDate=document.getElementById('coach-start-date')?.value||toLocalDateStr();
@@ -2227,7 +2319,7 @@ async function generateTrainingPlan(){
   if(out){out.style.color='var(--text2)';out.innerHTML='⏳ Creating plan...';}
   const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='⏳ Generating...';btn.disabled=true;}
   try{
-    const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':window._claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,system:'คุณเป็นโค้ชวิ่ง IAAF ตอบเป็น JSON ONLY ไม่มี markdown',messages:[{role:'user',content:`Goal:${goal}\nLevel:${level}\nDays:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nHistory:${history||'none'}\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"..."}]}\nCreate exactly ${parseInt(days)*totalWeeks} sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}`}]})}); 
+    const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':AppState.get('claudeKey'),'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,system:'คุณเป็นโค้ชวิ่ง IAAF ตอบเป็น JSON ONLY ไม่มี markdown',messages:[{role:'user',content:`Goal:${goal}\nLevel:${level}\nDays:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nHistory:${history||'none'}\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"..."}]}\nCreate exactly ${parseInt(days)*totalWeeks} sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}`}]})}); 
     const data=await res.json();const rawText=data?.content?.[0]?.text||'';
     let plan=null;
     try{plan=JSON.parse(rawText.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim());}
@@ -2300,7 +2392,7 @@ function renderCoachTracking(){
 
 async function matchWorkoutsToPlan(silent=false){if(!window._coachPlan?.sessions)return;if(document.getElementById('page-coach').classList.contains('active')&&document.getElementById('coach-track-tab').style.display!=='none')renderCoachTracking();if(!silent)showToast('🔄 Activities matched');}
 async function markDone(date){const plan=window._coachPlan;if(!plan)return;const c=plan.completedDates||{};c[date]=Date.now();await window._fb.setData('coach_plan/completedDates',c);showToast('✅ Marked as done');}
-async function clearCoachPlan(){if(!confirm('Delete training plan?'))return;await window._fb.removeData('coach_plan');window._coachPlan=null;renderCoachTracking();showToast('Plan deleted');}
+async function clearCoachPlan(){if(!confirm('Delete training plan?'))return;await window._fb.removeData('coach_plan');AppState.set('coachPlan',null);showToast('Plan deleted');}
 async function reviewPlanAI(){
   const plan=window._coachPlan;if(!plan?.sessions){showToast('No plan','error');return;}
   const today=toLocalDateStr();
@@ -2320,7 +2412,7 @@ function setNewsQ(q){document.getElementById('news-query').value=q;}
 // ── IMAGE AI ──
 async function processImageWithAI(event){
   const files=Array.from(event.target.files||[]);if(!files.length)return;
-  if(!window._claudeKey){showToast('กรุณาตั้งค่า API Key ก่อน','error');showPage('settings');return;}
+  if(!AppState.get('claudeKey')){showToast('กรุณาตั้งค่า API Key ก่อน','error');showPage('settings');return;}
   showLoading('AI extracting data...');
   try{
     const f=files[0];
@@ -2353,7 +2445,7 @@ async function summarizeDocAI(){
   const sys={brief:'สรุปหนังสือราชการ 3 ข้อสั้นๆ เพื่อเสนอผู้บริหาร',detailed:'สรุปละเอียด: บริบท สาระสำคัญ ข้อสังเกต',action:'ระบุ Action Items พร้อมผู้รับผิดชอบและกำหนดเวลา'};
   try{
     let reply=null;
-    if(_docFile){const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(_docFile);});const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':window._claudeKey,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2048,system:sys[format],messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:_docFile.type,data:b64}},{type:'text',text:'สรุปหนังสือราชการในภาพนี้'}]}]})});const data=await res.json();reply=data?.content?.[0]?.text||'';}
+    if(_docFile){const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(_docFile);});const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':AppState.get('claudeKey'),'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2048,system:sys[format],messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:_docFile.type,data:b64}},{type:'text',text:'สรุปหนังสือราชการในภาพนี้'}]}]})});const data=await res.json();reply=data?.content?.[0]?.text||'';}
     else{reply=await askClaude(text,sys[format]);}
     if(out&&reply)out.innerHTML=reply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
   }catch(e){if(out)out.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;}
@@ -2419,9 +2511,8 @@ async function renderStravaPage(){
 }
 
 function renderStravaActivities(acts){
-  window._stravaWorkouts=(acts||[]).map(a=>({date:a.start_date_local?a.start_date_local.slice(0,10):'',dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava'}));
-  if(document.getElementById('page-fitness-stats')?.classList.contains('active'))renderCurrentStatsView();
-  renderTodayStats();matchWorkoutsToPlan(true);
+  AppState.set('stravaWorkouts', (acts||[]).map(a=>({date:a.start_date_local?a.start_date_local.slice(0,10):'',dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava'})));
+  // Note: renderTodayStats + matchWorkoutsToPlan are triggered by AppState subscriber above
   const strip=document.getElementById('strava-week-strip');
   if(strip&&acts?.length){
     strip.style.display='grid';
@@ -2438,7 +2529,7 @@ function renderStravaActivities(acts){
   }
   const c=document.getElementById('strava-activities-list');
   if(!acts?.length){c.innerHTML='<p class="text-sm c2">No activities</p>';return;}
-  window._stravaActs=acts;
+  AppState.set('stravaActs', acts);
   const em={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',Hike:'🥾',WeightTraining:'🏋️',Workout:'💪'};
   const typeCol={Run:'var(--accent)',Ride:'var(--green)',Swim:'#5AC8FA',Walk:'var(--text2)',Hike:'var(--orange)'};
   c.innerHTML=acts.slice(0,20).map((a,idx)=>{
@@ -3430,7 +3521,7 @@ async function deleteDoc(key){if(!confirm('Delete this entry?'))return;try{await
 function exportDocList(){if(!window._docs.length){showToast('No data','error');return;}const csv=['\uFEFF#,Ref No.,Date,Subject,Type',...window._docs.map((d,i)=>`${i+1},"${d.num||''}","${d.date||''}","${d.sub||''}","${d.type||''}"`)];const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv.join('\n')],{type:'text/csv;charset=utf-8'}));a.download='document-registry.csv';a.click();}
 
 // ── SETTINGS ──
-async function saveClaudeKey(){const key=document.getElementById('set-claude-key').value.trim();if(!key){showToast('Please enter API Key','error');return;}showLoading('Saving...');try{window._claudeKey=key;const cfg=await window._fb.getData('settings')||{};cfg.claudeKey=key;await window._fb.setData('settings',cfg);document.getElementById('claude-key-status').innerHTML='<span style="color:var(--green)">✓ Saved & Ready</span>';showToast('✅ API Key saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
+async function saveClaudeKey(){const key=document.getElementById('set-claude-key').value.trim();if(!key){showToast('Please enter API Key','error');return;}showLoading('Saving...');try{AppState.set('claudeKey',key);const cfg=await window._fb.getData('settings')||{};cfg.claudeKey=key;await window._fb.setData('settings',cfg);document.getElementById('claude-key-status').innerHTML='<span style="color:var(--green)">✓ Saved & Ready</span>';showToast('✅ API Key saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 async function saveStravaSettings(){showLoading('Saving...');try{const cfg=await window._fb.getData('settings')||{};cfg.stravaId=document.getElementById('set-strava-id').value;cfg.stravaSecret=document.getElementById('set-strava-secret').value;cfg.stravaRedirect=document.getElementById('set-strava-redirect').value;await window._fb.setData('settings',cfg);showToast('✅ Strava settings saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 
 // ── INIT ──
