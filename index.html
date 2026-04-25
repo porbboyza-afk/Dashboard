@@ -344,9 +344,13 @@ body {
   margin-left: var(--sidebar-w);
   flex: 1; min-height: 100vh;
   padding: 36px 40px;
+  width: calc(100vw - var(--sidebar-w));
+  max-width: calc(100vw - var(--sidebar-w));
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
-.page { display: none; }
+.page { display: none; width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; }
 .page.active {
   display: block;
   animation: fadein .2s ease;
@@ -794,10 +798,12 @@ tbody tr:hover td { background: var(--bg); }
 .stats-col { display:flex; flex-direction:column; gap:0; min-width:0; }
 
 /* ── Global overflow fix ── */
-body { overflow-x:hidden; }
-.main { overflow-x:hidden; box-sizing:border-box; }
-img,video,iframe,canvas,svg { max-width:100%; }
-* { box-sizing:border-box; }
+html, body { overflow-x: hidden; max-width: 100vw; }
+body { overflow-x: hidden; }
+.main { overflow-x: hidden; box-sizing: border-box; }
+.page { width: 100%; min-width: 0; box-sizing: border-box; overflow-x: hidden; }
+img, video, iframe, canvas { max-width: 100%; }
+* { box-sizing: border-box; min-width: 0; }
 
 /* ── Strava card mobile fix ── */
 #strava-activities-list > div { max-width:100%; overflow:hidden; }
@@ -950,7 +956,12 @@ img,video,iframe,canvas,svg { max-width:100%; }
     margin-top: 8px;
   }
 
-  .main { margin-left: 0; padding: 20px 16px 90px; }
+  .main {
+    margin-left: 0;
+    padding: 20px 16px 90px;
+    width: 100vw;
+    max-width: 100vw;
+  }
   .cal-stats-row { grid-template-columns:1fr; }
   .stats-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
   .stats-col > * { margin-bottom:0 !important; }
@@ -1504,6 +1515,7 @@ img,video,iframe,canvas,svg { max-width:100%; }
       </div>
 
       <div id="coach-track-tab" style="display:none">
+        <div id="coach-no-plan" style="text-align:center;padding:48px;color:var(--text2)">
           <div style="font-size:48px;margin-bottom:16px">📋</div>
           <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)">No Training Plan</div>
           <div style="font-size:13px;margin-bottom:20px">Go to "Create Plan" tab to generate your schedule</div>
@@ -1552,16 +1564,16 @@ img,video,iframe,canvas,svg { max-width:100%; }
 
     <!-- ════════════ STRAVA ════════════ -->
     <div class="page" id="page-strava">
-      <div class="flex items-center justify-between mb-20 flex-wrap gap-12">
-        <div class="page-header" style="margin:0">
+      <div class="flex items-center justify-between mb-20 flex-wrap gap-12" style="min-width:0">
+        <div class="page-header" style="margin:0;min-width:0">
           <div class="page-title">Strava <span style="color:var(--strava)">●</span></div>
           <div class="page-subtitle">Activity sync · Auto-refresh token</div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <div id="strava-status-box" style="background:var(--surface);border-radius:var(--r);padding:8px 14px;display:flex;align-items:center;gap:8px;border:1.5px solid var(--border)"><div style="width:7px;height:7px;border-radius:50%;background:var(--text3)"></div><span style="font-size:12px;color:var(--text2)">Not connected</span></div>
-          <button id="btn-strava-sync" class="btn btn-strava btn-sm" onclick="stravaSync()" style="display:none">🔄 Sync</button>
-          <button id="btn-strava-connect" class="btn btn-strava btn-sm" onclick="stravaConnect()">🔗 Connect</button>
-          <button id="btn-strava-disconnect" class="btn btn-ghost btn-sm" onclick="stravaDisconnect()" style="display:none">✕ Disconnect</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0">
+          <div id="strava-status-box" style="background:var(--surface);border-radius:var(--r);padding:8px 14px;display:flex;align-items:center;gap:8px;border:1.5px solid var(--border);min-width:0;max-width:200px"><div style="width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0"></div><span style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Not connected</span></div>
+          <button id="btn-strava-sync" class="btn btn-strava btn-sm" onclick="stravaSync()" style="display:none;white-space:nowrap">🔄 Sync</button>
+          <button id="btn-strava-connect" class="btn btn-strava btn-sm" onclick="stravaConnect()" style="white-space:nowrap">🔗 Connect</button>
+          <button id="btn-strava-disconnect" class="btn btn-ghost btn-sm" onclick="stravaDisconnect()" style="display:none;white-space:nowrap">✕ Disconnect</button>
         </div>
       </div>
 
@@ -1574,7 +1586,7 @@ img,video,iframe,canvas,svg { max-width:100%; }
         </div>
       </div>
 
-      <div id="strava-activities-list" style="display:flex;flex-direction:column;gap:12px"><p class="text-sm c2">Not connected — press Connect above</p></div>
+      <div id="strava-activities-list" style="display:flex;flex-direction:column;gap:12px;width:100%;min-width:0"><p class="text-sm c2">Not connected — press Connect above</p></div>
 
       <div class="card mt-16" style="background:linear-gradient(135deg,rgba(0,122,255,.04),rgba(90,200,250,.03));border-color:rgba(0,122,255,.15)">
         <div class="flex justify-between items-center mb-12">
@@ -1904,7 +1916,11 @@ function showPage(id) {
   if(id==='strava') renderStravaPage();
   if(id==='coach'){
     const sd = document.getElementById('coach-start-date');
-    if(sd) { sd.value=toLocalDateStr(); sd.addEventListener('change', updateCoachEndDate, {once:false}); }
+    if(sd && !sd._listenerAdded) {
+      sd.addEventListener('change', updateCoachEndDate);
+      sd._listenerAdded = true;
+    }
+    if(sd) sd.value = toLocalDateStr();
     updateCoachEndDate();
     renderCoachTracking();
   }
