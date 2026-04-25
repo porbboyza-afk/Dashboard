@@ -2589,6 +2589,11 @@ function renderStravaActivities(acts){
       if (!a.map?.summary_polyline) return;
       const el = document.getElementById(`smap-${idx}`);
       if (!el) return;
+      // Destroy existing Leaflet instance if already initialized
+      if (el._leaflet_id) {
+        try { L.map(el).remove(); } catch(e) {}
+        el._leaflet_id = null;
+      }
       el.innerHTML = '';
       try {
         const coords = decodePolyline(a.map.summary_polyline);
