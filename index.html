@@ -1068,10 +1068,7 @@ img, video, iframe, canvas { max-width: 100%; }
         <div class="nav-item" data-page="coach" onclick="showPage('coach')"><span class="nav-icon">🤖</span><span>AI Coach</span></div>
         <div class="nav-item" data-page="strava" onclick="showPage('strava')"><span class="nav-icon">🚴</span><span>Strava</span></div>
 
-        <div class="nav-section-label">Documents</div>
-        <div class="nav-item" data-page="doc-summary" onclick="showPage('doc-summary')"><span class="nav-icon">📑</span><span>AI Summary</span></div>
-        <div class="nav-item" data-page="doc-create" onclick="showPage('doc-create')"><span class="nav-icon">📝</span><span>Create Doc</span></div>
-        <div class="nav-item" data-page="doc-list" onclick="showPage('doc-list')"><span class="nav-icon">📁</span><span>Registry</span></div>
+
 
         <div class="nav-section-label">Tools</div>
         <div class="nav-item" data-page="news" onclick="showPage('news')"><span class="nav-icon">💬</span><span>AI Q&A</span></div>
@@ -1135,13 +1132,9 @@ img, video, iframe, canvas { max-width: 100%; }
                 <span style="font-family:var(--font-mono);font-size:14px;color:var(--text3)">km</span>
               </div>
             </div>
-            <div style="padding:0 20px;border-right:1px solid var(--border)">
+            <div style="padding-left:20px">
               <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:2px">ACTIVITIES</div>
               <div style="font-family:var(--font-display);font-size:64px;line-height:1;color:var(--text);letter-spacing:1px" id="t-workouts">—</div>
-            </div>
-            <div style="padding-left:20px">
-              <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:2px">DOCUMENTS</div>
-              <div style="font-family:var(--font-display);font-size:64px;line-height:1;color:var(--text);letter-spacing:1px" id="t-docs">—</div>
             </div>
           </div>
           <!-- Ring — compact -->
@@ -1664,106 +1657,7 @@ img, video, iframe, canvas { max-width: 100%; }
           <li>คัดลอก <strong style="color:var(--green)">refresh_token</strong> → กด Connect ✅</li>
         </ol>
       </div>
-    </div>
-
-    <!-- ════════════ DOC SUMMARY ════════════ -->
-    <div class="page" id="page-doc-summary">
-      <div class="page-header">
-        <div class="page-title">AI Doc Summary 📑</div>
-        <div class="page-subtitle">อัปโหลดรูปภาพหรือวางข้อความ · Claude AI สรุปและแนะนำ Action Items</div>
-      </div>
-      <div class="grid g2">
-        <div class="card">
-          <div class="drop-zone" id="doc-drop-zone" onclick="document.getElementById('doc-file-input').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDocDrop(event)">
-            <span class="drop-zone-icon">📄</span>
-            <div class="drop-zone-title">Click or drag file here</div>
-            <div class="drop-zone-sub">รองรับรูปภาพ JPG / PNG</div>
-          </div>
-          <input type="file" id="doc-file-input" accept="image/*" style="display:none" onchange="onDocFileSelected(this)">
-          <div id="doc-file-chip" style="display:none;margin-top:12px" class="file-chip"><span>📎</span><span id="doc-file-name">file</span><button onclick="clearDocFile()">✕</button></div>
-          <div style="text-align:center;color:var(--text3);font-size:11px;font-weight:700;margin:14px 0;letter-spacing:2px;text-transform:uppercase">— or paste text below —</div>
-          <div class="form-group"><label>Document Content</label><textarea id="ai-doc-input" rows="8" placeholder="วางเนื้อหาหนังสือราชการ..."></textarea></div>
-          <div class="form-group"><label>Summary Format</label>
-            <select id="doc-summary-format">
-              <option value="brief">Short 3 points — for executives</option>
-              <option value="detailed">Detailed with key points</option>
-              <option value="action">Action Items</option>
-            </select>
-          </div>
-          <button class="btn btn-primary w100" id="btn-doc-ai" onclick="summarizeDocAI()">✨ Summarize with Claude AI</button>
-        </div>
-        <div class="card">
-          <div class="card-label">Summary Result</div>
-          <div id="ai-doc-output-page" style="line-height:1.85;font-size:13px"><p class="text-sm c2">ผลลัพธ์จะแสดงที่นี่...</p></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ════════════ DOC CREATE ════════════ -->
-    <div class="page" id="page-doc-create">
-      <div class="flex justify-between items-center mb-20">
-        <div class="page-header" style="margin:0">
-          <div class="page-title">Create Document 📝</div>
-          <div class="page-subtitle">ตามระเบียบสำนักนายกรัฐมนตรีฯ พ.ศ. 2548</div>
-        </div>
-        <button class="btn btn-ghost" onclick="printDoc()">🖨️ Print</button>
-      </div>
-      <div class="card mb-16">
-        <div class="flex items-center gap-12">
-          <div id="garuda-preview-thumb" style="width:46px;height:46px;border:1.5px dashed var(--border2);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:12px;color:var(--text3);font-weight:600">ครุฑ</div>
-          <label class="btn btn-ghost btn-sm" style="cursor:pointer">📁 Upload Garuda<input type="file" accept="image/*" style="display:none" onchange="loadGaruda(event)"></label>
-          <button class="btn btn-ghost btn-sm" onclick="clearGaruda()">✕ Remove</button>
-        </div>
-      </div>
-      <div class="grid g2">
-        <div class="card" style="max-height:85vh;overflow-y:auto">
-          <div class="seg-tabs" style="margin-bottom:20px">
-            <div class="seg-tab active" onclick="switchDocTab('out',this)">External Letter</div>
-            <div class="seg-tab" onclick="switchDocTab('memo',this)">Memo</div>
-          </div>
-          <div class="form-group"><label>Department / Agency</label><textarea id="do-dept" rows="2" oninput="updateDocPreview()" placeholder="ชื่อโรงเรียน / กรม / กอง"></textarea></div>
-          <div class="grid g2" style="gap:10px">
-            <div class="form-group"><label>Reference No.</label><input type="text" id="do-num" oninput="updateDocPreview()" placeholder="ศธ 0000/0000"></div>
-            <div class="form-group"><label>Date</label><input type="text" id="do-date" oninput="updateDocPreview()" placeholder="1 มกราคม 2568"></div>
-          </div>
-          <div class="form-group"><label>Subject</label><input type="text" id="do-subject" oninput="updateDocPreview()"></div>
-          <div class="form-group"><label>To</label><input type="text" id="do-to" oninput="updateDocPreview()"></div>
-          <div class="form-group" id="do-attach-group"><label>Attachments</label><input type="text" id="do-attach" oninput="updateDocPreview()" placeholder="(if any)"></div>
-          <div class="form-group"><label>Body</label><textarea id="do-body" rows="5" oninput="updateDocPreview()" placeholder="ด้วย..."></textarea></div>
-          <div class="form-group"><label>Closing</label><textarea id="do-conclusion" rows="2" oninput="updateDocPreview()" placeholder="จึงเรียนมาเพื่อโปรดพิจารณา"></textarea></div>
-          <div class="grid g2" style="gap:10px">
-            <div class="form-group"><label>Signatory</label><input type="text" id="do-signer" oninput="updateDocPreview()"></div>
-            <div class="form-group"><label>Position</label><input type="text" id="do-pos" oninput="updateDocPreview()"></div>
-          </div>
-          <div id="do-bottom-section">
-            <div class="form-group"><label>Contact Person</label><input type="text" id="do-contact-name" oninput="updateDocPreview()"></div>
-            <div class="form-group"><label>Phone</label><input type="text" id="do-contact-phone" oninput="updateDocPreview()"></div>
-            <div class="form-group"><label>Slogan</label><textarea id="do-slogan" rows="2" oninput="updateDocPreview()"></textarea></div>
-          </div>
-          <button class="btn btn-green mt-8 w100" onclick="saveDocDb()">☁️ Save to Registry</button>
-        </div>
-        <div class="doc-preview-bg"><div id="doc-render-area" class="a4-sim"></div></div>
-      </div>
-    </div>
-
-    <!-- ════════════ DOC LIST ════════════ -->
-    <div class="page" id="page-doc-list">
-      <div class="flex justify-between items-center mb-20">
-        <div class="page-header" style="margin:0">
-          <div class="page-title">Document Registry 📁</div>
-          <div class="page-subtitle">Realtime sync from Firebase</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="exportDocList()">📥 Export CSV</button>
-      </div>
-      <div class="card">
-        <table>
-          <thead><tr><th>#</th><th>Ref No.</th><th>Date</th><th>Subject</th><th>Type</th><th></th></tr></thead>
-          <tbody id="doc-table-body"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:28px">กำลังโหลด...</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ════════════ AI Q&A ════════════ -->
+    </div><!-- ════════════ AI Q&A ════════════ -->
     <div class="page" id="page-news">
       <div class="page-header">
         <div class="page-title">AI Q&A 💬</div>
@@ -1806,17 +1700,17 @@ img, video, iframe, canvas { max-width: 100%; }
 
       <div class="grid g2 mt-16">
         <div class="card">
-          <div class="card-label">Claude AI — Cloudflare Worker</div>
+          <div class="card-label">DeepSeek AI</div>
           <div style="background:var(--accent-light);border:1.5px solid rgba(0,122,255,.2);border-radius:var(--r);padding:14px;margin-bottom:16px;font-size:12px;line-height:1.8;color:var(--text2)">
-            🔒 Worker URL: <code style="color:var(--green);font-family:var(--font-mono);font-size:11px">claude-proxy2.porbboyza.workers.dev</code>
+            🤖 Model: <code style="color:var(--green);font-family:var(--font-mono);font-size:11px">deepseek-chat</code> (ราคาประหยัดและเสถียร)
           </div>
           <div class="form-group">
-            <label>Claude API Key</label>
-            <input type="password" id="set-claude-key" placeholder="sk-ant-api03-...">
-            <div style="font-size:11px;color:var(--text2);margin-top:6px">Get from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent)">console.anthropic.com</a></div>
+            <label>DeepSeek API Key</label>
+            <input type="password" id="set-deepseek-key" placeholder="sk-...">
+            <div style="font-size:11px;color:var(--text2);margin-top:6px">Get from DeepSeek Console</div>
           </div>
-          <button class="btn btn-green w100" onclick="saveClaudeKey()">☁️ Save API Key</button>
-          <div id="claude-key-status" style="font-size:12px;margin-top:10px"></div>
+          <button class="btn btn-green w100" onclick="saveDeepSeekKey()">☁️ Save API Key</button>
+          <div id="deepseek-key-status" style="font-size:12px;margin-top:10px"></div>
         </div>
         <div class="card">
           <div class="card-label">Strava API</div>
@@ -1873,33 +1767,108 @@ const CF_WORKER = 'https://claude-proxy2.porbboyza.workers.js';
 // Note: _claudeKey is managed by AppState — see defineProperties below
 
 // ── CLAUDE API ──
-async function askClaude(userPrompt, systemMsg='', btnId='', outId='') {
-  const key = AppState.get('claudeKey');
-  if (!key) { showToast('กรุณาตั้งค่า Claude API Key ก่อน','error'); showPage('settings'); return null; }
+async function askDeepSeek(userPrompt, systemMsg='', btnId='', outId='') {
+  if (!userPrompt?.trim()) {
+    showToast('กรุณากรอกข้อความ', 'warning');
+    return null;
+  }
+
+  const key = AppState.get('deepseekKey') || AppState.get('claudeKey');
+  if (!key) {
+    showToast('กรุณาตั้งค่า DeepSeek API Key ก่อน', 'error');
+    showPage('settings');
+    return null;
+  }
+
   const btn = btnId ? document.getElementById(btnId) : null;
   const out = outId ? document.getElementById(outId) : null;
   const oldHTML = btn?.innerHTML;
-  if (btn) { btn.innerHTML='⏳ Thinking...'; btn.disabled=true; }
-  if (out) { out.style.display='block'; out.innerHTML='<span style="opacity:.4;font-style:italic;font-size:12px">⏳ Claude กำลังประมวลผล...</span>'; }
+
+  if (btn) {
+    btn.innerHTML = '⏳ Thinking...';
+    btn.disabled = true;
+  }
+  if (out) {
+    out.style.display = 'block';
+    out.innerHTML = '<span style="opacity:.4;font-style:italic;font-size:12px">⏳ DeepSeek กำลังประมวลผล...</span>';
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
   try {
-    const res = await fetch('https://claude-proxy2.porbboyza.workers.dev', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2048,system:systemMsg||'คุณคือผู้ช่วยอัจฉริยะ ตอบเป็นภาษาไทย กระชับ ตรงประเด็น',messages:[{role:'user',content:userPrompt}]})
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model: AppState.get('deepseekModel') || 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: systemMsg || 'คุณคือผู้ช่วยอัจฉริยะ ตอบเป็นภาษาไทย กระชับ ตรงประเด็น'
+          },
+          { role: 'user', content: userPrompt.trim() }
+        ],
+        stream: false,
+        max_tokens: 4096,
+        temperature: 0.7
+      }),
+      signal: controller.signal
     });
-    if (!res.ok) { const e=await res.json().catch(()=>{}); throw new Error(e?.error?.message||`HTTP ${res.status}`); }
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(
+        errorData?.error?.message || 
+        `API Error: ${res.status} ${res.statusText}`
+      );
+    }
+
     const data = await res.json();
-    const reply = data?.content?.[0]?.text||'';
-    if (out) out.innerHTML = mdToHtml(reply);
+    
+    if (!data?.choices?.[0]?.message?.content) {
+      throw new Error('รูปแบบการตอบกลับจาก API ไม่ถูกต้อง');
+    }
+
+    const reply = data.choices[0].message.content;
+    
+    if (out) {
+      out.innerHTML = mdToHtml(reply);
+    }
+    
     return reply;
-  } catch(e) {
-    if (out) out.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;
-    else showToast('Claude Error: '+e.message,'error');
+
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      const msg = 'การเชื่อมต่อหมดเวลา (30 วินาที)';
+      if (out) out.innerHTML = `<span style="color:var(--red)">⚠️ ${msg}</span>`;
+      else showToast(msg, 'error');
+      return null;
+    }
+
+    const errorMsg = error.message || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ';
+    if (out) {
+      out.innerHTML = `<span style="color:var(--red)">⚠️ ${errorMsg}</span>`;
+    } else {
+      showToast(`DeepSeek Error: ${errorMsg}`, 'error');
+    }
     return null;
+
   } finally {
-    if (btn) { btn.innerHTML=oldHTML; btn.disabled=false; }
+    clearTimeout(timeoutId);
+    if (btn) {
+      btn.innerHTML = oldHTML;
+      btn.disabled = false;
+    }
   }
 }
+// Keep askClaude as fallback alias to prevent any missing ref crashes
+const askClaude = askDeepSeek;
 
 function mdToHtml(text) {
   return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -1925,8 +1894,9 @@ const AppState = (() => {
     stravaWorkouts: [],
     stravaActs:     [],
     coachPlan:      null,
-    docs:           [],
+    
     claudeKey:      '',
+  deepseekKey:    '',
     appReady:       false,
   };
   const _listeners = {};
@@ -1973,8 +1943,9 @@ Object.defineProperties(window, {
   _stravaWorkouts: { get: () => AppState.get('stravaWorkouts'), set: v => AppState.set('stravaWorkouts', v), configurable:true },
   _stravaActs:     { get: () => AppState.get('stravaActs'),     set: v => AppState.set('stravaActs', v),     configurable:true },
   _coachPlan:      { get: () => AppState.get('coachPlan'),      set: v => AppState.set('coachPlan', v),      configurable:true },
-  _docs:           { get: () => AppState.get('docs'),           set: v => AppState.set('docs', v),           configurable:true },
+  
   _claudeKey:      { get: () => AppState.get('claudeKey'),      set: v => AppState.set('claudeKey', v),      configurable:true },
+  _deepseekKey:    { get: () => AppState.get('deepseekKey'),    set: v => AppState.set('deepseekKey', v),    configurable:true },
   _appReady:       { get: () => AppState.get('appReady'),       set: v => AppState.set('appReady', v),       configurable:true },
 });
 
@@ -1994,7 +1965,7 @@ window._appReady = async (user) => {
     }
     const safe=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
     safe('set-strava-id',cfg.stravaId);safe('set-strava-secret',cfg.stravaSecret);safe('set-strava-redirect',cfg.stravaRedirect);
-    if(cfg.garudaImg){window._garudaB64=cfg.garudaImg;const t=document.getElementById('garuda-preview-thumb');if(t)t.innerHTML=`<img src="${cfg.garudaImg}" style="width:100%;height:100%;object-fit:contain">`;}
+
   } catch(e) { console.warn('Settings:',e.message); }
   try { startRealtimeListeners(); } catch(e) { showToast('Firebase: '+e.message,'error'); }
 };
@@ -2003,11 +1974,6 @@ function startRealtimeListeners() {
   window._fb.listen('workouts', data => {
     AppState.set('workouts',
       data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.date||'').localeCompare(a.date||'')) : []
-    );
-  });
-  window._fb.listen('docs', data => {
-    AppState.set('docs',
-      data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)) : []
     );
   });
   window._fb.listen('coach_plan', data => {
@@ -2034,11 +2000,6 @@ AppState.subscribe('stravaWorkouts', () => {
   matchWorkoutsToPlan(true);
 });
 
-AppState.subscribe('docs', () => {
-  renderDocList();
-  const el = document.getElementById('t-docs');
-  if (el) el.textContent = AppState.get('docs').length;
-});
 
 AppState.subscribe('coachPlan', () => {
   if (document.getElementById('page-coach')?.classList.contains('active')) renderCoachTracking();
@@ -2062,7 +2023,7 @@ function showPage(id) {
   if(id==='today') renderTodayStats();
   if(id==='fitness-log') document.getElementById('f-date').value=toLocalDateStr();
   if(id==='fitness-stats'){initStatsNav();renderCurrentStatsView();}
-  if(id==='doc-create') updateDocPreview();
+
   if(id==='strava') renderStravaPage();
   if(id==='coach'){
     const sd = document.getElementById('coach-start-date');
@@ -2487,29 +2448,6 @@ async function processImageWithAI(event){
   }catch(e){showToast('Error: '+e.message,'error');}
   finally{hideLoading();event.target.value='';}
 }
-
-// ── DOC SUMMARY ──
-let _docFile=null;
-function onDocFileSelected(input){_docFile=input.files?.[0]||null;const chip=document.getElementById('doc-file-chip'),name=document.getElementById('doc-file-name');if(_docFile){chip.style.display='inline-flex';name.textContent=`${_docFile.name} (${(_docFile.size/1024/1024).toFixed(1)}MB)`;}else chip.style.display='none';}
-function clearDocFile(){_docFile=null;document.getElementById('doc-file-input').value='';document.getElementById('doc-file-chip').style.display='none';}
-function handleDocDrop(e){e.preventDefault();document.getElementById('doc-drop-zone').classList.remove('drag-over');const file=e.dataTransfer.files?.[0];if(!file)return;_docFile=file;document.getElementById('doc-file-chip').style.display='inline-flex';document.getElementById('doc-file-name').textContent=`${file.name}`;}
-async function summarizeDocAI(){
-  const text=document.getElementById('ai-doc-input')?.value?.trim();
-  const format=document.getElementById('doc-summary-format')?.value||'brief';
-  const out=document.getElementById('ai-doc-output-page'),btn=document.getElementById('btn-doc-ai');
-  if(!_docFile&&!text){showToast('กรุณาอัปโหลดรูปหรือวางข้อความก่อน','error');return;}
-  if(out)out.innerHTML='<span style="opacity:.4;font-style:italic;font-size:12px">⏳ Claude กำลังอ่านและสรุป...</span>';
-  if(btn){btn.innerHTML='⏳ Summarizing...';btn.disabled=true;}
-  const sys={brief:'สรุปหนังสือราชการ 3 ข้อสั้นๆ เพื่อเสนอผู้บริหาร',detailed:'สรุปละเอียด: บริบท สาระสำคัญ ข้อสังเกต',action:'ระบุ Action Items พร้อมผู้รับผิดชอบและกำหนดเวลา'};
-  try{
-    let reply=null;
-    if(_docFile){const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(_docFile);});const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':AppState.get('claudeKey'),'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:2048,system:sys[format],messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:_docFile.type,data:b64}},{type:'text',text:'สรุปหนังสือราชการในภาพนี้'}]}]})});const data=await res.json();reply=data?.content?.[0]?.text||'';}
-    else{reply=await askClaude(text,sys[format]);}
-    if(out&&reply)out.innerHTML=reply.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-  }catch(e){if(out)out.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;}
-  finally{if(btn){btn.innerHTML='✨ Summarize with Claude AI';btn.disabled=false;}}
-}
-
 // ── STRAVA ──
 const STRAVA_API='https://www.strava.com/api/v3';
 function stravaConnect(){const sb=document.getElementById('strava-status-box');sb.innerHTML=`<div style="width:100%;display:flex;flex-direction:column;gap:8px"><p style="font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px">Paste Refresh Token</p><div style="display:flex;gap:8px"><input type="text" id="strava-token-input" placeholder="Paste refresh_token..." style="flex:1;font-size:11px"><button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ Connect</button></div></div>`;}
@@ -3563,28 +3501,9 @@ function showDashActivities() {
 }
 
 // ── END ADDITIONS ──
-
-let currentDocType='out',_garudaB64=null;
-function esc(s){return(s||'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-function v(id){return esc(document.getElementById(id)?.value||'');}
-function garudaHtml(size){const h=size==='lg'?'3cm':'1.5cm';if(!_garudaB64)return `<div style="width:${h};height:${h};border:1px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:${size==='lg'?'10pt':'7pt'};font-weight:bold;font-family:serif">ครุฑ</div>`;return `<img src="${_garudaB64}" style="height:${h};width:auto;object-fit:contain;display:block">`;}
-async function loadGaruda(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{_garudaB64=ev.target.result;window._garudaB64=_garudaB64;document.getElementById('garuda-preview-thumb').innerHTML=`<img src="${_garudaB64}" style="width:100%;height:100%;object-fit:contain">`;try{await window._fb.setData('settings/garudaImg',_garudaB64);}catch{}updateDocPreview();};r.readAsDataURL(f);}
-async function clearGaruda(){_garudaB64=null;window._garudaB64=null;document.getElementById('garuda-preview-thumb').innerHTML='ครุฑ';try{await window._fb.removeData('settings/garudaImg');}catch{}updateDocPreview();}
-function switchDocTab(type,el){currentDocType=type;document.querySelectorAll('#page-doc-create .seg-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('do-attach-group').style.display=type==='out'?'block':'none';document.getElementById('do-bottom-section').style.display=type==='out'?'block':'none';updateDocPreview();}
-function updateDocPreview(){
-  let html='';
-  if(currentDocType==='out'){html=`<div style="text-align:center;margin-bottom:4pt">${garudaHtml('lg')}</div><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4pt"><div>ที่&nbsp;&nbsp;${v('do-num')||'..........'}</div><div style="text-align:right;white-space:pre-wrap">${v('do-dept')||'ชื่อหน่วยงาน'}</div></div><div style="text-align:right;margin-bottom:10pt">${v('do-date')||'วันที่'}</div>${v('do-attach')?`<div style="margin-bottom:4pt">สิ่งที่ส่งมาด้วย&nbsp;&nbsp;${v('do-attach')}</div>`:''}<div style="margin-bottom:4pt">เรื่อง&nbsp;&nbsp;${v('do-subject')||'...'}</div><div style="margin-bottom:12pt">เรียน&nbsp;&nbsp;${v('do-to')||'...'}</div><hr style="border:none;border-top:.5pt solid #000;margin-bottom:12pt"><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body')||'ด้วย ...'}</div><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion')||'จึงเรียนมาเพื่อโปรดพิจารณา'}</div><div style="margin-left:9cm;text-align:center;line-height:2"><div style="margin-bottom:3cm">ขอแสดงความนับถือ</div><div>(${v('do-signer')||'...'})</div><div>${v('do-pos')||'ตำแหน่ง'}</div></div><div style="margin-top:auto;padding-top:10pt;font-size:14pt;border-top:.5pt solid #ccc;line-height:1.8">${v('do-contact-name')?`<div>${v('do-contact-name')}</div>`:''}${v('do-contact-phone')?`<div>โทร. ${v('do-contact-phone')}</div>`:''}${v('do-slogan')?`<div style="text-align:center;margin-top:8pt;font-weight:bold">${v('do-slogan')}</div>`:''}</div>`;}
-  else{html=`<div style="display:flex;align-items:center;gap:12pt;margin-bottom:8pt">${garudaHtml('sm')}<div style="font-size:22pt;font-weight:bold;padding-bottom:2pt">บันทึกข้อความ</div></div><table style="width:100%;border-collapse:collapse;font-size:16pt;margin-bottom:8pt"><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:3cm">ส่วนราชการ</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-dept')}</td></tr><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">ที่</td><td style="border:1px solid #000;padding:3pt 6pt;width:5cm">${v('do-num')||'&nbsp;'}</td><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold;width:1.5cm">วันที่</td><td style="border:1px solid #000;padding:3pt 6pt">${v('do-date')}</td></tr><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรื่อง</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-subject')}</td></tr><tr><td style="border:1px solid #000;padding:3pt 6pt;font-weight:bold">เรียน</td><td style="border:1px solid #000;padding:3pt 6pt" colspan="3">${v('do-to')}</td></tr></table><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:10pt;flex:1">${v('do-body')||'ด้วย ...'}</div><div style="text-indent:2.5cm;white-space:pre-wrap;margin-bottom:32pt">${v('do-conclusion')||'จึงเรียนมาเพื่อโปรดทราบ'}</div><div style="margin-left:9cm;text-align:center;line-height:2"><div style="margin-bottom:2.5cm"></div><div>(${v('do-signer')||'...'})</div><div>${v('do-pos')||'ตำแหน่ง'}</div></div>`;}
-  const area=document.getElementById('doc-render-area');if(area)area.innerHTML=html;
-}
-function printDoc(){const content=document.getElementById('doc-render-area')?.innerHTML||'';const win=window.open('','_blank');win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>@font-face{font-family:'TH Sarabun New';src:local('TH Sarabun New');}@page{size:A4;margin:0;}body{margin:0;}.p{width:210mm;min-height:297mm;padding:2.5cm 2cm 2cm 3cm;font-family:'TH Sarabun New',serif;font-size:16pt;color:#000;display:flex;flex-direction:column;box-sizing:border-box;}</style></head><body><div class="p">${content}</div><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close();};<\/script></body></html>`);win.document.close();}
-async function saveDocDb(){showLoading('Saving...');try{await window._fb.pushData('docs',{num:document.getElementById('do-num')?.value||'',sub:document.getElementById('do-subject')?.value||'',date:document.getElementById('do-date')?.value||'',type:currentDocType,createdAt:Date.now()});showToast('✅ Saved to Registry!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
-function renderDocList(){const body=document.getElementById('doc-table-body');if(!body)return;if(!window._docs.length){body.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:28px">No data yet</td></tr>';return;}const typeLabel={out:'External Letter',memo:'Memo'};body.innerHTML=window._docs.map((d,i)=>`<tr><td style="color:var(--text3);font-size:10px;font-family:var(--font-mono)">${i+1}</td><td style="font-family:var(--font-mono);font-size:12px">${d.num||'-'}</td><td style="font-family:var(--font-mono);font-size:12px">${d.date||'-'}</td><td style="font-size:13px">${d.sub||'-'}</td><td><span class="tag ${d.type==='out'?'tag-blue':'tag-orange'}">${typeLabel[d.type]||'-'}</span></td><td><button onclick="deleteDoc('${d._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:6px;border-radius:8px;transition:all .15s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">✕</button></td></tr>`).join('');}
-async function deleteDoc(key){if(!confirm('Delete this entry?'))return;try{await window._fb.removeData(`docs/${key}`);showToast('Deleted');}catch(e){showToast('Delete failed','error');}}
-function exportDocList(){if(!window._docs.length){showToast('No data','error');return;}const csv=['\uFEFF#,Ref No.,Date,Subject,Type',...window._docs.map((d,i)=>`${i+1},"${d.num||''}","${d.date||''}","${d.sub||''}","${d.type||''}"`)];const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv.join('\n')],{type:'text/csv;charset=utf-8'}));a.download='document-registry.csv';a.click();}
-
 // ── SETTINGS ──
 async function saveClaudeKey(){const key=document.getElementById('set-claude-key').value.trim();if(!key){showToast('Please enter API Key','error');return;}showLoading('Saving...');try{AppState.set('claudeKey',key);const cfg=await window._fb.getData('settings')||{};cfg.claudeKey=key;await window._fb.setData('settings',cfg);document.getElementById('claude-key-status').innerHTML='<span style="color:var(--green)">✓ Saved & Ready</span>';showToast('✅ API Key saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
+async function saveDeepSeekKey(){const key=document.getElementById('set-deepseek-key').value.trim();if(!key){showToast('Please enter API Key','error');return;}showLoading('Saving...');try{AppState.set('deepseekKey',key);const cfg=await window._fb.getData('settings')||{};cfg.deepseekKey=key;await window._fb.setData('settings',cfg);document.getElementById('deepseek-key-status').innerHTML='<span style="color:var(--green)">✓ Saved & Ready</span>';showToast('✅ API Key saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 async function saveStravaSettings(){showLoading('Saving...');try{const cfg=await window._fb.getData('settings')||{};cfg.stravaId=document.getElementById('set-strava-id').value;cfg.stravaSecret=document.getElementById('set-strava-secret').value;cfg.stravaRedirect=document.getElementById('set-strava-redirect').value;await window._fb.setData('settings',cfg);showToast('✅ Strava settings saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 
 // ── INIT ──
@@ -3598,9 +3517,7 @@ document.getElementById('today-date-label').textContent=new Date().toLocaleDateS
     { page:'fitness-stats', icon:'📊', label:'Statistics' },
     { page:'coach',         icon:'🤖', label:'AI Coach' },
     { page:'strava',        icon:'🚴', label:'Strava' },
-    { page:'doc-summary',   icon:'📑', label:'AI Summary' },
-    { page:'doc-create',    icon:'📝', label:'Create Doc' },
-    { page:'doc-list',      icon:'📁', label:'Registry' },
+
     { page:'news',          icon:'💬', label:'AI Q&A' },
     { page:'settings',      icon:'⚙️', label:'Settings' },
   ];
