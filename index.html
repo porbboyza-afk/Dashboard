@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260618-9">
+<link rel="manifest" href="manifest.json?v=20260618-10">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-9">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-9">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-9">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-10">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-10">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-10">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -1828,6 +1828,12 @@ img, video, iframe, canvas { max-width: 100%; }
         <div class="page-subtitle">บันทึกการฟื้นตัวก่อนฝึก เพื่อดูความพร้อมและความเสี่ยงสะสม</div>
       </div>
 
+      <div class="seg-tabs" id="wellness-tabs">
+        <div class="seg-tab active" onclick="switchWellnessTab('checkin',this)">บันทึกวันนี้</div>
+        <div class="seg-tab" onclick="switchWellnessTab('analytics',this)">วิเคราะห์</div>
+      </div>
+
+      <div id="wellness-checkin-view">
       <div class="wellness-top-grid">
         <div class="card">
           <div class="card-label">Morning Check-in</div>
@@ -1887,7 +1893,9 @@ img, video, iframe, canvas { max-width: 100%; }
           </div>
         </div>
       </div>
+      </div>
 
+      <div id="wellness-analytics-view" style="display:none">
       <div class="card mt-16">
         <div class="wellness-toolbar mb-16">
           <div>
@@ -1923,6 +1931,7 @@ img, video, iframe, canvas { max-width: 100%; }
           <div id="wellness-calendar" class="wellness-calendar"></div>
           <div class="text-xs c3 mt-8">เขียว ≥ 80 · ส้ม 60–79 · แดง &lt; 60 · ช่องจาง = ไม่ได้บันทึก</div>
         </div>
+      </div>
       </div>
     </div>
 
@@ -2025,7 +2034,9 @@ function rebuildCharts() {
     setTimeout(renderCurrentStatsView, 50);
   }
   if (document.getElementById('page-wellness')?.classList.contains('active')) {
-    setTimeout(renderWellnessAnalytics, 50);
+    if (document.getElementById('wellness-analytics-view')?.style.display !== 'none') {
+      setTimeout(renderWellnessAnalytics, 50);
+    }
   }
 }
 
@@ -2522,9 +2533,11 @@ function renderWeekStats(){
   }
   const comparison=document.getElementById('atl-comparison');
   if(comparison){
+    const provisionalStatus=atl<200?'เบา':atl<400?'ปานกลาง':atl<600?'ค่อนข้างหนัก':'หนักมาก';
+    const status=loadRatio===null?`${provisionalStatus} (เกณฑ์เริ่มต้น)`:loadRatio<.8?'เบา / ลดโหลด':loadRatio<=1.3?'ปานกลาง / สมดุล':loadRatio<=1.5?'ค่อนข้างหนัก':'หนักมาก';
     comparison.textContent=loadRatio===null
-      ? 'ต้องมีข้อมูลย้อนหลังเพื่อสร้างฐาน 28 วัน'
-      : `ฐาน 28 วัน ${Math.round(loadMetrics.chronicWeekly)} AU/สัปดาห์ · ACWR ${loadRatio.toFixed(2)}`;
+      ? `${status} · ${atl} AU · มีประวัติ ${loadMetrics.historyDays} วัน`
+      : `${status} · ฐาน 28 วัน ${Math.round(loadMetrics.chronicWeekly)} AU · ACWR ${loadRatio.toFixed(2)}`;
   }
   renderIntegratedHealth();
 
@@ -3685,8 +3698,20 @@ function showStatInfo(type) {
   const cadVal = document.getElementById('stat-wk-cad')?.textContent || '—';
   const loadMetrics = calculateLoadMetrics();
   const acwr = loadMetrics.acwr;
+  const baseline = loadMetrics.chronicWeekly;
+  const currentLoad = Math.round(loadMetrics.acute);
+  const roundLoad = value => Math.max(0, Math.round(value / 5) * 5);
+  const lightMax = Math.max(5, roundLoad(baseline * .8));
+  const balancedMax = Math.max(lightMax + 5, roundLoad(baseline * 1.3));
+  const highMax = Math.max(balancedMax + 5, roundLoad(baseline * 1.5));
   const loadStatus = acwr === null
-    ? {label:'ข้อมูลฐานยังไม่พอ',color:'var(--text3)',advice:'บันทึกกิจกรรมต่อเนื่องเพื่อสร้างฐานโหลด 28 วัน'}
+    ? currentLoad < 200
+      ? {label:'เบา (เกณฑ์เริ่มต้น)',color:'var(--accent)',advice:'โหลด 7 วันอยู่ในช่วงเบา ระหว่างรอสร้างฐานเฉพาะตัวจากประวัติอย่างน้อย 21 วัน'}
+      : currentLoad < 400
+        ? {label:'ปานกลาง (เกณฑ์เริ่มต้น)',color:'var(--green)',advice:'โหลด 7 วันอยู่ในช่วงปานกลาง ระหว่างรอสร้างฐานเฉพาะตัวจากประวัติอย่างน้อย 21 วัน'}
+        : currentLoad < 600
+          ? {label:'ค่อนข้างหนัก (เกณฑ์เริ่มต้น)',color:'var(--orange)',advice:'โหลดค่อนข้างหนัก ควรดู Wellness และวันพักร่วมด้วย ระหว่างรอฐานเฉพาะตัว'}
+          : {label:'หนักมาก (เกณฑ์เริ่มต้น)',color:'var(--red)',advice:'โหลดสูง ควรติดตามการฟื้นตัวและหลีกเลี่ยงวันหนักติดกัน ระหว่างรอฐานเฉพาะตัว'}
     : acwr < .8
       ? {label:'ต่ำกว่าฐาน',color:'var(--accent)',advice:'โหลดสัปดาห์นี้ต่ำกว่าที่ร่างกายคุ้นเคย อาจเป็นช่วงพักหรือกลับมาซ้อม'}
       : acwr <= 1.3
@@ -3701,7 +3726,7 @@ function showStatInfo(type) {
       color: 'var(--orange)',
       current: atlVal,
       unit: 'โหลดสะสม',
-      desc: `<strong>Training Load 7 วัน</strong> คือผลรวมภาระการฝึกล่าสุด โดยใช้ <strong>เวลา (นาที) × RPE</strong> หากกิจกรรมไม่ได้บันทึก RPE ระบบจะประมาณความหนักจาก HR และประเภทกิจกรรม ค่านี้ควรใช้ดูแนวโน้มของคุณเองร่วมกับ 28D Baseline และ ACWR ไม่ควรนำตัวเลขไปเทียบกับผู้อื่น`,
+      desc: `<strong>Training Load 7 วัน</strong> คือผลรวมภาระการฝึกล่าสุด โดยใช้ <strong>เวลา (นาที) × RPE</strong> ช่วงตัวเลขด้านล่างคำนวณจากฐานการซ้อม 28 วันของคุณ จึงอ่านได้ทันทีว่า AU ปัจจุบันเบาหรือหนักเพียงใด`,
       summary: `
         <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px">
           <div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center">
@@ -3721,13 +3746,17 @@ function showStatInfo(type) {
           <div style="font-size:13px;font-weight:800;color:${loadStatus.color}">${loadStatus.label}</div>
           <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-top:3px">${loadStatus.advice}</div>
         </div>`,
-      levelTitle: 'เกณฑ์ ACWR — ไม่ใช่เกณฑ์ของเลข AU',
-      levels: [
-        { range: 'ตัวอย่าง', label: 'วิธีอ่าน', color: 'var(--accent)', tip: 'ถ้าโหลด 7 วัน = 255 AU และฐาน 28 วัน = 250 AU จะได้ ACWR 1.02 ซึ่งถือว่าใกล้เคียงฐาน ไม่ได้แปลว่า 255 สูงเกินไป' },
-        { range: 'ACWR < 0.8', label: 'ต่ำกว่าฐาน', color: 'var(--accent)', tip: 'โหลดล่าสุดต่ำกว่าสิ่งที่ร่างกายคุ้นเคย อาจเป็นช่วงพัก ลดโหลด หรือกลับมาซ้อม' },
-        { range: 'ACWR 0.8–1.3', label: 'ค่อนข้างสมดุล', color: 'var(--green)', tip: 'โหลด 7 วันใกล้เคียงกับสิ่งที่ร่างกายคุ้นเคย แต่ยังต้องดู Wellness และอาการปวดร่วมด้วย' },
-        { range: 'ACWR 1.3–1.5', label: 'เพิ่มค่อนข้างเร็ว', color: 'var(--orange)', tip: 'ควรหลีกเลี่ยงวันหนักติดกัน และติดตาม HRV, Resting HR, การนอน และความล้า' },
-        { range: 'ACWR > 1.5', label: 'เพิ่มเร็วมาก', color: 'var(--red)', tip: 'พิจารณาลดความหนักหรือเพิ่มวันพัก โดยเฉพาะเมื่อ Readiness ต่ำหรือมีอาการปวด' },
+      levelTitle: loadMetrics.baselineReady ? 'ช่วง Training Load ของคุณ (AU)' : 'ช่วง Training Load เริ่มต้น (AU)',
+      levels: loadMetrics.baselineReady ? [
+        { range: `0–${lightMax - 1} AU`, label: 'เบา / ลดโหลด', color: 'var(--accent)', tip: 'ต่ำกว่าฐานที่ร่างกายคุ้นเคย เหมาะกับช่วงพักหรือ Recovery' },
+        { range: `${lightMax}–${balancedMax} AU`, label: 'ปานกลาง / สมดุล', color: 'var(--green)', tip: 'ใกล้เคียงโหลดปกติของคุณ โดยทั่วไปเพิ่มความฟิตได้โดยไม่กระโดดจากฐานมากเกินไป' },
+        { range: `${balancedMax + 1}–${highMax} AU`, label: 'ค่อนข้างหนัก', color: 'var(--orange)', tip: 'โหลดเพิ่มเร็วกว่าฐาน ควรติดตามการนอน HRV Resting HR และหลีกเลี่ยงวันหนักติดกัน' },
+        { range: `${highMax + 1}+ AU`, label: 'หนักมาก', color: 'var(--red)', tip: 'สูงกว่าฐานมาก ควรพิจารณาลดความหนักหรือเพิ่มวันพัก โดยเฉพาะเมื่อ Readiness ต่ำ' },
+      ] : [
+        { range: '0–199 AU', label: 'เบา', color: 'var(--accent)', tip: 'โหลดค่อนข้างเบา เหมาะกับช่วง Recovery หรือลดโหลด' },
+        { range: '200–399 AU', label: 'ปานกลาง', color: 'var(--green)', tip: 'ระดับฝึกปานกลาง ตัวอย่างเช่น 255 AU จะอยู่ในช่วงนี้' },
+        { range: '400–599 AU', label: 'ค่อนข้างหนัก', color: 'var(--orange)', tip: 'ควรมีวันเบาหรือวันพัก และติดตาม Wellness ร่วมด้วย' },
+        { range: '600+ AU', label: 'หนักมาก', color: 'var(--red)', tip: 'ควรหลีกเลี่ยงการเพิ่มโหลดต่อเนื่อง หาก Recovery ต่ำหรือมีอาการปวดให้ลดความหนัก' }
       ]
     },
     hr: {
@@ -3883,13 +3912,16 @@ function calculateLoadMetrics(all=getAllActivities()){
   const acute=acuteActs.reduce((s,w)=>s+sessionLoad(w),0);
   const chronicTotal=chronicActs.reduce((s,w)=>s+sessionLoad(w),0);
   const chronicWeekly=chronicTotal/4;
-  const acwr=chronicWeekly>0?acute/chronicWeekly:null;
+  const validDates=chronicActs.map(w=>new Date((w.date||'')+'T12:00:00')).filter(d=>!isNaN(d));
+  const historyDays=validDates.length?Math.floor((today-Math.min(...validDates))/86400000)+1:0;
+  const baselineReady=historyDays>=21&&chronicActs.length>=3;
+  const acwr=baselineReady&&chronicWeekly>0?acute/chronicWeekly:null;
   const daily=Array.from({length:7},(_,i)=>{const ds=toLocalDateStr(dateDaysAgo(6-i));return acuteActs.filter(w=>w.date===ds).reduce((s,w)=>s+sessionLoad(w),0);});
   const mean=daily.reduce((a,b)=>a+b,0)/7;
   const sd=Math.sqrt(daily.reduce((s,v)=>s+Math.pow(v-mean,2),0)/7);
   const monotony=sd>0?mean/sd:(mean>0?7:0);
   const strain=acute*monotony;
-  return {acute,chronicWeekly,acwr,monotony,strain,daily,acuteActs,chronicActs};
+  return {acute,chronicWeekly,acwr,monotony,strain,daily,acuteActs,chronicActs,historyDays,baselineReady};
 }
 function wellnessBaseline(records,field,days=28){
   const values=(records||[]).filter(r=>new Date((r.date||'')+'T12:00:00')>=dateDaysAgo(days-1)).map(r=>parseFloat(r[field])).filter(Number.isFinite);
@@ -4064,10 +4096,23 @@ function renderWellness() {
       </div>
       <button onclick="deleteWellness('${r._key}')" class="btn btn-ghost btn-sm">✕</button>
     </div>`).join('') : '<p class="text-sm c2">ยังไม่มีข้อมูล Wellness</p>';
-  renderWellnessAnalytics(records);
+  if (document.getElementById('wellness-analytics-view')?.style.display !== 'none') {
+    renderWellnessAnalytics(records);
+  }
 }
 
 let wellnessRangeDays = 30;
+
+function switchWellnessTab(tab, element) {
+  document.querySelectorAll('#wellness-tabs .seg-tab').forEach(item => item.classList.remove('active'));
+  element?.classList.add('active');
+  const checkin = document.getElementById('wellness-checkin-view');
+  const analytics = document.getElementById('wellness-analytics-view');
+  if (checkin) checkin.style.display = tab === 'checkin' ? 'block' : 'none';
+  if (analytics) analytics.style.display = tab === 'analytics' ? 'block' : 'none';
+  if (tab === 'analytics') setTimeout(renderWellnessAnalytics, 50);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
 function setWellnessRange(days, button) {
   wellnessRangeDays = days;
