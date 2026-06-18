@@ -1,5 +1,11 @@
-const CACHE_NAME = 'mydash-v2-20260618';
-const APP_SHELL = ['./', './index.html', './manifest.json', './icon.svg'];
+const CACHE_NAME = 'mydash-v2-20260618-3';
+const APP_SHELL = [
+  './',
+  './index.html',
+  './manifest.json?v=20260618-3',
+  './icon-192.png?v=20260618-3',
+  './icon-512.png?v=20260618-3'
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
