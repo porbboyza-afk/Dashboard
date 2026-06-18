@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260618-4">
+<link rel="manifest" href="manifest.json?v=20260618-5">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-4">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-4">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-4">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-5">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-5">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-5">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -1029,6 +1029,10 @@ img, video, iframe, canvas { max-width: 100%; }
 @media (min-width: 769px) {
   #mob-menu-btn, #mob-drawer-overlay, #mob-drawer { display: none !important; }
 }
+@media (max-width: 768px) {
+  #load-metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  #readiness-dashboard-card > div { align-items:flex-start !important; }
+}
 </style>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1147,6 +1151,24 @@ img, video, iframe, canvas { max-width: 100%; }
                 stroke-dasharray="176" stroke-dashoffset="176" stroke-linecap="round"/>
             </svg>
             <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);text-align:center">Weekly<br>Goal</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-16" id="readiness-dashboard-card" style="border-left:4px solid var(--green)">
+        <div class="flex justify-between items-center flex-wrap gap-12">
+          <div style="display:flex;align-items:center;gap:16px">
+            <div id="dash-readiness-score" style="font-family:var(--font-display);font-size:58px;line-height:1;color:var(--green)">—</div>
+            <div>
+              <div class="card-label" style="margin-bottom:4px">Today's Readiness</div>
+              <div id="dash-readiness-label" style="font-size:15px;font-weight:800">รอข้อมูล Wellness</div>
+              <div id="dash-readiness-reasons" style="font-size:11px;color:var(--text2);line-height:1.6;margin-top:4px"></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(74px,1fr));gap:8px;min-width:260px">
+            <div style="background:var(--bg);border-radius:10px;padding:9px;text-align:center"><div class="stat-label">7D LOAD</div><div id="dash-load-7" style="font-family:var(--font-mono);font-weight:800">—</div></div>
+            <div style="background:var(--bg);border-radius:10px;padding:9px;text-align:center"><div class="stat-label">ACWR</div><div id="dash-acwr" style="font-family:var(--font-mono);font-weight:800">—</div></div>
+            <div style="background:var(--bg);border-radius:10px;padding:9px;text-align:center"><div class="stat-label">REST</div><div id="dash-rest-hours" style="font-family:var(--font-mono);font-weight:800">—</div></div>
           </div>
         </div>
       </div>
@@ -1340,8 +1362,36 @@ img, video, iframe, canvas { max-width: 100%; }
             </div>
           </div>
 
+          <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 8px">Training Context</div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>Session purpose</label>
+              <select id="r-purpose">
+                <option value="easy">Easy</option><option value="recovery">Recovery</option>
+                <option value="tempo">Tempo</option><option value="interval">Interval</option>
+                <option value="long">Long Run</option><option value="race">Race</option>
+                <option value="strength">Strength</option><option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group"><label>RPE (1–10)</label><input type="number" id="r-rpe" min="1" max="10" placeholder="5"></div>
+          </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>Shoe / Equipment</label><input type="text" id="r-shoe" maxlength="80" placeholder="เช่น Nike Pegasus 41"></div>
+            <div class="form-group"><label>Surface</label>
+              <select id="r-surface"><option value="">—</option><option>Road</option><option>Track</option><option>Trail</option><option>Treadmill</option><option>Pool</option><option>Indoor</option></select>
+            </div>
+          </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>Temperature (°C)</label><input type="number" id="r-temp" min="-20" max="60" step="0.1" placeholder="30"></div>
+            <div class="form-group"><label>Weather</label><input type="text" id="r-weather" maxlength="60" placeholder="ร้อน / ฝน / ลมแรง"></div>
+          </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>Pain during/after (0–10)</label><input type="number" id="r-pain" min="0" max="10" placeholder="0"></div>
+            <div class="form-group"><label>Pain location</label><input type="text" id="r-pain-location" maxlength="80" placeholder="เช่น เข่าซ้าย"></div>
+          </div>
+          <div class="form-group"><label>Post-workout feeling</label><input type="text" id="r-feeling" maxlength="160" placeholder="สดชื่น / หนักกว่าปกติ / ขาไม่ตอบสนอง"></div>
           <div class="form-group"><label>Notes / Route</label><textarea id="r-note" rows="2" placeholder="Route, conditions, feeling..."></textarea></div>
-          <button class="btn btn-primary w100" onclick="saveWorkout()">☁️ Save to Cloud</button>
+          <button class="btn btn-primary w100" id="workout-save-btn" onclick="saveWorkout()">☁️ Save to Cloud</button>
+          <button class="btn btn-ghost w100 mt-8" id="workout-cancel-edit" onclick="cancelWorkoutEdit()" style="display:none">ยกเลิกการแก้ไข</button>
         </div>
 
         <div class="card">
@@ -1427,6 +1477,19 @@ img, video, iframe, canvas { max-width: 100%; }
             <div id="stat-wk-cad" style="font-family:var(--font-mono);font-size:32px;font-weight:800;color:var(--green)">—</div>
             <div style="font-size:11px;color:var(--text2);margin-top:6px">spm · target ≥ 170</div>
           </div>
+        </div>
+
+        <div class="card mb-16">
+          <div class="card-label">🧠 Integrated Load & Recovery</div>
+          <div id="load-metrics-grid" style="display:grid;grid-template-columns:repeat(5,minmax(90px,1fr));gap:8px;margin-bottom:12px">
+            <div class="stat-card"><div class="stat-label">Acute 7D</div><div id="metric-acute" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
+            <div class="stat-card"><div class="stat-label">Chronic 28D</div><div id="metric-chronic" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
+            <div class="stat-card"><div class="stat-label">ACWR</div><div id="metric-acwr" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
+            <div class="stat-card"><div class="stat-label">Monotony</div><div id="metric-monotony" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
+            <div class="stat-card"><div class="stat-label">Strain</div><div id="metric-strain" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
+          </div>
+          <div id="load-risk-message" style="font-size:12px;color:var(--text2);line-height:1.7"></div>
+          <div style="font-size:10px;color:var(--text3);margin-top:8px">คะแนนใช้ช่วยวางแผนการฝึก ไม่ใช่การวินิจฉัยทางการแพทย์</div>
         </div>
 
         <!-- Pace Trend (last 8 weeks) -->
@@ -1706,6 +1769,16 @@ img, video, iframe, canvas { max-width: 100%; }
             <div class="form-group"><label>Soreness/Pain (0–10)</label><input type="number" id="w-soreness" min="0" max="10" placeholder="0"></div>
             <div class="form-group"><label>Mood (1–10)</label><input type="number" id="w-mood" min="1" max="10" placeholder="7"></div>
           </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>HRV (ms, optional)</label><input type="number" id="w-hrv" min="1" max="300" placeholder="—"></div>
+            <div class="form-group"><label>SpO₂ (%, optional)</label><input type="number" id="w-spo2" min="70" max="100" placeholder="—"></div>
+          </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>Blood pressure</label><input type="text" id="w-bp" maxlength="20" placeholder="120/80"></div>
+            <div class="form-group"><label>Status</label>
+              <select id="w-health-status"><option value="normal">ปกติ</option><option value="sick">ป่วย</option><option value="medication">ใช้ยา</option><option value="injured">บาดเจ็บ</option></select>
+            </div>
+          </div>
           <div class="form-group"><label>Pain location</label><input type="text" id="w-pain-location" maxlength="120" placeholder="เช่น เข่าซ้าย / น่องขวา"></div>
           <div class="form-group"><label>Note</label><textarea id="w-note" rows="3" maxlength="500" placeholder="ป่วย พักผ่อนน้อย หรือข้อมูลอื่นที่มีผลต่อการฝึก"></textarea></div>
           <button class="btn btn-primary w100" onclick="saveWellness()">💾 Save wellness</button>
@@ -1725,7 +1798,11 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="card">
             <div class="flex justify-between items-center mb-12">
               <div class="card-label" style="margin:0">Recent Wellness</div>
-              <button class="btn btn-ghost btn-sm" onclick="exportMyDashJSON()">⬇️ Export backup</button>
+              <div class="flex gap-8">
+                <button class="btn btn-ghost btn-sm" onclick="exportActivitiesCSV()">CSV</button>
+                <button class="btn btn-ghost btn-sm" onclick="exportMyDashJSON()">JSON</button>
+                <label class="btn btn-ghost btn-sm" style="cursor:pointer">Restore<input type="file" accept=".json,application/json" style="display:none" onchange="restoreMyDashJSON(event)"></label>
+              </div>
             </div>
             <div id="wellness-list"><p class="text-sm c2">กำลังโหลด...</p></div>
           </div>
@@ -2068,12 +2145,14 @@ function startRealtimeListeners() {
 AppState.subscribe('workouts', () => {
   renderRecentWorkouts();
   renderTodayStats();
+  renderIntegratedHealth();
   if (document.getElementById('page-fitness-stats')?.classList.contains('active')) renderCurrentStatsView();
   matchWorkoutsToPlan(true);
 });
 
 AppState.subscribe('stravaWorkouts', () => {
   renderTodayStats();
+  renderIntegratedHealth();
   if (document.getElementById('page-fitness-stats')?.classList.contains('active')) renderCurrentStatsView();
   matchWorkoutsToPlan(true);
 });
@@ -2085,6 +2164,7 @@ AppState.subscribe('coachPlan', () => {
 
 AppState.subscribe('wellness', () => {
   renderWellness();
+  renderIntegratedHealth();
 });
 
 AppState.subscribe('claudeKey', key => {
@@ -2127,7 +2207,7 @@ function getThisWeekStart(){return getMondayOfWeek(new Date());}
 // ── TODAY ──
 function renderTodayStats(){
   const cutoff=getThisWeekStart();
-  const all=[...window._workouts,...(window._stravaWorkouts||[])];
+  const all=getAllActivities();
   const recent=all.filter(w=>new Date(w.date+'T00:00:00')>=cutoff);
   const totalDist=recent.reduce((s,w)=>s+parseFloat(w.dist||0),0);
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
@@ -2145,7 +2225,7 @@ function renderTodayStats(){
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
   const recentEl=document.getElementById('today-recent-workouts');
   // Show this week's activities from both Firebase + Strava
-  const allCombined=[...window._workouts,...(window._stravaWorkouts||[])];
+  const allCombined=getAllActivities();
   const weekRecent=allCombined.filter(w=>(w.date||'')>=toLocalDateStr(cutoff)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
   const stravaTag='<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>';
   window._dashWeekActs = weekRecent;
@@ -2185,14 +2265,52 @@ function buildSplits(){
 window.calcAvgPace=function(){
   const manualPace=document.getElementById('r-avg-pace')?.value?.trim();
   if(manualPace){const p=paceStrToDecimal(manualPace);const d=document.getElementById('avg-pace-disp');if(d)d.textContent=`Avg Pace: ${formatPace(p)}`;return p;}
-  const paces=[...document.querySelectorAll('.sp-pace')];let total=0,cnt=0;
-  paces.forEach(p=>{const v=paceStrToDecimal(p.value);if(v>0){total+=v;cnt++;}});
-  const disp=document.getElementById('avg-pace-disp');if(!disp)return cnt>0?total/cnt:0;
-  if(!cnt){disp.textContent='Avg Pace: —';return 0;}
-  const avg=total/cnt;disp.textContent=`Avg Pace: ${formatPace(avg)}`;return avg;
+  const paces=[...document.querySelectorAll('.sp-pace')];let weightedTime=0,totalDistance=0;
+  paces.forEach(p=>{const v=paceStrToDecimal(p.value),km=parseFloat(p.dataset.km||1);if(v>0&&km>0){weightedTime+=v*km;totalDistance+=km;}});
+  const disp=document.getElementById('avg-pace-disp');if(!disp)return totalDistance>0?weightedTime/totalDistance:0;
+  if(!totalDistance){disp.textContent='Avg Pace: —';return 0;}
+  const avg=weightedTime/totalDistance;disp.textContent=`Avg Pace: ${formatPace(avg)}`;return avg;
 };
 
 // ── WORKOUT CRUD ──
+let _editingWorkoutKey = null;
+function fieldValue(id){return document.getElementById(id)?.value?.trim()||'';}
+function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function workoutFingerprint(w){
+  return `${w.date||''}|${String(w.type||'').toLowerCase()}|${Math.round(parseFloat(w.dist||0)*20)}|${Math.round(parseFloat(w.time||0))}`;
+}
+function getAllActivities(){
+  const seen=new Map();
+  [...(window._workouts||[]),...(window._stravaWorkouts||[])].forEach(w=>{
+    const fp=workoutFingerprint(w);
+    const old=seen.get(fp);
+    if(!old||w.source==='strava')seen.set(fp,w);
+  });
+  return [...seen.values()].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+}
+function resetWorkoutForm(){
+  _editingWorkoutKey=null;
+  ['r-distance','r-time','r-hr','r-cadence','r-avg-pace','r-stride','r-rpe','r-shoe','r-temp','r-weather','r-pain','r-pain-location','r-feeling','r-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['r-purpose','r-surface'].forEach(id=>{const el=document.getElementById(id);if(el)el.selectedIndex=0;});
+  const btn=document.getElementById('workout-save-btn');if(btn)btn.textContent='☁️ Save to Cloud';
+  const cancel=document.getElementById('workout-cancel-edit');if(cancel)cancel.style.display='none';
+  const sa=document.getElementById('splits-area');if(sa)sa.innerHTML='<p class="text-sm c2" style="font-style:italic">กรอกระยะทางเพื่อสร้าง Splits</p>';
+}
+function cancelWorkoutEdit(){resetWorkoutForm();}
+function editWorkout(key){
+  const w=(window._workouts||[]).find(x=>x._key===key);if(!w)return;
+  _editingWorkoutKey=key;showPage('fitness-log');
+  const values={'f-date':w.date,'f-type':w.type,'r-distance':w.dist,'r-time':w.time,'r-hr':w.hr,'r-cadence':w.cad,'r-avg-pace':w.avgPace?formatPace(w.avgPace):'','r-stride':w.stride,'r-purpose':w.purpose,'r-rpe':w.rpe,'r-shoe':w.shoe,'r-surface':w.surface,'r-temp':w.temperature,'r-weather':w.weather,'r-pain':w.pain,'r-pain-location':w.painLocation,'r-feeling':w.feeling,'r-note':w.note};
+  Object.entries(values).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&v!==undefined&&v!==null)el.value=v;});
+  if(w.interval){
+    const iv=w.interval,ivValues={'iv-reps':iv.reps,'iv-rep-dist':iv.repDist,'iv-rep-pace':iv.repPace,'iv-rep-hr':iv.repHR,'iv-rest-time':iv.restTime,'iv-rest-hr':iv.restHR,'iv-wu-dist':iv.warmup?.dist,'iv-wu-time':iv.warmup?.time,'iv-wu-pace':iv.warmup?.pace,'iv-cd-dist':iv.cooldown?.dist,'iv-cd-time':iv.cooldown?.time,'iv-cd-pace':iv.cooldown?.pace};
+    Object.entries(ivValues).forEach(([id,v])=>{const el=document.getElementById(id);if(el&&v!==undefined&&v!==null)el.value=v;});
+  }
+  onTypeChange();buildSplits();
+  setTimeout(()=>{(w.splits||[]).forEach((s,i)=>{const row=document.querySelectorAll('#splits-area tbody tr')[i];if(row){row.querySelector('.sp-pace').value=s.pace||'';row.querySelector('.sp-hr').value=s.hr||'';}});calcAvgPace();},50);
+  const btn=document.getElementById('workout-save-btn');if(btn)btn.textContent='💾 Update activity';
+  const cancel=document.getElementById('workout-cancel-edit');if(cancel)cancel.style.display='block';
+}
 async function saveWorkout(){
   if (!document.getElementById('user-name')?.textContent || document.getElementById('user-name').textContent === '—') {
     showToast('กรุณา Sign in ก่อนบันทึกข้อมูล', 'error'); return;
@@ -2216,12 +2334,16 @@ async function saveWorkout(){
   }
   showLoading('Saving...');
   try{
-    const workout={date:document.getElementById('f-date').value||toLocalDateStr(),dist:type==='interval'?totalDist:dist,time:type==='interval'?(intervalData?.totalTime||0):(parseFloat(document.getElementById('r-time').value)||0),hr:type==='interval'?(intervalData?.repHR||0):(parseInt(document.getElementById('r-hr').value)||0),cad:parseInt(document.getElementById('r-cadence')?.value)||0,note:document.getElementById('r-note').value||'',type,avgPace,splits,...(intervalData?{interval:intervalData}:{}),createdAt:Date.now()};
-    await window._fb.pushData('workouts',workout);
+    const wasEditing=!!_editingWorkoutKey;
+    const old=_editingWorkoutKey?(window._workouts||[]).find(w=>w._key===_editingWorkoutKey):null;
+    const workout={date:document.getElementById('f-date').value||toLocalDateStr(),dist:type==='interval'?totalDist:dist,time:type==='interval'?(intervalData?.totalTime||0):(parseFloat(document.getElementById('r-time').value)||0),hr:type==='interval'?(intervalData?.repHR||0):(parseInt(document.getElementById('r-hr').value)||0),cad:parseInt(document.getElementById('r-cadence')?.value)||0,stride:numberValue('r-stride'),purpose:fieldValue('r-purpose'),rpe:numberValue('r-rpe'),shoe:fieldValue('r-shoe'),surface:fieldValue('r-surface'),temperature:numberValue('r-temp'),weather:fieldValue('r-weather'),pain:numberValue('r-pain'),painLocation:fieldValue('r-pain-location'),feeling:fieldValue('r-feeling'),note:fieldValue('r-note'),type,avgPace,splits,...(intervalData?{interval:intervalData}:{}),createdAt:old?.createdAt||Date.now(),updatedAt:Date.now()};
+    if(workout.rpe!==null&&(workout.rpe<1||workout.rpe>10)){throw new Error('RPE ต้องอยู่ระหว่าง 1–10');}
+    if(workout.pain!==null&&(workout.pain<0||workout.pain>10)){throw new Error('Pain ต้องอยู่ระหว่าง 0–10');}
+    if(_editingWorkoutKey)await window._fb.setData(`workouts/${_editingWorkoutKey}`,workout);
+    else await window._fb.pushData('workouts',workout);
     await sendSheetsBackup('workout', workout, true);
-    ['r-distance','r-time','r-hr','r-cadence','r-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-    const sa=document.getElementById('splits-area');if(sa)sa.innerHTML='<p class="text-sm c2" style="font-style:italic">กรอกระยะทางเพื่อสร้าง Splits</p>';
-    showToast('✅ Saved to Cloud!');
+    resetWorkoutForm();
+    showToast(wasEditing?'✅ Activity updated':'✅ Saved to Cloud!');
   }catch(e){showToast('Error: '+e.message,'error');}
   finally{hideLoading();}
 }
@@ -2234,7 +2356,7 @@ function renderRecentWorkouts(){
     let main='',sub='';
     if(w.type==='interval'&&w.interval){const iv=w.interval;main=`⚡ ${iv.reps}×${iv.repDist}km @ ${iv.repPace||'—'} · Total ${w.dist}km`;sub=`${w.date} · Rest ${iv.restTime}min`;}
     else{main=`${w.dist}km · ${w.time}min${w.hr?' · ♥'+w.hr:''}`;sub=`${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}`;}
-    return `<div class="workout-row"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1;min-width:0"><div class="workout-title">${main}</div><div class="workout-meta">${sub}</div></div><button onclick="deleteWorkout('${w._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:6px;border-radius:8px;transition:all .15s" onmouseover="this.style.color='var(--red)';this.style.background='var(--red-light)'" onmouseout="this.style.color='var(--text3)';this.style.background='none'">✕</button></div>`;
+    return `<div class="workout-row"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1;min-width:0"><div class="workout-title">${escapeHTML(main)}</div><div class="workout-meta">${escapeHTML(sub)}${w.rpe?' · RPE '+w.rpe:''}${w.shoe?' · '+escapeHTML(w.shoe):''}</div></div><button onclick="editWorkout('${w._key}')" class="btn btn-ghost btn-sm" title="แก้ไข">✎</button><button onclick="deleteWorkout('${w._key}')" class="btn btn-ghost btn-sm" title="ลบ">✕</button></div>`;
   }).join('');
 }
 
@@ -2269,7 +2391,7 @@ function getChartColors() {
 function renderWeekStats(){
   const days=getWeekDates(_statsWeekOffset);
   const today=toLocalDateStr();
-  const allWks=[...window._workouts,...(window._stravaWorkouts||[])];
+  const allWks=getAllActivities();
   const label=document.getElementById('week-nav-label');
   if(label){const s=days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'});const e=days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});label.textContent=_statsWeekOffset===0?`THIS WEEK · Mon ${s} – Sun ${e}`:`Mon ${s} – Sun ${e}`;}
   document.getElementById('btn-week-next').disabled=_statsWeekOffset>=0;
@@ -2288,8 +2410,9 @@ function renderWeekStats(){
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('stat-wk-dist',totalDist.toFixed(2));set('stat-wk-count',dayCount);set('stat-wk-time',Math.round(totalTime));set('stat-wk-pace',pace>0?formatPace(pace):'—');
   set('stat-wk-hr',hrCnt>0?Math.round(hrSum/hrCnt):'—');set('stat-wk-cad',cadCnt>0?Math.round(cadSum/cadCnt):'—');
-  const atl=Math.min(100,Math.round(totalDist/0.7));set('stat-atl',atl);
-  const atlFill=document.getElementById('atl-bar-fill');if(atlFill)atlFill.style.width=atl+'%';
+  const loadMetrics=calculateLoadMetrics(allWks),atl=Math.round(loadMetrics.acute);set('stat-atl',atl);
+  const atlFill=document.getElementById('atl-bar-fill');if(atlFill)atlFill.style.width=Math.min(100,atl/10)+'%';
+  renderIntegratedHealth();
 
   if(charts.week)charts.week.destroy();
   const ctx=document.getElementById('chart-week-trend')?.getContext('2d');
@@ -2319,7 +2442,7 @@ function getMonthBounds(offset){const now=new Date(),y=now.getFullYear(),m=now.g
 function renderMonthStats(){
   const{start,year,month}=getMonthBounds(_statsMonthOffset);
   const monthName=start.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
-  const allWks=[...window._workouts,...(window._stravaWorkouts||[])];
+  const allWks=getAllActivities();
   const label=document.getElementById('month-nav-label');
   if(label)label.textContent=_statsMonthOffset===0?`THIS MONTH · ${monthName.toUpperCase()}`:monthName.toUpperCase();
   document.getElementById('btn-month-next').disabled=_statsMonthOffset>=0;
@@ -2368,7 +2491,7 @@ function renderMonthStats(){
 }
 
 async function analyzeFitnessAI(period='week'){
-  const allWks=[...window._workouts,...(window._stravaWorkouts||[])];
+  const allWks=getAllActivities();
   let wks=[],periodLabel='';
   if(period==='week'){const days=getWeekDates(_statsWeekOffset);const ds0=toLocalDateStr(days[0]),ds6=toLocalDateStr(days[6]);wks=allWks.filter(w=>w.date>=ds0&&w.date<=ds6);periodLabel=`week ${ds0} to ${ds6}`;}
   else{const{year,month}=getMonthBounds(_statsMonthOffset);wks=allWks.filter(w=>{if(!w.date)return false;const d=new Date(w.date+'T00:00:00');return d.getFullYear()===year&&d.getMonth()===month;});periodLabel=`month ${new Date(year,month,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'})}`;}
@@ -2376,9 +2499,11 @@ async function analyzeFitnessAI(period='week'){
   const totalTime=wks.reduce((s,w)=>s+parseFloat(w.time||0),0);
   const avgPace=totalDist>0?totalTime/totalDist:0;
   const avgHR=wks.filter(w=>w.hr).length?Math.round(wks.filter(w=>w.hr).reduce((s,w)=>s+w.hr,0)/wks.filter(w=>w.hr).length):0;
-  const summary=wks.length>0?wks.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(w=>`[${w.date}] ${w.type||'run'} ${w.dist}km ${w.time}min${w.hr?' HR'+w.hr:''}${w.avgPace?' Pace'+formatPace(w.avgPace):''}`).join('\n'):'No data in this period';
+  const summary=wks.length>0?wks.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(w=>`[${w.date}] ${w.type||'run'} ${w.dist}km ${w.time}min${w.hr?' HR'+w.hr:''}${w.avgPace?' Pace'+formatPace(w.avgPace):''}${w.rpe?' RPE'+w.rpe:''}${w.pain?' Pain'+w.pain:''}`).join('\n'):'No data in this period';
   const statsLine=wks.length>0?`\n\nSummary: ${wks.length} sessions · ${totalDist.toFixed(2)}km · ${Math.round(totalTime)}min · Pace ${formatPace(avgPace)}${avgHR?' · HR '+avgHR+' bpm':''}`:'' ;
-  const prompt=`Activity data for ${periodLabel}:\n${summary}${statsLine}\n\n${wks.length===0?'No data available. Please log activities or sync Strava.':'Analyze:\n1. Training Load\n2. Consistency\n3. Strengths and risks\n4. 3 specific recommendations'}`;
+  const wellness=(AppState.get('wellness')||[]).filter(r=>!wks.length||wks.some(w=>w.date===r.date)).slice(0,14).map(r=>`[${r.date}] Sleep ${r.sleepHours??'-'}h RHR ${r.restingHR??'-'} HRV ${r.hrv??'-'} Fatigue ${r.fatigue??'-'} Stress ${r.stress??'-'} Pain ${r.soreness??'-'} Recovery ${calculateRecoveryScore(r)??'-'}`).join('\n');
+  const readiness=calculateReadiness();
+  const prompt=`Activity data for ${periodLabel}:\n${summary}${statsLine}\n\nWellness:\n${wellness||'No wellness data'}\n\nCurrent integrated metrics: Readiness ${readiness.score}/100, Acute load ${Math.round(readiness.load.acute)}, Chronic weekly ${Math.round(readiness.load.chronicWeekly)}, ACWR ${readiness.load.acwr?.toFixed(2)??'n/a'}, Monotony ${readiness.load.monotony.toFixed(2)}.\n\n${wks.length===0?'No activity data available. Explain what should be logged.':'Analyze together:\n1. Training load and recovery balance\n2. Pace/HR efficiency and consistency\n3. Sleep, RHR, HRV, fatigue and pain risk signals\n4. Specific recommendation for the next 24–48 hours\n5. Three actionable changes. Do not diagnose disease.'}`;
   await askClaude(prompt,'คุณคือนักสรีรวิทยาและโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย ตรงประเด็น',period==='week'?'btn-analyze-wk':'btn-analyze-mo',period==='week'?'ai-stats-output':'ai-month-output');
 }
 
@@ -2420,12 +2545,14 @@ async function generateTrainingPlan(){
     if (diff > 0) totalWeeks = diff;
   }
   const endInfo = endDate ? `\nRace/Goal Date: ${endDate}` : '';
-  const history=window._workouts.slice(0,7).map(w=>`${w.date}:${w.dist}km${w.avgPace?' Pace'+formatPace(w.avgPace):''}`).join(', ');
+  const history=getAllActivities().slice(0,21).map(w=>`${w.date}:${w.type} ${w.dist}km ${w.time}min${w.avgPace?' Pace'+formatPace(w.avgPace):''}${w.rpe?' RPE'+w.rpe:''}`).join(', ');
+  const readiness=calculateReadiness();
+  const wellnessContext=(AppState.get('wellness')||[]).slice(0,14).map(r=>`${r.date}:sleep${r.sleepHours??'-'} RHR${r.restingHR??'-'} HRV${r.hrv??'-'} fatigue${r.fatigue??'-'} pain${r.soreness??'-'}`).join(', ');
   const out=document.getElementById('coach-output');
   if(out){out.style.color='var(--text2)';out.innerHTML='⏳ Creating plan...';}
   const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='⏳ Generating...';btn.disabled=true;}
   try{
-    const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':AppState.get('claudeKey'),'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,system:'คุณเป็นโค้ชวิ่ง IAAF ตอบเป็น JSON ONLY ไม่มี markdown',messages:[{role:'user',content:`Goal:${goal}\nLevel:${level}\nDays:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nHistory:${history||'none'}\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"..."}]}\nCreate exactly ${parseInt(days)*totalWeeks} sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}`}]})}); 
+    const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':AppState.get('claudeKey'),'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,system:'คุณเป็นโค้ชวิ่ง IAAF ตอบเป็น JSON ONLY ไม่มี markdown วางวันหนักไม่ติดกันและมี recovery/taper ตามข้อมูลสุขภาพ',messages:[{role:'user',content:`Goal:${goal}\nLevel:${level}\nDays:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nHistory:${history||'none'}\nWellness:${wellnessContext||'none'}\nCurrent readiness:${readiness.score}/100 (${readiness.level})\nLoad: acute ${Math.round(readiness.load.acute)}, chronic ${Math.round(readiness.load.chronicWeekly)}, ACWR ${readiness.load.acwr?.toFixed(2)??'n/a'}\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"..."}]}\nCreate exactly ${parseInt(days)*totalWeeks} sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Adapt the first week to current readiness and load.`}]})});
     const data=await res.json();const rawText=data?.content?.[0]?.text||'';
     let plan=null;
     try{plan=JSON.parse(rawText.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim());}
@@ -2460,7 +2587,7 @@ function renderCoachTracking(){
   set('coach-plan-meta-disp',`START ${plan.startDate||'—'} · ${plan.totalWeeks||4} WKS · ${plan.sessions.length} SESSIONS`);
   const today=toLocalDateStr();
   const completedDates=plan.completedDates||{};
-  const workoutDates=new Set([...window._workouts.map(w=>w.date),...(window._stravaWorkouts||[]).map(w=>w.date)]);
+  const workoutDates=new Set(getAllActivities().map(w=>w.date));
   let doneCount=0,missCount=0,remainCount=0;
   plan.sessions.forEach(s=>{if(s.type==='Rest')return;if(completedDates[s.date]||workoutDates.has(s.date))doneCount++;else if(s.date<today)missCount++;else remainCount++;});
   set('coach-done-count',doneCount);set('coach-miss-count',missCount);set('coach-remain-count',remainCount);
@@ -2473,7 +2600,7 @@ function renderCoachTracking(){
   const typeColor={Easy:'var(--green)',Tempo:'var(--orange)',Interval:'var(--red)',Long:'var(--accent)',Rest:'var(--text3)'};
   daysEl.innerHTML=plan.sessions.map(s=>{
     const isToday=s.date===today,isFuture=s.date>today,isRest=s.type==='Rest';
-    const actualWks=[...window._workouts,...(window._stravaWorkouts||[])].filter(w=>w.date===s.date);
+    const actualWks=getAllActivities().filter(w=>w.date===s.date);
     const isDone=!!completedDates[s.date]||actualWks.length>0;
     const isMissed=!isDone&&s.date<today&&!isRest;
     let cls='plan-day';
@@ -2502,7 +2629,7 @@ async function clearCoachPlan(){if(!confirm('Delete training plan?'))return;awai
 async function reviewPlanAI(){
   const plan=window._coachPlan;if(!plan?.sessions){showToast('No plan','error');return;}
   const today=toLocalDateStr();
-  const allWks=[...window._workouts,...(window._stravaWorkouts||[])];
+  const allWks=getAllActivities();
   const completedDates=plan.completedDates||{};
   let summary=`Plan: ${plan.goal}\n\n`,doneCount=0,missCount=0;
   plan.sessions.forEach(s=>{if(s.type==='Rest')return;const aw=allWks.find(w=>w.date===s.date);const isDone=!!completedDates[s.date]||!!aw;if(isDone)doneCount++;if(!isDone&&s.date<today)missCount++;if(s.date<=today){summary+=`[${s.date}] ${s.type} target:${s.targetDist}km `;if(aw)summary+=`→ actual:${aw.dist}km ✅\n`;else summary+=`→ ❌\n`;}});
@@ -2761,7 +2888,15 @@ function showActivityDetail(wEncoded) {
         ${row('HR เฉลี่ย', w.hr ? w.hr+' bpm' : null, 'var(--red)')}
         ${row('Cadence', w.cad ? w.cad+' spm' : null, 'var(--green)')}
         ${row('ระดับความสูง', w.elev ? '+'+w.elev+' m' : null, 'var(--teal)')}
-        ${w.note ? `<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">หมายเหตุ</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${w.note}</div></div>` : ''}
+        ${row('RPE', w.rpe ? w.rpe+'/10' : null, 'var(--orange)')}
+        ${row('Session load', sessionLoad(w) || null, 'var(--orange)')}
+        ${row('Purpose', w.purpose ? escapeHTML(w.purpose) : null)}
+        ${row('Shoe / Equipment', w.shoe ? escapeHTML(w.shoe) : null)}
+        ${row('Surface', w.surface ? escapeHTML(w.surface) : null)}
+        ${row('Weather', w.weather ? `${escapeHTML(w.weather)}${w.temperature!==null&&w.temperature!==undefined?' · '+w.temperature+'°C':''}` : (w.temperature!==null&&w.temperature!==undefined?w.temperature+'°C':null))}
+        ${row('Pain', w.pain ? `${w.pain}/10${w.painLocation?' · '+escapeHTML(w.painLocation):''}` : null, 'var(--red)')}
+        ${row('Feeling', w.feeling ? escapeHTML(w.feeling) : null)}
+        ${w.note ? `<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">หมายเหตุ</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${escapeHTML(w.note)}</div></div>` : ''}
       </div>
       ${w.interval ? `
         <div style="background:var(--accent-light);border-radius:var(--r);padding:12px 14px;margin-bottom:12px">
@@ -2854,7 +2989,7 @@ async function renderDashRaceBanner() {
 // ── MINI WEEK STRIP (removed) ──
 
 function renderDashboardExtras() {
-  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  const all = getAllActivities();
 
   // Streak
   const streak = computeStreak(all);
@@ -2924,11 +3059,11 @@ function saveGoal() {
   if (val > 0) { localStorage.setItem('weeklyGoalKm', val); showToast(`ตั้งเป้า ${val} km/สัปดาห์ แล้ว ✅`); }
   else { localStorage.removeItem('weeklyGoalKm'); }
   document.getElementById('goal-overlay')?.remove();
-  renderGoalDisplay([...window._workouts,...(window._stravaWorkouts||[])]);
+  renderGoalDisplay(getAllActivities());
 }
 
 function showPRPanel() {
-  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  const all = getAllActivities();
   const prs = computePR(all);
   const overlay = document.createElement('div');
   overlay.id = 'pr-overlay';
@@ -3047,7 +3182,7 @@ function installPWA() {
 // PACE TREND (last 8 weeks)
 // ══════════════════════════════════════════════
 function renderPaceTrend() {
-  const all = [...window._workouts, ...(window._stravaWorkouts||[])].filter(w => w.avgPace > 0 && w.dist >= 1);
+  const all = getAllActivities().filter(w => w.avgPace > 0 && w.dist >= 1);
   const weeks = [];
   for (let i = 7; i >= 0; i--) {
     const days = getWeekDates(-i);
@@ -3191,7 +3326,7 @@ function renderCalendar() {
   const label = document.getElementById('cal-month-label');
   if (label) label.textContent = monthName.toUpperCase();
 
-  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  const all = getAllActivities();
   const todayStr = toLocalDateStr(new Date());
 
   // Group activities by date
@@ -3255,7 +3390,7 @@ function renderCalendar() {
 }
 
 function showCalDay(dateStr) {
-  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  const all = getAllActivities();
   const acts = all.filter(w => w.date === dateStr);
   if (!acts.length) return;
   const em = {run:'🏃', interval:'⚡', bike:'🚴', swim:'🏊', walk:'🚶'};
@@ -3321,7 +3456,7 @@ function renderRaceList() {
   const todayStr = toLocalDateStr(today);
   if (!_races.length) { el.innerHTML = '<p class="text-sm c2" style="text-align:center;padding:24px">ยังไม่มีการแข่งขัน — เพิ่มด้านบนได้เลย 🏁</p>'; return; }
 
-  const all = [...window._workouts, ...(window._stravaWorkouts||[])];
+  const all = getAllActivities();
   el.innerHTML = _races.map(r => {
     const raceDate = new Date(r.date + 'T00:00:00');
     const daysLeft = Math.ceil((raceDate - today) / 86400000);
@@ -3412,7 +3547,7 @@ renderWeekStats = function() {
   // Render effort score for the selected week
   const days = getWeekDates(_statsWeekOffset);
   const ds0 = toLocalDateStr(days[0]), ds6 = toLocalDateStr(days[6]);
-  const wActs = [...window._workouts,...(window._stravaWorkouts||[])].filter(w => (w.date||'') >= ds0 && (w.date||'') <= ds6);
+  const wActs = getAllActivities().filter(w => (w.date||'') >= ds0 && (w.date||'') <= ds6);
   setTimeout(() => renderEffortScore(wActs), 100);
 };
 
@@ -3536,7 +3671,7 @@ function showDashActivities() {
   // Get this week's activities from both Firebase + Strava
   const cutoff = getThisWeekStart();
   const cutoffStr = toLocalDateStr(cutoff);
-  const allActs = [...(window._workouts||[]), ...(window._stravaWorkouts||[])];
+  const allActs = getAllActivities();
   const weekActs = allActs
     .filter(w => (w.date||'') >= cutoffStr)
     .sort((a,b) => (b.date||'').localeCompare(a.date||''));
@@ -3601,6 +3736,106 @@ function numberValue(id) {
 
 function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
 
+function dateDaysAgo(days){
+  const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-days);return d;
+}
+function sessionLoad(w){
+  const minutes=parseFloat(w.time||0);if(!minutes)return 0;
+  if(w.rpe)return Math.round(minutes*parseFloat(w.rpe));
+  const hr=parseFloat(w.hr||0);
+  const intensity=hr?(hr<130?2:hr<145?3:hr<160?5:hr<175?7:9):(w.type==='interval'?7:w.type==='run'?4:3);
+  return Math.round(minutes*intensity);
+}
+function calculateLoadMetrics(all=getAllActivities()){
+  const today=new Date();today.setHours(23,59,59,999);
+  const inRange=days=>all.filter(w=>{const d=new Date((w.date||'')+'T12:00:00');return d>=dateDaysAgo(days-1)&&d<=today;});
+  const acuteActs=inRange(7),chronicActs=inRange(28);
+  const acute=acuteActs.reduce((s,w)=>s+sessionLoad(w),0);
+  const chronicTotal=chronicActs.reduce((s,w)=>s+sessionLoad(w),0);
+  const chronicWeekly=chronicTotal/4;
+  const acwr=chronicWeekly>0?acute/chronicWeekly:null;
+  const daily=Array.from({length:7},(_,i)=>{const ds=toLocalDateStr(dateDaysAgo(6-i));return acuteActs.filter(w=>w.date===ds).reduce((s,w)=>s+sessionLoad(w),0);});
+  const mean=daily.reduce((a,b)=>a+b,0)/7;
+  const sd=Math.sqrt(daily.reduce((s,v)=>s+Math.pow(v-mean,2),0)/7);
+  const monotony=sd>0?mean/sd:(mean>0?7:0);
+  const strain=acute*monotony;
+  return {acute,chronicWeekly,acwr,monotony,strain,daily,acuteActs,chronicActs};
+}
+function wellnessBaseline(records,field,days=28){
+  const values=(records||[]).filter(r=>new Date((r.date||'')+'T12:00:00')>=dateDaysAgo(days-1)).map(r=>parseFloat(r[field])).filter(Number.isFinite);
+  return values.length>=3?values.reduce((a,b)=>a+b,0)/values.length:null;
+}
+function paceHREfficiency(w){const pace=parseFloat(w.avgPace||0),hr=parseFloat(w.hr||0);return pace>0&&hr>0?(1/pace)*1000/hr:0;}
+function calculateEfficiencyTrend(all=getAllActivities()){
+  const current=all.filter(w=>new Date((w.date||'')+'T12:00:00')>=dateDaysAgo(27)).map(paceHREfficiency).filter(Boolean);
+  const prior=all.filter(w=>{const d=new Date((w.date||'')+'T12:00:00');return d>=dateDaysAgo(55)&&d<dateDaysAgo(27);}).map(paceHREfficiency).filter(Boolean);
+  if(current.length<2||prior.length<2)return null;
+  const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+  return (avg(current)-avg(prior))/avg(prior)*100;
+}
+function hoursSinceLastWorkout(all=getAllActivities()){
+  if(!all.length)return null;
+  const latest=[...all].sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
+  return Math.max(0,(Date.now()-new Date((latest.date||'')+'T12:00:00').getTime())/3600000);
+}
+function calculateReadiness(){
+  const wellness=AppState.get('wellness')||[];
+  const today=wellness.find(r=>r.date===toLocalDateStr())||wellness[0]||null;
+  const recovery=calculateRecoveryScore(today);
+  const load=calculateLoadMetrics();
+  const rhrBase=wellnessBaseline(wellness,'restingHR');
+  const hrvBase=wellnessBaseline(wellness,'hrv');
+  const restHours=hoursSinceLastWorkout();
+  let score=recovery??55,reasons=[];
+  if(load.acwr!==null){
+    if(load.acwr>1.5){score-=18;reasons.push(`โหลด 7 วันสูงกว่าฐาน ${Math.round((load.acwr-1)*100)}%`);}
+    else if(load.acwr>1.3){score-=9;reasons.push('โหลดเพิ่มค่อนข้างเร็ว');}
+    else if(load.acwr<0.6&&load.chronicWeekly>0){score-=4;reasons.push('โหลดต่ำกว่าฐานระยะยาว');}
+    else reasons.push('โหลดอยู่ในช่วงสมดุล');
+  }
+  if(today&&rhrBase&&today.restingHR){
+    const diff=today.restingHR-rhrBase;
+    if(diff>=8){score-=15;reasons.push(`Resting HR สูงกว่าฐาน ${Math.round(diff)} bpm`);}
+    else if(diff>=5){score-=8;reasons.push(`Resting HR สูงกว่าฐาน ${Math.round(diff)} bpm`);}
+  }
+  if(today&&hrvBase&&today.hrv&&today.hrv<hrvBase*.8){score-=10;reasons.push('HRV ต่ำกว่าฐานมากกว่า 20%');}
+  if(restHours!==null&&restHours<18){score-=8;reasons.push(`พักจากครั้งล่าสุด ${Math.round(restHours)} ชม.`);}
+  if(today?.soreness>=6||today?.healthStatus==='injured'){score=Math.min(score,45);reasons.push('มีอาการปวด/บาดเจ็บสูง');}
+  if(today?.healthStatus==='sick'){score=Math.min(score,35);reasons.push('สถานะป่วย');}
+  const efficiencyTrend=calculateEfficiencyTrend();
+  if(efficiencyTrend!==null)reasons.push(`ประสิทธิภาพ Pace/HR ${efficiencyTrend>=0?'ดีขึ้น':'ลดลง'} ${Math.abs(efficiencyTrend).toFixed(0)}%`);
+  score=clamp(Math.round(score),0,100);
+  const level=score>=80?'พร้อมฝึกตามแผน':score>=65?'พร้อม แต่ควรคุมความหนัก':score>=45?'แนะนำ Recovery / Easy':'แนะนำพักและติดตามอาการ';
+  return {score,level,reasons,recovery,load,rhrBase,hrvBase,restHours,today,efficiencyTrend};
+}
+function renderIntegratedHealth(){
+  const result=calculateReadiness(),{load}=result;
+  const color=result.score>=80?'var(--green)':result.score>=60?'var(--orange)':'var(--red)';
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set('dash-readiness-score',result.score);
+  set('dash-readiness-label',result.level);
+  set('dash-readiness-reasons',result.reasons.slice(0,3).join(' · ')||'เพิ่มข้อมูล Wellness เพื่อความแม่นยำ');
+  set('dash-load-7',Math.round(load.acute));
+  set('dash-acwr',load.acwr===null?'—':load.acwr.toFixed(2));
+  set('dash-rest-hours',result.restHours===null?'—':Math.round(result.restHours)+'h');
+  const scoreEl=document.getElementById('dash-readiness-score');if(scoreEl)scoreEl.style.color=color;
+  const card=document.getElementById('readiness-dashboard-card');if(card)card.style.borderLeftColor=color;
+  set('metric-acute',Math.round(load.acute));
+  set('metric-chronic',Math.round(load.chronicWeekly));
+  set('metric-acwr',load.acwr===null?'—':load.acwr.toFixed(2));
+  set('metric-monotony',load.monotony.toFixed(2));
+  set('metric-strain',Math.round(load.strain));
+  const risk=document.getElementById('load-risk-message');
+  if(risk){
+    const notes=[];
+    if(load.acwr!==null&&load.acwr>1.5)notes.push('⚠️ โหลดเพิ่มเร็วมาก ควรลดความหนักหรือพัก');
+    else if(load.acwr!==null&&load.acwr>1.3)notes.push('🟠 โหลดเพิ่มเร็ว ควรหลีกเลี่ยงวันหนักติดกัน');
+    else notes.push('✅ อัตราโหลดไม่พบความเสี่ยงเด่น');
+    if(load.monotony>2)notes.push('รูปแบบการฝึกซ้ำสูง ควรสลับวันเบาและวันพัก');
+    risk.textContent=notes.join(' · ');
+  }
+}
+
 function calculateRecoveryScore(entry) {
   if (!entry) return null;
   const sleepHours = entry.sleepHours ?? 0;
@@ -3634,6 +3869,10 @@ async function saveWellness() {
     stress: numberValue('w-stress'),
     soreness: numberValue('w-soreness'),
     mood: numberValue('w-mood'),
+    hrv: numberValue('w-hrv'),
+    spo2: numberValue('w-spo2'),
+    bloodPressure: fieldValue('w-bp'),
+    healthStatus: fieldValue('w-health-status')||'normal',
     painLocation: document.getElementById('w-pain-location').value.trim(),
     note: document.getElementById('w-note').value.trim(),
     createdAt: Date.now()
@@ -3662,7 +3901,7 @@ function renderWellness() {
   if (!list) return;
   const records = AppState.get('wellness') || [];
   const today = records.find(r => r.date === toLocalDateStr()) || records[0];
-  const score = calculateRecoveryScore(today);
+  const score = today?.date===toLocalDateStr()?calculateReadiness().score:calculateRecoveryScore(today);
   const scoreEl = document.getElementById('recovery-score');
   const labelEl = document.getElementById('recovery-label');
   const adviceEl = document.getElementById('recovery-advice');
@@ -3677,7 +3916,7 @@ function renderWellness() {
       adviceEl.textContent = 'บันทึก Morning Check-in เพื่อรับคำแนะนำ';
     } else if (score >= 80) {
       labelEl.textContent = 'พร้อมฝึก';
-      adviceEl.textContent = 'ร่างกายฟื้นตัวดี สามารถทำแผนตามกำหนดได้';
+      adviceEl.textContent = calculateReadiness().reasons.join(' · ') || 'ร่างกายฟื้นตัวดี สามารถทำแผนตามกำหนดได้';
     } else if (score >= 60) {
       labelEl.textContent = 'ควรลดความหนัก';
       adviceEl.textContent = 'เลือก Easy/Recovery และติดตาม HR กับอาการปวดระหว่างฝึก';
@@ -3691,7 +3930,7 @@ function renderWellness() {
       <div class="workout-icon-wrap" style="background:var(--green-light)">🫀</div>
       <div style="flex:1;min-width:0">
         <div class="workout-title">${r.date} · Recovery ${calculateRecoveryScore(r) ?? '—'}</div>
-        <div class="workout-meta">Sleep ${r.sleepHours ?? '—'}h · RHR ${r.restingHR ?? '—'} · Fatigue ${r.fatigue ?? '—'} · Pain ${r.soreness ?? '—'}</div>
+        <div class="workout-meta">Sleep ${r.sleepHours ?? '—'}h · RHR ${r.restingHR ?? '—'} · HRV ${r.hrv ?? '—'} · Fatigue ${r.fatigue ?? '—'} · Pain ${r.soreness ?? '—'}</div>
       </div>
       <button onclick="deleteWellness('${r._key}')" class="btn btn-ghost btn-sm">✕</button>
     </div>`).join('') : '<p class="text-sm c2">ยังไม่มีข้อมูล Wellness</p>';
@@ -3717,14 +3956,31 @@ async function getBackupSettings() {
 async function sendSheetsBackup(type, data, silent=false) {
   const {url, token} = await getBackupSettings();
   if (!url) { if (!silent) showToast('ยังไม่ได้ตั้งค่า Apps Script URL', 'error'); return false; }
-  await fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type':'text/plain;charset=utf-8'},
-    mode: 'no-cors',
-    body: JSON.stringify({token, action:'upsert', type, data})
-  });
-  return true;
+  const queuedPayload={action:'upsert',type,data},payload={token,...queuedPayload};
+  if(!navigator.onLine){queueSheetsBackup(queuedPayload);if(!silent)showToast('ออฟไลน์: เก็บเข้าคิวรอซิงก์','warn');return false;}
+  try{
+    await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},mode:'no-cors',body:JSON.stringify(payload)});
+    return true;
+  }catch(e){queueSheetsBackup(queuedPayload);if(!silent)showToast('ส่งไม่สำเร็จ: เก็บเข้าคิวแล้ว','warn');return false;}
 }
+function queueSheetsBackup(payload){
+  const q=JSON.parse(localStorage.getItem('mydash-sync-queue')||'[]');q.push(payload);
+  localStorage.setItem('mydash-sync-queue',JSON.stringify(q.slice(-500)));renderSyncStatus();
+}
+async function flushSheetsQueue(){
+  if(!navigator.onLine)return;
+  const {url,token}=await getBackupSettings();if(!url)return;
+  const q=JSON.parse(localStorage.getItem('mydash-sync-queue')||'[]');if(!q.length)return;
+  const remaining=[];
+  for(const payload of q){try{await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},mode:'no-cors',body:JSON.stringify({token,...payload})});}catch(e){remaining.push(payload);}}
+  localStorage.setItem('mydash-sync-queue',JSON.stringify(remaining));renderSyncStatus();
+}
+function renderSyncStatus(){
+  const q=JSON.parse(localStorage.getItem('mydash-sync-queue')||'[]');
+  const el=document.getElementById('gas-status');
+  if(el&&q.length)el.innerHTML=`<span style="color:var(--orange)">⏳ รอซิงก์ ${q.length} รายการ</span>`;
+}
+window.addEventListener('online',()=>{flushSheetsQueue();showToast('กลับมาออนไลน์ กำลังซิงก์ข้อมูล...');});
 
 async function testSheetsBackup() {
   const status = document.getElementById('gas-status');
@@ -3750,7 +4006,7 @@ async function syncAllToSheets() {
 function exportMyDashJSON() {
   const payload = {
     exportedAt: new Date().toISOString(),
-    version: 'MyDash V2',
+    version: 'MyDash Health Intelligence V3',
     workouts: AppState.get('workouts').map(({_key,...v})=>v),
     wellness: AppState.get('wellness').map(({_key,...v})=>v),
     coachPlan: AppState.get('coachPlan')
@@ -3762,10 +4018,39 @@ function exportMyDashJSON() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
+function csvCell(value){const s=typeof value==='object'?JSON.stringify(value??''):String(value??'');return `"${s.replace(/"/g,'""')}"`;}
+function exportActivitiesCSV(){
+  const rows=getAllActivities();
+  const headers=['date','source','type','purpose','distance_km','time_min','avg_pace','avg_hr','cadence','rpe','session_load','shoe','surface','temperature','weather','pain','pain_location','feeling','note'];
+  const lines=[headers.map(csvCell).join(',')];
+  rows.forEach(w=>lines.push([w.date,w.source||'firebase',w.type,w.purpose,w.dist,w.time,w.avgPace?formatPace(w.avgPace):'',w.hr,w.cad,w.rpe,sessionLoad(w),w.shoe,w.surface,w.temperature,w.weather,w.pain,w.painLocation,w.feeling,w.note].map(csvCell).join(',')));
+  const blob=new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`mydash-activities-${toLocalDateStr()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+async function restoreMyDashJSON(event){
+  const file=event.target.files?.[0];if(!file)return;
+  try{
+    const payload=JSON.parse(await file.text());
+    if(!Array.isArray(payload.workouts)&&!Array.isArray(payload.wellness))throw new Error('รูปแบบไฟล์ไม่ถูกต้อง');
+    if(!confirm(`นำกลับ ${payload.workouts?.length||0} activities และ ${payload.wellness?.length||0} wellness records? ข้อมูลวันที่ซ้ำจะถูกอัปเดต`))return;
+    showLoading('Restoring backup...');
+    for(const w of payload.workouts||[]){
+      const raw=`${w.date||'unknown'}|${w.createdAt||''}|${w.type||''}|${w.dist||''}|${w.time||''}`;
+      const id='restore-'+btoa(unescape(encodeURIComponent(raw))).replace(/[^a-z0-9]/gi,'').slice(0,60);
+      await window._fb.setData(`workouts/${id}`,w);
+    }
+    for(const w of payload.wellness||[])if(w.date)await window._fb.setData(`wellness/${w.date}`,w);
+    if(payload.coachPlan)await window._fb.setData('coach_plan',payload.coachPlan);
+    showToast('✅ Restore completed');
+  }catch(e){showToast('Restore failed: '+e.message,'error');}
+  finally{hideLoading();event.target.value='';}
+}
 
 // ── INIT ──
 document.getElementById('today-date-label').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 const wellnessDate = document.getElementById('w-date'); if (wellnessDate) wellnessDate.value = toLocalDateStr();
+renderSyncStatus();
+setTimeout(flushSheetsQueue,1500);
 
 // ── MOBILE DRAWER ──
 (function() {
@@ -3967,7 +4252,7 @@ function selectShareStyle(s, el) {
 }
 
 function getShareData() {
-  const all = [...AppState.get('workouts'), ...AppState.get('stravaWorkouts')];
+  const all = getAllActivities();
   const now = new Date();
   let filtered, label;
 
