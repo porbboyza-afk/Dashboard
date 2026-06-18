@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260618-11">
+<link rel="manifest" href="manifest.json?v=20260618-12">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-11">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-11">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-11">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-12">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-12">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-12">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -937,6 +937,14 @@ img, video, iframe, canvas { max-width: 100%; }
 #strava-activities-list .smap-thumb { flex-shrink:0; width:100px !important; min-width:100px !important; }
 #strava-activities-list .act-stats { display:grid !important; grid-template-columns:1fr 1fr !important; gap:8px !important; }
 #strava-activities-list .act-name { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+.strava-overview-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.strava-dashboard-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.strava-chart-wrap { position:relative; height:240px; }
+.strava-filter-bar { display:flex; gap:8px; align-items:end; flex-wrap:wrap; }
+.strava-filter-bar .form-group { margin:0; min-width:140px; flex:1; }
+.strava-pr-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.strava-pr { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:12px; }
+.strava-delta { font-size:10px; margin-top:5px; font-weight:700; }
 
 /* ══════════════════════════
    UTILS
@@ -1104,6 +1112,10 @@ img, video, iframe, canvas { max-width: 100%; }
   .stats-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
   .stats-col > * { margin-bottom:0 !important; }
   #strava-activities-list .smap-thumb { width:80px !important; min-width:80px !important; }
+  .strava-overview-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .strava-dashboard-grid { grid-template-columns:1fr; }
+  .strava-pr-grid { grid-template-columns:1fr; }
+  .strava-filter-bar .form-group { min-width:calc(50% - 4px); }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
   .page-title { font-size: 24px; }
   .hero-ring-card { flex-direction: column; }
@@ -1141,6 +1153,7 @@ img, video, iframe, canvas { max-width: 100%; }
   .wellness-range-tabs { width:100%; }
   .wellness-range-btn { flex:1; }
   .wellness-calendar { grid-template-columns:repeat(7,minmax(14px,1fr)); }
+  .strava-filter-bar .form-group { min-width:100%; }
 }
 </style>
   <meta name="mobile-web-app-capable" content="yes">
@@ -1809,16 +1822,45 @@ img, video, iframe, canvas { max-width: 100%; }
         </div>
       </div>
 
-      <div id="strava-week-strip" style="display:none;gap:10px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">
-        <div style="display:flex;gap:10px;min-width:max-content">
-          <div class="stat-card" style="min-width:110px;padding:12px 14px"><div class="stat-label" style="font-size:9px">This Week</div><span class="stat-value" id="sv-dist" style="font-size:22px">—</span><span class="stat-unit">km</span></div>
-          <div class="stat-card" style="min-width:100px;padding:12px 14px"><div class="stat-label" style="font-size:9px">Activities</div><span class="stat-value" id="sv-count" style="font-size:22px">—</span></div>
-          <div class="stat-card" style="min-width:110px;padding:12px 14px"><div class="stat-label" style="font-size:9px">Avg Pace</div><span class="stat-value" id="sv-pace" style="font-size:22px">—</span><span class="stat-unit">/km</span></div>
-          <div class="stat-card" style="min-width:100px;padding:12px 14px"><div class="stat-label" style="font-size:9px">Avg HR</div><span class="stat-value" id="sv-hr" style="font-size:22px">—</span><span class="stat-unit">bpm</span></div>
+      <div class="seg-tabs" id="strava-tabs">
+        <div class="seg-tab active" onclick="switchStravaTab('overview',this)">Overview</div>
+        <div class="seg-tab" onclick="switchStravaTab('activities',this)">Activities</div>
+      </div>
+
+      <div id="strava-overview-view">
+        <div id="strava-week-strip" class="strava-overview-grid mb-16" style="display:none">
+          <div class="stat-card"><div class="stat-label">This Week</div><span class="stat-value" id="sv-dist" style="font-size:28px">—</span><span class="stat-unit">km</span><div class="strava-delta" id="sv-dist-delta">—</div></div>
+          <div class="stat-card"><div class="stat-label">Activities</div><span class="stat-value" id="sv-count" style="font-size:28px">—</span><div class="strava-delta" id="sv-count-delta">—</div></div>
+          <div class="stat-card"><div class="stat-label">Avg Pace</div><span class="stat-value" id="sv-pace" style="font-size:28px">—</span><span class="stat-unit">/km</span><div class="strava-delta" id="sv-pace-delta">—</div></div>
+          <div class="stat-card"><div class="stat-label">Avg HR</div><span class="stat-value" id="sv-hr" style="font-size:28px">—</span><span class="stat-unit">bpm</span><div class="strava-delta" id="sv-hr-delta">—</div></div>
+        </div>
+
+        <div class="strava-dashboard-grid mb-16">
+          <div class="card"><div class="card-label">8-week Distance</div><div class="strava-chart-wrap"><canvas id="chart-strava-distance"></canvas></div></div>
+          <div class="card"><div class="card-label">Running Pace & HR</div><div class="strava-chart-wrap"><canvas id="chart-strava-performance"></canvas></div></div>
+        </div>
+
+        <div class="card mb-16">
+          <div class="card-label">Personal Records from synced activities</div>
+          <div class="strava-pr-grid" id="strava-pr-grid"><div class="text-sm c2">รอข้อมูล Strava</div></div>
+          <div class="text-xs c3 mt-8">เป็นค่าประมาณจากความเร็วเฉลี่ยของกิจกรรม ไม่ใช่ Best Effort split อย่างเป็นทางการของ Strava</div>
         </div>
       </div>
 
-      <div id="strava-activities-list" style="display:flex;flex-direction:column;gap:12px;width:100%;min-width:0"><p class="text-sm c2">Not connected — press Connect above</p></div>
+      <div id="strava-activities-view" style="display:none">
+        <div class="card mb-16">
+          <div class="strava-filter-bar">
+            <div class="form-group"><label>Activity type</label><select id="strava-filter-type" onchange="applyStravaFilters()"><option value="all">ทั้งหมด</option><option value="Run">Run</option><option value="Ride">Ride</option><option value="Swim">Swim</option><option value="Walk">Walk</option><option value="Hike">Hike</option><option value="Workout">Workout</option></select></div>
+            <div class="form-group"><label>Period</label><select id="strava-filter-days" onchange="applyStravaFilters()"><option value="30">30 วัน</option><option value="90" selected>90 วัน</option><option value="180">180 วัน</option><option value="365">1 ปี</option><option value="0">ทั้งหมด</option></select></div>
+            <div class="form-group"><label>Search</label><input id="strava-filter-search" type="search" placeholder="ชื่อกิจกรรม..." oninput="applyStravaFilters()"></div>
+          </div>
+          <div id="strava-filter-result" class="text-xs c3 mt-8">—</div>
+        </div>
+        <div id="strava-activities-list" style="display:flex;flex-direction:column;gap:12px;width:100%;min-width:0"><p class="text-sm c2">Not connected — press Connect above</p></div>
+        <button id="strava-load-more" class="btn btn-ghost w100 mt-16" onclick="loadMoreStrava()" style="display:none;justify-content:center">โหลดเพิ่ม</button>
+      </div>
+
+      <div id="strava-last-sync" class="text-xs c3 mt-12" style="text-align:right">ยังไม่เคยซิงค์</div>
 
       <div class="card mt-16" style="background:linear-gradient(135deg,rgba(0,122,255,.04),rgba(90,200,250,.03));border-color:rgba(0,122,255,.15)">
         <div class="flex justify-between items-center mb-12">
@@ -2075,6 +2117,10 @@ function rebuildCharts() {
     if (document.getElementById('wellness-analytics-view')?.style.display !== 'none') {
       setTimeout(renderWellnessAnalytics, 50);
     }
+  }
+  if (document.getElementById('page-strava')?.classList.contains('active') &&
+      document.getElementById('strava-overview-view')?.style.display !== 'none') {
+    setTimeout(()=>renderStravaOverview(window._stravaAllActs||[]),50);
   }
 }
 
@@ -2526,7 +2572,7 @@ function goToCurrentMonth(){_statsMonthOffset=0;document.getElementById('btn-mon
 function renderCurrentStatsView(){if(document.getElementById('stats-week-view').style.display!=='none')renderWeekStats();else renderMonthStats();}
 function switchStatsTab(tab,el){document.querySelectorAll('#page-fitness-stats .seg-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('stats-week-view').style.display=tab==='week'?'block':'none';document.getElementById('stats-month-view').style.display=tab==='month'?'block':'none';if(tab==='week')renderWeekStats();else renderMonthStats();}
 
-const charts={hrzone:null, paceTrend:null};
+const charts={hrzone:null, paceTrend:null, stravaDistance:null, stravaPerformance:null};
 const dayNamesTH=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 function getChartColors() {
@@ -2836,11 +2882,13 @@ async function stravaSync(){
   if(btn){btn.innerHTML='⏳ Syncing...';btn.disabled=true;}
   try{
     let at=await stravaGetValidToken();if(!at)return;
-    let res=await fetch(`${STRAVA_API}/athlete/activities?per_page=30`,{headers:{'Authorization':`Bearer ${at}`}});
-    if(res.status===401){const td=await window._fb.getData('strava_token');const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at});at=r.access_token;res=await fetch(`${STRAVA_API}/athlete/activities?per_page=30`,{headers:{'Authorization':`Bearer ${at}`}});}
+    let res=await fetch(`${STRAVA_API}/athlete/activities?per_page=100`,{headers:{'Authorization':`Bearer ${at}`}});
+    if(res.status===401){const td=await window._fb.getData('strava_token');const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at});at=r.access_token;res=await fetch(`${STRAVA_API}/athlete/activities?per_page=100`,{headers:{'Authorization':`Bearer ${at}`}});}
     if(!res.ok)throw new Error(`HTTP ${res.status}`);
     const acts=await res.json();
-    await window._fb.setData('strava_activities',acts);renderStravaActivities(acts);matchWorkoutsToPlan(true);
+    await window._fb.setData('strava_activities',acts);
+    await window._fb.setData('strava_last_sync',Date.now());
+    renderStravaActivities(acts);matchWorkoutsToPlan(true);
     showToast(`✅ Synced ${acts.length} activities`);
   }catch(e){showToast('Error: '+e.message,'error');}
   finally{if(btn){btn.innerHTML=oldHTML;btn.disabled=false;}}
@@ -2859,6 +2907,9 @@ async function renderStravaPage(){
     const cached=await window._fb.getData('strava_activities');
     if(cached)renderStravaActivities(Array.isArray(cached)?cached:Object.values(cached));
     else document.getElementById('strava-activities-list').innerHTML='<p class="text-sm c2">Press Sync to load activities</p>';
+    const lastSync=await window._fb.getData('strava_last_sync');
+    const lastSyncEl=document.getElementById('strava-last-sync');
+    if(lastSyncEl)lastSyncEl.textContent=lastSync?`ซิงค์ล่าสุด ${new Date(lastSync).toLocaleString('th-TH')}`:'ยังไม่เคยซิงค์';
   }else{
     sb.style.cssText='background:var(--surface);border-radius:var(--r);padding:8px 14px;display:flex;align-items:center;gap:8px;border:1.5px solid var(--border)';
     sb.innerHTML='<div style="width:7px;height:7px;border-radius:50%;background:var(--text3)"></div><span style="font-size:12px;color:var(--text2)">Not connected</span>';
@@ -2868,8 +2919,140 @@ async function renderStravaPage(){
   }
 }
 
+let stravaVisibleLimit=10;
+let stravaFilteredActs=[];
+
+function switchStravaTab(tab,element){
+  document.querySelectorAll('#strava-tabs .seg-tab').forEach(item=>item.classList.remove('active'));
+  element?.classList.add('active');
+  const overview=document.getElementById('strava-overview-view');
+  const activities=document.getElementById('strava-activities-view');
+  if(overview)overview.style.display=tab==='overview'?'block':'none';
+  if(activities)activities.style.display=tab==='activities'?'block':'none';
+  if(tab==='overview')setTimeout(()=>renderStravaOverview(window._stravaAllActs||[]),50);
+  else applyStravaFilters();
+  document.querySelector('.main')?.scrollTo({top:0,behavior:'smooth'});
+}
+
+function stravaWeekSummary(acts,start){
+  const end=new Date(start);end.setDate(end.getDate()+7);
+  const rows=acts.filter(a=>{const d=new Date(a.start_date_local);return d>=start&&d<end;});
+  const runs=rows.filter(a=>a.type==='Run'&&a.distance>0);
+  const hrs=rows.map(a=>+a.average_heartrate).filter(Number.isFinite);
+  return {
+    rows,
+    distance:rows.reduce((sum,a)=>sum+(+a.distance||0),0)/1000,
+    pace:runs.length?runs.reduce((sum,a)=>sum+a.moving_time/a.distance*1000,0)/runs.length:0,
+    hr:hrs.length?hrs.reduce((sum,value)=>sum+value,0)/hrs.length:0
+  };
+}
+
+function setStravaDelta(id,current,previous,inverse=false,suffix='%'){
+  const element=document.getElementById(id);if(!element)return;
+  if(!previous){element.textContent='ยังไม่มีช่วงก่อนหน้า';element.style.color='var(--text3)';return;}
+  const pct=(current-previous)/previous*100;
+  const good=inverse?pct<=0:pct>=0;
+  element.textContent=`${pct>=0?'↑':'↓'} ${Math.abs(pct).toFixed(0)}${suffix} จากสัปดาห์ก่อน`;
+  element.style.color=good?'var(--green)':'var(--orange)';
+}
+
+function renderStravaOverview(acts){
+  if(!acts?.length)return;
+  const currentStart=getThisWeekStart();
+  const previousStart=new Date(currentStart);previousStart.setDate(previousStart.getDate()-7);
+  const current=stravaWeekSummary(acts,currentStart);
+  const previous=stravaWeekSummary(acts,previousStart);
+  const strip=document.getElementById('strava-week-strip');if(strip)strip.style.display='grid';
+  const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+  set('sv-dist',current.distance.toFixed(2));set('sv-count',current.rows.length);
+  set('sv-pace',current.pace?formatPace(current.pace/60):'—');set('sv-hr',current.hr?Math.round(current.hr):'—');
+  setStravaDelta('sv-dist-delta',current.distance,previous.distance);
+  setStravaDelta('sv-count-delta',current.rows.length,previous.rows.length);
+  setStravaDelta('sv-pace-delta',current.pace,previous.pace,true);
+  setStravaDelta('sv-hr-delta',current.hr,previous.hr,true);
+
+  const labels=[],distances=[],paces=[],hrs=[];
+  for(let offset=7;offset>=0;offset--){
+    const start=new Date(currentStart);start.setDate(start.getDate()-offset*7);
+    const summary=stravaWeekSummary(acts,start);
+    labels.push(start.toLocaleDateString('th-TH',{day:'numeric',month:'short'}));
+    distances.push(+summary.distance.toFixed(1));
+    paces.push(summary.pace?+(summary.pace/60).toFixed(2):null);
+    hrs.push(summary.hr?Math.round(summary.hr):null);
+  }
+  const colors=getChartColors();
+  if(charts.stravaDistance)charts.stravaDistance.destroy();
+  const distanceContext=document.getElementById('chart-strava-distance')?.getContext('2d');
+  if(distanceContext)charts.stravaDistance=new Chart(distanceContext,{type:'bar',data:{labels,datasets:[{label:'km',data:distances,backgroundColor:'rgba(252,76,2,.65)',borderRadius:7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:colors.tick,font:{size:9}}},y:{beginAtZero:true,grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}}}}}});
+  if(charts.stravaPerformance)charts.stravaPerformance.destroy();
+  const performanceContext=document.getElementById('chart-strava-performance')?.getContext('2d');
+  if(performanceContext)charts.stravaPerformance=new Chart(performanceContext,{type:'line',data:{labels,datasets:[{label:'Pace /km',data:paces,borderColor:'#FC4C02',tension:.3,spanGaps:true,yAxisID:'y'},{label:'HR bpm',data:hrs,borderColor:'#FF3B30',tension:.3,spanGaps:true,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:colors.tick,boxWidth:10,font:{size:10}}}},scales:{x:{grid:{display:false},ticks:{color:colors.tick,font:{size:9}}},y:{reverse:true,grid:{color:colors.grid},ticks:{color:colors.tick,callback:value=>formatPace(value),font:{size:9}}},y1:{position:'right',grid:{display:false},ticks:{color:colors.tick,font:{size:9}}}}}});
+  renderStravaPRs(acts);
+}
+
+function renderStravaPRs(acts){
+  const runs=acts.filter(a=>a.type==='Run'&&a.distance>0&&a.moving_time>0);
+  const targets=[['5K',5],['10K',10],['Half',21.0975]];
+  const element=document.getElementById('strava-pr-grid');if(!element)return;
+  element.innerHTML=targets.map(([label,km])=>{
+    const candidates=runs.filter(a=>a.distance/1000>=km*.95).map(a=>({activity:a,seconds:a.moving_time/(a.distance/1000)*km})).sort((a,b)=>a.seconds-b.seconds);
+    if(!candidates.length)return `<div class="strava-pr"><div class="stat-label">${label}</div><div class="c3">ยังไม่มีข้อมูล</div></div>`;
+    const best=candidates[0],minutes=Math.floor(best.seconds/60),seconds=Math.round(best.seconds%60);
+    return `<div class="strava-pr"><div class="stat-label">${label} estimate</div><div style="font:30px/1 var(--font-display);color:var(--strava)">${minutes}:${String(seconds).padStart(2,'0')}</div><div class="text-xs c3 mt-8">${new Date(best.activity.start_date_local).toLocaleDateString('th-TH')} · ${best.activity.name||'Run'}</div></div>`;
+  }).join('');
+}
+
+function applyStravaFilters(){
+  const all=window._stravaAllActs||[];
+  const type=document.getElementById('strava-filter-type')?.value||'all';
+  const days=+(document.getElementById('strava-filter-days')?.value||0);
+  const search=(document.getElementById('strava-filter-search')?.value||'').trim().toLowerCase();
+  const cutoff=days?dateDaysAgo(days-1):null;
+  stravaFilteredActs=all.filter(a=>{
+    const matchesType=type==='all'||a.type===type;
+    const matchesDate=!cutoff||new Date(a.start_date_local)>=cutoff;
+    const matchesSearch=!search||(a.name||'').toLowerCase().includes(search);
+    return matchesType&&matchesDate&&matchesSearch;
+  });
+  stravaVisibleLimit=10;
+  renderStravaActivityCards();
+}
+
+function loadMoreStrava(){stravaVisibleLimit+=10;renderStravaActivityCards();}
+
+function renderStravaActivityCards(){
+  const container=document.getElementById('strava-activities-list');if(!container)return;
+  const visible=stravaFilteredActs.slice(0,stravaVisibleLimit);
+  window._stravaVisibleActs=visible;
+  const result=document.getElementById('strava-filter-result');if(result)result.textContent=`พบ ${stravaFilteredActs.length} กิจกรรม · แสดง ${visible.length}`;
+  const more=document.getElementById('strava-load-more');if(more)more.style.display=visible.length<stravaFilteredActs.length?'flex':'none';
+  if(!visible.length){container.innerHTML='<div class="card text-sm c2">ไม่พบกิจกรรมตามตัวกรอง</div>';return;}
+  const emoji={Run:'🏃',Ride:'🚴',Swim:'🏊',Walk:'🚶',Hike:'🥾',WeightTraining:'🏋️',Workout:'💪'};
+  container.innerHTML=visible.map((a,index)=>{
+    const distance=(a.distance/1000).toFixed(2),minutes=Math.floor(a.moving_time/60);
+    const pace=(a.type==='Run'||a.type==='Walk')&&a.distance>0?formatPace(a.moving_time/a.distance*1000/60):'';
+    const date=new Date(a.start_date_local).toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
+    return `<div class="card" style="padding:14px;cursor:pointer" onclick="openStravaDetail(${index})">
+      <div class="flex justify-between gap-12">
+        <div style="min-width:0"><div class="text-xs c3">${date} · ${emoji[a.type]||'🏅'} ${a.type}</div><div class="act-name" style="font-size:15px;font-weight:800;margin-top:3px">${a.name||'Activity'}</div></div><span class="c3">›</span>
+      </div>
+      <div class="act-stats mt-12">
+        <div><div class="stat-label">Distance</div><div class="mono bold">${distance} km</div></div>
+        <div><div class="stat-label">Time</div><div class="mono bold">${minutes} min</div></div>
+        ${pace?`<div><div class="stat-label">Pace</div><div class="mono bold">${pace}/km</div></div>`:''}
+        ${a.average_heartrate?`<div><div class="stat-label">HR</div><div class="mono bold" style="color:var(--red)">${Math.round(a.average_heartrate)} bpm</div></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderStravaActivities(acts){
   AppState.set('stravaWorkouts', (acts||[]).map(a=>({date:a.start_date_local?a.start_date_local.slice(0,10):'',dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava'})));
+  window._stravaAllActs=acts||[];
+  AppState.set('stravaActs',acts||[]);
+  renderStravaOverview(acts||[]);
+  applyStravaFilters();
+  return;
   // Note: renderTodayStats + matchWorkoutsToPlan are triggered by AppState subscriber above
   const strip=document.getElementById('strava-week-strip');
   if(strip&&acts?.length){
@@ -2953,7 +3136,7 @@ function renderStravaActivities(acts){
 }
 
 function openStravaDetail(idx){
-  const a=(window._stravaActs||[])[idx];if(!a)return;
+  const a=(window._stravaVisibleActs||window._stravaActs||[])[idx];if(!a)return;
   const dist=(a.distance/1000).toFixed(2),mins=Math.floor(a.moving_time/60),secs=a.moving_time%60;
   const paceSec=a.distance>0?a.moving_time/a.distance*1000:0;const pace=paceSec>0?formatPace(paceSec/60):'—';
   const date=new Date(a.start_date_local).toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
