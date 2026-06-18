@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260618-12">
+<link rel="manifest" href="manifest.json?v=20260618-13">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-12">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-12">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-12">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-13">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-13">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-13">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -2986,7 +2986,30 @@ function renderStravaOverview(acts){
   if(distanceContext)charts.stravaDistance=new Chart(distanceContext,{type:'bar',data:{labels,datasets:[{label:'km',data:distances,backgroundColor:'rgba(252,76,2,.65)',borderRadius:7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:colors.tick,font:{size:9}}},y:{beginAtZero:true,grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}}}}}});
   if(charts.stravaPerformance)charts.stravaPerformance.destroy();
   const performanceContext=document.getElementById('chart-strava-performance')?.getContext('2d');
-  if(performanceContext)charts.stravaPerformance=new Chart(performanceContext,{type:'line',data:{labels,datasets:[{label:'Pace /km',data:paces,borderColor:'#FC4C02',tension:.3,spanGaps:true,yAxisID:'y'},{label:'HR bpm',data:hrs,borderColor:'#FF3B30',tension:.3,spanGaps:true,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:colors.tick,boxWidth:10,font:{size:10}}}},scales:{x:{grid:{display:false},ticks:{color:colors.tick,font:{size:9}}},y:{reverse:true,grid:{color:colors.grid},ticks:{color:colors.tick,callback:value=>formatPace(value),font:{size:9}}},y1:{position:'right',grid:{display:false},ticks:{color:colors.tick,font:{size:9}}}}}});
+  if(performanceContext)charts.stravaPerformance=new Chart(performanceContext,{
+    type:'line',
+    data:{labels,datasets:[
+      {
+        label:'Pace /km',data:paces,borderColor:'#007AFF',backgroundColor:'rgba(0,122,255,.10)',
+        borderWidth:3,pointBackgroundColor:'#007AFF',pointBorderColor:'#FFFFFF',pointBorderWidth:1.5,
+        pointRadius:4,pointHoverRadius:6,pointStyle:'circle',fill:true,tension:.3,spanGaps:true,yAxisID:'y'
+      },
+      {
+        label:'HR bpm',data:hrs,borderColor:'#FF2D55',backgroundColor:'transparent',
+        borderWidth:2.5,borderDash:[7,5],pointBackgroundColor:'#FF2D55',pointBorderColor:'#FFFFFF',pointBorderWidth:1.5,
+        pointRadius:4,pointHoverRadius:6,pointStyle:'triangle',fill:false,tension:.3,spanGaps:true,yAxisID:'y1'
+      }
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:colors.tick,usePointStyle:true,boxWidth:10,padding:18,font:{size:10}}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:colors.tick,font:{size:9}}},
+        y:{reverse:true,grid:{color:colors.grid},ticks:{color:'#007AFF',callback:value=>formatPace(value),font:{size:9}},title:{display:true,text:'PACE /KM',color:'#007AFF',font:{size:9,weight:'bold'}}},
+        y1:{position:'right',grid:{display:false},ticks:{color:'#FF2D55',font:{size:9}},title:{display:true,text:'HR BPM',color:'#FF2D55',font:{size:9,weight:'bold'}}}
+      }
+    }
+  });
   renderStravaPRs(acts);
 }
 
