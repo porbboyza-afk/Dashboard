@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260618-5">
+<link rel="manifest" href="manifest.json?v=20260618-6">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-5">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-5">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-5">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-6">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-6">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-6">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -2114,7 +2114,7 @@ window._appReady = async (user) => {
     }
     const safe=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
     safe('set-strava-id',cfg.stravaId);safe('set-strava-secret',cfg.stravaSecret);safe('set-strava-redirect',cfg.stravaRedirect);
-    safe('set-gas-url',cfg.gasUrl);safe('set-gas-token',cfg.gasToken);
+    safe('set-gas-url',cfg.gasUrl||DEFAULT_GAS_URL);safe('set-gas-token',cfg.gasToken);
 
   } catch(e) { console.warn('Settings:',e.message); }
   try { startRealtimeListeners(); } catch(e) { showToast('Firebase: '+e.message,'error'); }
@@ -3729,6 +3729,8 @@ async function saveDeepSeekKey(){const key=document.getElementById('set-deepseek
 async function saveStravaSettings(){showLoading('Saving...');try{const cfg=await window._fb.getData('settings')||{};cfg.stravaId=document.getElementById('set-strava-id').value;cfg.stravaSecret=document.getElementById('set-strava-secret').value;cfg.stravaRedirect=document.getElementById('set-strava-redirect').value;await window._fb.setData('settings',cfg);showToast('✅ Strava settings saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 
 // ── WELLNESS + GOOGLE SHEETS BACKUP ──
+const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxyYeWVjX5VlNbusJ_nUlu4k6tEk2Jd5P9IP3VocAjiFH8ZUIXda6S8HeME6W6_s_PvFg/exec';
+
 function numberValue(id) {
   const value = parseFloat(document.getElementById(id)?.value);
   return Number.isFinite(value) ? value : null;
@@ -3950,7 +3952,7 @@ async function saveBackupSettings() {
 
 async function getBackupSettings() {
   const cfg = await window._fb.getData('settings') || {};
-  return { url: cfg.gasUrl || '', token: cfg.gasToken || '' };
+  return { url: cfg.gasUrl || DEFAULT_GAS_URL, token: cfg.gasToken || '' };
 }
 
 async function sendSheetsBackup(type, data, silent=false) {
