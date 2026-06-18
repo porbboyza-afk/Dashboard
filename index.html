@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260618-6">
+<link rel="manifest" href="manifest.json?v=20260618-7">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-6">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-6">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-6">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-7">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-7">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-7">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -806,6 +806,53 @@ tbody tr:hover td { background: var(--bg); }
 ══════════════════════════ */
 .chart-wrap { position: relative; height: 200px; }
 
+/* Wellness analytics */
+.wellness-top-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, .9fr) minmax(420px, 1.1fr);
+  gap: 16px;
+  align-items: start;
+}
+.wellness-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.wellness-score-row { display:flex; align-items:center; gap:18px; }
+.wellness-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+.wellness-range-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+.wellness-range-btn {
+  padding:7px 12px; border-radius:999px; border:1px solid var(--border2);
+  background:transparent; color:var(--text2); cursor:pointer; font:700 11px var(--font-body);
+}
+.wellness-range-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.wellness-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.wellness-kpi {
+  padding:14px; border:1px solid var(--border); border-radius:var(--r);
+  background:var(--bg2);
+}
+.wellness-kpi-value { font:32px/1 var(--font-display); color:var(--text); }
+.wellness-kpi-note { margin-top:6px; font-size:10px; color:var(--text3); line-height:1.4; }
+.wellness-chart-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.wellness-chart-wrap { position:relative; height:240px; }
+.wellness-summary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.wellness-summary-list { display:grid; gap:8px; }
+.wellness-summary-item { display:flex; justify-content:space-between; gap:12px; font-size:12px; }
+.wellness-summary-item span:last-child { font-weight:800; text-align:right; }
+.wellness-alerts { display:grid; gap:8px; }
+.wellness-alert {
+  padding:10px 12px; border-radius:var(--r-sm); font-size:12px; line-height:1.55;
+  background:var(--bg2); border-left:3px solid var(--green);
+}
+.wellness-alert.warn { border-left-color:var(--orange); }
+.wellness-alert.danger { border-left-color:var(--red); }
+.wellness-calendar { display:grid; grid-template-columns:repeat(15,minmax(14px,1fr)); gap:5px; }
+.wellness-day {
+  aspect-ratio:1; min-height:18px; border-radius:5px; background:var(--bg2);
+  border:1px solid var(--border); position:relative;
+}
+.wellness-day[data-level="good"] { background:rgba(52,199,89,.55); border-color:rgba(52,199,89,.3); }
+.wellness-day[data-level="fair"] { background:rgba(255,149,0,.55); border-color:rgba(255,149,0,.3); }
+.wellness-day[data-level="low"] { background:rgba(255,59,48,.55); border-color:rgba(255,59,48,.3); }
+.wellness-day[data-level="none"] { opacity:.45; }
+#wellness-list { max-height:560px; overflow-y:auto; overscroll-behavior:contain; padding-right:3px; }
+
 /* ══════════════════════════
    AI OUTPUT
 ══════════════════════════ */
@@ -1024,14 +1071,38 @@ img, video, iframe, canvas { max-width: 100%; }
   .hero-ring-card { flex-direction: column; }
   .doc-preview-bg, .a4-sim { display: none; }
   .week-nav-label { min-width: 130px; font-size: 10px; }
+  .wellness-top-grid, .wellness-chart-grid, .wellness-summary-grid { grid-template-columns:1fr; }
+  .wellness-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .wellness-score-row { align-items:flex-start; gap:12px; }
+  #recovery-score { font-size:56px !important; }
+  .wellness-toolbar .flex { width:100%; }
+  .wellness-toolbar .btn { flex:1; justify-content:center; padding-left:8px; padding-right:8px; }
+  .wellness-chart-wrap { height:220px; }
+  .wellness-calendar { grid-template-columns:repeat(10,minmax(14px,1fr)); }
+  #wellness-list .workout-row { align-items:flex-start; gap:9px; }
+  #wellness-list .workout-meta { white-space:normal; line-height:1.55; }
 }
 
 @media (min-width: 769px) {
   #mob-menu-btn, #mob-drawer-overlay, #mob-drawer { display: none !important; }
 }
+@media (min-width:769px) and (max-width:1100px) {
+  .main { padding:28px 24px; }
+  .wellness-top-grid, .wellness-chart-grid { grid-template-columns:1fr; }
+  .wellness-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
 @media (max-width: 768px) {
   #load-metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
   #readiness-dashboard-card > div { align-items:flex-start !important; }
+}
+@media (max-width:420px) {
+  .main { padding-left:12px; padding-right:12px; }
+  .card { padding:16px; }
+  .wellness-form-grid { grid-template-columns:1fr; gap:0; }
+  .wellness-kpi-value { font-size:27px; }
+  .wellness-range-tabs { width:100%; }
+  .wellness-range-btn { flex:1; }
+  .wellness-calendar { grid-template-columns:repeat(7,minmax(14px,1fr)); }
 }
 </style>
   <meta name="mobile-web-app-capable" content="yes">
@@ -1462,9 +1533,9 @@ img, video, iframe, canvas { max-width: 100%; }
 
         <div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
           <div class="stat-card" style="cursor:pointer;transition:box-shadow .2s" onclick="showStatInfo('atl')" onmouseover="this.style.boxShadow='var(--shadow)'" onmouseout="this.style.boxShadow='var(--shadow-card)'" title="แตะเพื่อดูคำอธิบาย">
-            <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">Training Load (ATL)<span style="color:var(--accent);font-size:13px;font-weight:700">ℹ</span></div>
+            <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">Training Load (7D)<span style="color:var(--accent);font-size:13px;font-weight:700">ℹ</span></div>
             <div id="stat-atl" style="font-family:var(--font-mono);font-size:32px;font-weight:800;color:var(--orange)">—</div>
-            <div style="font-size:11px;color:var(--text2);margin-top:6px;margin-bottom:10px">7-day cumulative</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:6px;margin-bottom:10px">โหลดสะสม 7 วัน · หน่วยสัมพัทธ์</div>
             <div class="progress-wrap"><div id="atl-bar-fill" class="progress-fill" style="width:0%;background:linear-gradient(90deg,var(--green),var(--orange))"></div></div>
           </div>
           <div class="stat-card" style="cursor:pointer;transition:box-shadow .2s" onclick="showStatInfo('hr')" onmouseover="this.style.boxShadow='var(--shadow)'" onmouseout="this.style.boxShadow='var(--shadow-card)'" title="แตะเพื่อดูคำอธิบาย">
@@ -1480,16 +1551,24 @@ img, video, iframe, canvas { max-width: 100%; }
         </div>
 
         <div class="card mb-16">
-          <div class="card-label">🧠 Integrated Load & Recovery</div>
+          <div class="card-label">🧠 Training Load & Recovery</div>
           <div id="load-metrics-grid" style="display:grid;grid-template-columns:repeat(5,minmax(90px,1fr));gap:8px;margin-bottom:12px">
-            <div class="stat-card"><div class="stat-label">Acute 7D</div><div id="metric-acute" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
-            <div class="stat-card"><div class="stat-label">Chronic 28D</div><div id="metric-chronic" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
+            <div class="stat-card" title="โหลดรวมใน 7 วันล่าสุด"><div class="stat-label">7D Load</div><div id="metric-acute" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
+            <div class="stat-card" title="โหลดเฉลี่ยต่อสัปดาห์จาก 28 วันล่าสุด"><div class="stat-label">28D Baseline</div><div id="metric-chronic" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
             <div class="stat-card"><div class="stat-label">ACWR</div><div id="metric-acwr" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
             <div class="stat-card"><div class="stat-label">Monotony</div><div id="metric-monotony" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
             <div class="stat-card"><div class="stat-label">Strain</div><div id="metric-strain" style="font-family:var(--font-mono);font-size:22px;font-weight:800">—</div></div>
           </div>
+          <div style="font-size:11px;color:var(--text2);line-height:1.75;margin-bottom:8px">
+            <strong>วิธีคำนวณ:</strong> เวลาออกกำลังกาย × RPE หากไม่ได้กรอก RPE ระบบจะประมาณความหนักจาก HR และประเภทกิจกรรม
+            · <strong>7D Load</strong> = โหลดรวม 7 วัน
+            · <strong>28D Baseline</strong> = โหลดเฉลี่ยต่อสัปดาห์จาก 28 วัน
+            · <strong>ACWR</strong> = 7D Load ÷ 28D Baseline
+            · <strong>Monotony</strong> = ความซ้ำของโหลดรายวัน
+            · <strong>Strain</strong> = 7D Load × Monotony
+          </div>
           <div id="load-risk-message" style="font-size:12px;color:var(--text2);line-height:1.7"></div>
-          <div style="font-size:10px;color:var(--text3);margin-top:8px">คะแนนใช้ช่วยวางแผนการฝึก ไม่ใช่การวินิจฉัยทางการแพทย์</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:8px">หน่วยเป็นคะแนนสัมพัทธ์ ใช้เปรียบเทียบแนวโน้มของตัวเอง ไม่ควรเปรียบเทียบกับผู้อื่น และไม่ใช่การวินิจฉัยทางการแพทย์</div>
         </div>
 
         <!-- Pace Trend (last 8 weeks) -->
@@ -1749,31 +1828,31 @@ img, video, iframe, canvas { max-width: 100%; }
         <div class="page-subtitle">บันทึกการฟื้นตัวก่อนฝึก เพื่อดูความพร้อมและความเสี่ยงสะสม</div>
       </div>
 
-      <div class="grid g2">
+      <div class="wellness-top-grid">
         <div class="card">
           <div class="card-label">Morning Check-in</div>
           <div class="form-group"><label>Date</label><input type="date" id="w-date"></div>
-          <div class="grid g2" style="gap:10px">
+          <div class="wellness-form-grid">
             <div class="form-group"><label>Weight (kg)</label><input type="number" id="w-weight" min="20" max="300" step="0.1" placeholder="—"></div>
             <div class="form-group"><label>Resting HR (bpm)</label><input type="number" id="w-rhr" min="30" max="220" placeholder="—"></div>
           </div>
-          <div class="grid g2" style="gap:10px">
+          <div class="wellness-form-grid">
             <div class="form-group"><label>Sleep (hours)</label><input type="number" id="w-sleep-hours" min="0" max="24" step="0.1" placeholder="7.5"></div>
             <div class="form-group"><label>Sleep quality (1–10)</label><input type="number" id="w-sleep-quality" min="1" max="10" placeholder="7"></div>
           </div>
-          <div class="grid g2" style="gap:10px">
+          <div class="wellness-form-grid">
             <div class="form-group"><label>Fatigue (1–10)</label><input type="number" id="w-fatigue" min="1" max="10" placeholder="3"></div>
             <div class="form-group"><label>Stress (1–10)</label><input type="number" id="w-stress" min="1" max="10" placeholder="3"></div>
           </div>
-          <div class="grid g2" style="gap:10px">
+          <div class="wellness-form-grid">
             <div class="form-group"><label>Soreness/Pain (0–10)</label><input type="number" id="w-soreness" min="0" max="10" placeholder="0"></div>
             <div class="form-group"><label>Mood (1–10)</label><input type="number" id="w-mood" min="1" max="10" placeholder="7"></div>
           </div>
-          <div class="grid g2" style="gap:10px">
+          <div class="wellness-form-grid">
             <div class="form-group"><label>HRV (ms, optional)</label><input type="number" id="w-hrv" min="1" max="300" placeholder="—"></div>
             <div class="form-group"><label>SpO₂ (%, optional)</label><input type="number" id="w-spo2" min="70" max="100" placeholder="—"></div>
           </div>
-          <div class="grid g2" style="gap:10px">
+          <div class="wellness-form-grid">
             <div class="form-group"><label>Blood pressure</label><input type="text" id="w-bp" maxlength="20" placeholder="120/80"></div>
             <div class="form-group"><label>Status</label>
               <select id="w-health-status"><option value="normal">ปกติ</option><option value="sick">ป่วย</option><option value="medication">ใช้ยา</option><option value="injured">บาดเจ็บ</option></select>
@@ -1787,7 +1866,7 @@ img, video, iframe, canvas { max-width: 100%; }
         <div>
           <div class="card mb-16">
             <div class="card-label">Recovery Score</div>
-            <div style="display:flex;align-items:center;gap:18px">
+            <div class="wellness-score-row">
               <div id="recovery-score" style="font-family:var(--font-display);font-size:72px;line-height:1;color:var(--green)">—</div>
               <div>
                 <div id="recovery-label" style="font-size:16px;font-weight:800">ยังไม่มีข้อมูลวันนี้</div>
@@ -1796,7 +1875,7 @@ img, video, iframe, canvas { max-width: 100%; }
             </div>
           </div>
           <div class="card">
-            <div class="flex justify-between items-center mb-12">
+            <div class="wellness-toolbar mb-12">
               <div class="card-label" style="margin:0">Recent Wellness</div>
               <div class="flex gap-8">
                 <button class="btn btn-ghost btn-sm" onclick="exportActivitiesCSV()">CSV</button>
@@ -1806,6 +1885,43 @@ img, video, iframe, canvas { max-width: 100%; }
             </div>
             <div id="wellness-list"><p class="text-sm c2">กำลังโหลด...</p></div>
           </div>
+        </div>
+      </div>
+
+      <div class="card mt-16">
+        <div class="wellness-toolbar mb-16">
+          <div>
+            <div class="card-label" style="margin-bottom:4px">Wellness Analytics</div>
+            <div class="text-sm c2">แนวโน้มการฟื้นตัว สุขภาพ และความสัมพันธ์กับโหลดการฝึก</div>
+          </div>
+          <div class="wellness-range-tabs">
+            <button class="wellness-range-btn active" data-days="30" onclick="setWellnessRange(30,this)">30 วัน</button>
+            <button class="wellness-range-btn" data-days="90" onclick="setWellnessRange(90,this)">90 วัน</button>
+          </div>
+        </div>
+        <div class="wellness-kpis">
+          <div class="wellness-kpi"><div class="stat-label">Avg recovery</div><div class="wellness-kpi-value" id="wellness-avg-recovery">—</div><div class="wellness-kpi-note" id="wellness-recovery-trend">รอข้อมูล</div></div>
+          <div class="wellness-kpi"><div class="stat-label">Avg sleep</div><div class="wellness-kpi-value" id="wellness-avg-sleep">—</div><div class="wellness-kpi-note" id="wellness-sleep-trend">รอข้อมูล</div></div>
+          <div class="wellness-kpi"><div class="stat-label">HRV baseline</div><div class="wellness-kpi-value" id="wellness-avg-hrv">—</div><div class="wellness-kpi-note" id="wellness-hrv-trend">รอข้อมูล</div></div>
+          <div class="wellness-kpi"><div class="stat-label">Data coverage</div><div class="wellness-kpi-value" id="wellness-coverage">—</div><div class="wellness-kpi-note" id="wellness-coverage-note">รอข้อมูล</div></div>
+        </div>
+      </div>
+
+      <div class="wellness-chart-grid mt-16">
+        <div class="card"><div class="card-label">Recovery & Sleep</div><div class="wellness-chart-wrap"><canvas id="chart-wellness-recovery"></canvas></div></div>
+        <div class="card"><div class="card-label">HRV & Resting HR</div><div class="wellness-chart-wrap"><canvas id="chart-wellness-vitals"></canvas></div></div>
+        <div class="card"><div class="card-label">Fatigue · Stress · Pain</div><div class="wellness-chart-wrap"><canvas id="chart-wellness-feeling"></canvas></div></div>
+        <div class="card"><div class="card-label">Recovery vs Training Load</div><div class="wellness-chart-wrap"><canvas id="chart-wellness-load"></canvas></div></div>
+      </div>
+
+      <div class="wellness-summary-grid mt-16">
+        <div class="card"><div class="card-label">Weekly Summary</div><div id="wellness-week-summary" class="wellness-summary-list"></div></div>
+        <div class="card"><div class="card-label">Monthly Summary</div><div id="wellness-month-summary" class="wellness-summary-list"></div></div>
+        <div class="card"><div class="card-label">Signals & Alerts</div><div id="wellness-alerts" class="wellness-alerts"></div></div>
+        <div class="card">
+          <div class="card-label">30-day Recovery Calendar</div>
+          <div id="wellness-calendar" class="wellness-calendar"></div>
+          <div class="text-xs c3 mt-8">เขียว ≥ 80 · ส้ม 60–79 · แดง &lt; 60 · ช่องจาง = ไม่ได้บันทึก</div>
         </div>
       </div>
     </div>
@@ -1907,6 +2023,9 @@ initTheme();
 function rebuildCharts() {
   if (document.getElementById('page-fitness-stats')?.classList.contains('active')) {
     setTimeout(renderCurrentStatsView, 50);
+  }
+  if (document.getElementById('page-wellness')?.classList.contains('active')) {
+    setTimeout(renderWellnessAnalytics, 50);
   }
 }
 
@@ -2185,6 +2304,7 @@ function showPage(id) {
   if(id==='today') renderTodayStats();
   if(id==='fitness-log') document.getElementById('f-date').value=toLocalDateStr();
   if(id==='fitness-stats'){initStatsNav();renderCurrentStatsView();}
+  if(id==='wellness') setTimeout(renderWellness, 50);
 
   if(id==='strava') renderStravaPage();
   if(id==='coach'){
@@ -3589,17 +3709,16 @@ function showStatInfo(type) {
 
   const info = {
     atl: {
-      title: '🔥 Training Load (ATL)',
+      title: '🔥 Training Load (7 วัน)',
       color: 'var(--orange)',
       current: atlVal,
-      unit: 'คะแนน',
-      desc: `<strong>ATL (Acute Training Load)</strong> คือภาระการฝึกซ้อมสะสมใน 7 วันที่ผ่านมา คำนวณจากระยะทาง × เวลา × ความหนัก`,
+      unit: 'หน่วยสัมพัทธ์',
+      desc: `<strong>Training Load 7 วัน</strong> คือผลรวมภาระการฝึกล่าสุด โดยใช้ <strong>เวลา (นาที) × RPE</strong> หากกิจกรรมไม่ได้บันทึก RPE ระบบจะประมาณความหนักจาก HR และประเภทกิจกรรม ค่านี้ควรใช้ดูแนวโน้มของคุณเองร่วมกับ 28D Baseline และ ACWR ไม่ควรนำตัวเลขไปเทียบกับผู้อื่น`,
       levels: [
-        { range: '0–10', label: 'เบามาก', color: 'var(--green)', tip: 'ยังฝึกน้อยไป ร่างกายยังรับได้อีกมาก' },
-        { range: '11–20', label: 'เบา–ปานกลาง', color: 'var(--green)', tip: 'เหมาะสำหรับช่วง Base / Recovery' },
-        { range: '21–40', label: 'ปานกลาง', color: 'var(--orange)', tip: 'โซนนี้ดีสำหรับพัฒนาฟิตเนส' },
-        { range: '41–60', label: 'หนัก', color: 'var(--orange)', tip: 'ต้องพักเพียงพอ ระวัง overtraining' },
-        { range: '61+', label: 'หนักมาก', color: 'var(--red)', tip: 'ควรพักหรือลดความเข้มข้น' },
+        { range: 'เทียบ 28D Baseline', label: 'หลักสำคัญ', color: 'var(--green)', tip: 'ตัวเลขเดี่ยวไม่มีเกณฑ์หนักหรือเบาที่ใช้ได้กับทุกคน ให้เทียบกับฐาน 28 วันของคุณ' },
+        { range: 'ACWR 0.8–1.3', label: 'ค่อนข้างสมดุล', color: 'var(--green)', tip: 'โหลด 7 วันใกล้เคียงกับสิ่งที่ร่างกายคุ้นเคย แต่ยังต้องดู Wellness และอาการปวดร่วมด้วย' },
+        { range: 'ACWR 1.3–1.5', label: 'เพิ่มค่อนข้างเร็ว', color: 'var(--orange)', tip: 'ควรหลีกเลี่ยงวันหนักติดกัน และติดตาม HRV, Resting HR, การนอน และความล้า' },
+        { range: 'ACWR > 1.5', label: 'เพิ่มเร็วมาก', color: 'var(--red)', tip: 'พิจารณาลดความหนักหรือเพิ่มวันพัก โดยเฉพาะเมื่อ Readiness ต่ำหรือมีอาการปวด' },
       ]
     },
     hr: {
@@ -3936,6 +4055,209 @@ function renderWellness() {
       </div>
       <button onclick="deleteWellness('${r._key}')" class="btn btn-ghost btn-sm">✕</button>
     </div>`).join('') : '<p class="text-sm c2">ยังไม่มีข้อมูล Wellness</p>';
+  renderWellnessAnalytics(records);
+}
+
+let wellnessRangeDays = 30;
+
+function setWellnessRange(days, button) {
+  wellnessRangeDays = days;
+  document.querySelectorAll('.wellness-range-btn').forEach(el => el.classList.toggle('active', el === button));
+  renderWellnessAnalytics();
+}
+
+function wellnessAverage(records, field, transform = value => value) {
+  const values = records.map(r => transform(r[field], r)).filter(Number.isFinite);
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+}
+
+function wellnessPeriodRecords(records, start, end = new Date()) {
+  return records.filter(r => {
+    const date = new Date(`${r.date}T12:00:00`);
+    return date >= start && date <= end;
+  });
+}
+
+function wellnessTrend(current, previous, unit = '') {
+  if (current === null || previous === null) return 'ข้อมูลยังไม่พอสำหรับเปรียบเทียบ';
+  const diff = current - previous;
+  if (Math.abs(diff) < .05) return 'ใกล้เคียงช่วงก่อนหน้า';
+  return `${diff > 0 ? '↑' : '↓'} ${Math.abs(diff).toFixed(unit === 'h' ? 1 : 0)}${unit} จากช่วงก่อนหน้า`;
+}
+
+function wellnessSummaryRows(current, previous) {
+  const avgRecovery = wellnessAverage(current, 'recoveryScore', (_, record) => calculateRecoveryScore(record));
+  const previousRecovery = wellnessAverage(previous, 'recoveryScore', (_, record) => calculateRecoveryScore(record));
+  const avgSleep = wellnessAverage(current, 'sleepHours');
+  const avgRhr = wellnessAverage(current, 'restingHR');
+  const avgHrv = wellnessAverage(current, 'hrv');
+  return [
+    ['วันที่บันทึก', `${current.length} วัน`],
+    ['Recovery เฉลี่ย', avgRecovery === null ? '—' : `${avgRecovery.toFixed(0)} · ${wellnessTrend(avgRecovery, previousRecovery)}`],
+    ['การนอนเฉลี่ย', avgSleep === null ? '—' : `${avgSleep.toFixed(1)} ชม.`],
+    ['Resting HR เฉลี่ย', avgRhr === null ? '—' : `${avgRhr.toFixed(0)} bpm`],
+    ['HRV เฉลี่ย', avgHrv === null ? '—' : `${avgHrv.toFixed(0)} ms`]
+  ];
+}
+
+function renderWellnessSummary(targetId, rows) {
+  const element = document.getElementById(targetId);
+  if (!element) return;
+  element.innerHTML = rows.map(([label, value]) => `<div class="wellness-summary-item"><span class="c2">${label}</span><span>${value}</span></div>`).join('');
+}
+
+function renderWellnessAlerts(records) {
+  const element = document.getElementById('wellness-alerts');
+  if (!element) return;
+  const latest = [...records].sort((a,b) => (b.date || '').localeCompare(a.date || '')).slice(0, 7);
+  const rhrBase = wellnessBaseline(records, 'restingHR');
+  const hrvBase = wellnessBaseline(records, 'hrv');
+  const alerts = [];
+  const highRhr = latest.filter(r => r.restingHR && rhrBase && r.restingHR >= rhrBase + 5);
+  const lowHrv = latest.filter(r => r.hrv && hrvBase && r.hrv <= hrvBase * .8);
+  const poorSleep = latest.filter(r => Number.isFinite(+r.sleepHours) && +r.sleepHours < 6);
+  const pain = latest.filter(r => +r.soreness >= 6 || r.healthStatus === 'injured');
+  if (highRhr.length >= 2) alerts.push(['warn', `Resting HR สูงกว่าฐานอย่างน้อย 5 bpm จำนวน ${highRhr.length} วันในข้อมูลล่าสุด`]);
+  if (lowHrv.length >= 2) alerts.push(['warn', `HRV ต่ำกว่าฐานมากกว่า 20% จำนวน ${lowHrv.length} วัน ควรติดตามการฟื้นตัว`]);
+  if (poorSleep.length >= 2) alerts.push(['warn', `นอนต่ำกว่า 6 ชั่วโมง ${poorSleep.length} วัน อาจกระทบคุณภาพการซ้อม`]);
+  if (pain.length) alerts.push(['danger', `พบอาการปวดสูงหรือสถานะบาดเจ็บ ${pain.length} วัน หลีกเลี่ยงการเพิ่มโหลดเร็ว`]);
+  const load = calculateLoadMetrics();
+  if (load.acwr !== null && load.acwr > 1.3) alerts.push(['danger', `ACWR ${load.acwr.toFixed(2)} โหลดเพิ่มเร็ว ควรลดวันหนักติดกัน`]);
+  if (!alerts.length && latest.length) alerts.push(['', 'ยังไม่พบสัญญาณเสี่ยงเด่นจากข้อมูลล่าสุด']);
+  if (!latest.length) alerts.push(['', 'เริ่มบันทึก Wellness เพื่อเปิดการตรวจจับแนวโน้ม']);
+  element.innerHTML = alerts.map(([level, text]) => `<div class="wellness-alert ${level}">${text}</div>`).join('');
+}
+
+function renderWellnessCalendar(records) {
+  const element = document.getElementById('wellness-calendar');
+  if (!element) return;
+  const byDate = Object.fromEntries(records.map(r => [r.date, r]));
+  element.innerHTML = Array.from({length:30}, (_, index) => {
+    const date = dateDaysAgo(29 - index);
+    const dateString = toLocalDateStr(date);
+    const score = calculateRecoveryScore(byDate[dateString]);
+    const level = score === null ? 'none' : score >= 80 ? 'good' : score >= 60 ? 'fair' : 'low';
+    const detail = score === null ? 'ไม่มีข้อมูล' : `Recovery ${score}`;
+    return `<div class="wellness-day" data-level="${level}" title="${dateString} · ${detail}"></div>`;
+  }).join('');
+}
+
+function wellnessChartOptions(extra = {}) {
+  const colors = getChartColors();
+  return {
+    responsive:true,
+    maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    plugins:{
+      legend:{labels:{color:colors.tick,boxWidth:10,font:{size:10}}},
+      tooltip:{backgroundColor:colors.tooltip,borderColor:colors.tooltipBorder,borderWidth:1,titleColor:colors.tooltipText,bodyColor:colors.tooltipText}
+    },
+    scales:{
+      x:{grid:{display:false},ticks:{color:colors.tick,maxTicksLimit:8,font:{size:9}}},
+      y:{grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}}}
+    },
+    ...extra
+  };
+}
+
+function replaceWellnessChart(name, canvasId, config) {
+  if (charts[name]) charts[name].destroy();
+  const context = document.getElementById(canvasId)?.getContext('2d');
+  if (context) charts[name] = new Chart(context, config);
+}
+
+function renderWellnessAnalytics(sourceRecords) {
+  if (!document.getElementById('page-wellness')) return;
+  const all = [...(sourceRecords || AppState.get('wellness') || [])]
+    .filter(record => record.date)
+    .sort((a,b) => a.date.localeCompare(b.date));
+  const records = wellnessPeriodRecords(all, dateDaysAgo(wellnessRangeDays - 1));
+  const recent7 = wellnessPeriodRecords(all, dateDaysAgo(6));
+  const previous7End = dateDaysAgo(7); previous7End.setHours(23,59,59,999);
+  const previous7 = wellnessPeriodRecords(all, dateDaysAgo(13), previous7End);
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+  const previousMonthEnd = new Date(monthStart); previousMonthEnd.setMilliseconds(-1);
+  const previousMonthStart = new Date(previousMonthEnd.getFullYear(), previousMonthEnd.getMonth(), 1);
+  const thisMonth = wellnessPeriodRecords(all, monthStart);
+  const previousMonth = wellnessPeriodRecords(all, previousMonthStart, previousMonthEnd);
+  const priorEnd = dateDaysAgo(wellnessRangeDays); priorEnd.setHours(23,59,59,999);
+  const priorRecords = wellnessPeriodRecords(all, dateDaysAgo(wellnessRangeDays * 2 - 1), priorEnd);
+  const avgRecovery = wellnessAverage(records, 'recoveryScore', (_, record) => calculateRecoveryScore(record));
+  const priorRecovery = wellnessAverage(priorRecords, 'recoveryScore', (_, record) => calculateRecoveryScore(record));
+  const avgSleep = wellnessAverage(records, 'sleepHours');
+  const priorSleep = wellnessAverage(priorRecords, 'sleepHours');
+  const avgHrv = wellnessAverage(records, 'hrv');
+  const priorHrv = wellnessAverage(priorRecords, 'hrv');
+  const set = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = value; };
+  set('wellness-avg-recovery', avgRecovery === null ? '—' : avgRecovery.toFixed(0));
+  set('wellness-recovery-trend', wellnessTrend(avgRecovery, priorRecovery));
+  set('wellness-avg-sleep', avgSleep === null ? '—' : `${avgSleep.toFixed(1)}h`);
+  set('wellness-sleep-trend', wellnessTrend(avgSleep, priorSleep, 'h'));
+  set('wellness-avg-hrv', avgHrv === null ? '—' : avgHrv.toFixed(0));
+  set('wellness-hrv-trend', wellnessTrend(avgHrv, priorHrv));
+  const coverage = Math.min(100, Math.round(records.length / wellnessRangeDays * 100));
+  set('wellness-coverage', `${coverage}%`);
+  set('wellness-coverage-note', coverage >= 80 ? 'ข้อมูลเพียงพอสำหรับดูแนวโน้ม' : coverage >= 50 ? 'ควรบันทึกให้สม่ำเสมอขึ้น' : 'ข้อมูลยังน้อย ผลวิเคราะห์อาจไม่นิ่ง');
+  renderWellnessSummary('wellness-week-summary', wellnessSummaryRows(recent7, previous7));
+  renderWellnessSummary('wellness-month-summary', wellnessSummaryRows(thisMonth, previousMonth));
+  renderWellnessAlerts(all);
+  renderWellnessCalendar(all);
+
+  const labels = records.map(record => record.date.slice(5));
+  const colors = getChartColors();
+  const xScale = {grid:{display:false},ticks:{color:colors.tick,maxTicksLimit:8,font:{size:9}}};
+  replaceWellnessChart('wellnessRecovery', 'chart-wellness-recovery', {
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Recovery',data:records.map(calculateRecoveryScore),borderColor:'#34C759',backgroundColor:'rgba(52,199,89,.12)',fill:true,tension:.3,yAxisID:'y'},
+      {label:'Sleep h',data:records.map(r => r.sleepHours),borderColor:'#007AFF',backgroundColor:'transparent',tension:.3,spanGaps:true,yAxisID:'y1'}
+    ]},
+    options:wellnessChartOptions({scales:{
+      x:xScale,
+      y:{min:0,max:100,grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}}},
+      y1:{min:0,max:12,position:'right',grid:{display:false},ticks:{color:colors.tick,font:{size:9}}}
+    }})
+  });
+  replaceWellnessChart('wellnessVitals', 'chart-wellness-vitals', {
+    type:'line',
+    data:{labels,datasets:[
+      {label:'HRV ms',data:records.map(r => r.hrv),borderColor:'#AF52DE',tension:.3,spanGaps:true,yAxisID:'y'},
+      {label:'Resting HR',data:records.map(r => r.restingHR),borderColor:'#FF3B30',tension:.3,spanGaps:true,yAxisID:'y1'}
+    ]},
+    options:wellnessChartOptions({scales:{
+      x:xScale,
+      y:{position:'left',grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}}},
+      y1:{position:'right',grid:{display:false},ticks:{color:colors.tick,font:{size:9}}}
+    }})
+  });
+  replaceWellnessChart('wellnessFeeling', 'chart-wellness-feeling', {
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Fatigue',data:records.map(r => r.fatigue),borderColor:'#FF9500',tension:.3,spanGaps:true},
+      {label:'Stress',data:records.map(r => r.stress),borderColor:'#FF3B30',tension:.3,spanGaps:true},
+      {label:'Pain',data:records.map(r => r.soreness),borderColor:'#AF52DE',tension:.3,spanGaps:true}
+    ]},
+    options:wellnessChartOptions({scales:{
+      x:xScale,
+      y:{min:0,max:10,grid:{color:colors.grid},ticks:{stepSize:2,color:colors.tick,font:{size:9}}}
+    }})
+  });
+  const loadByDate = {};
+  getAllActivities().forEach(workout => {
+    loadByDate[workout.date] = (loadByDate[workout.date] || 0) + sessionLoad(workout);
+  });
+  replaceWellnessChart('wellnessLoad', 'chart-wellness-load', {
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Training load',data:records.map(r => loadByDate[r.date] || 0),backgroundColor:'rgba(255,77,0,.45)',borderRadius:4,yAxisID:'y1'},
+      {type:'line',label:'Recovery',data:records.map(calculateRecoveryScore),borderColor:'#34C759',backgroundColor:'#34C759',tension:.3,yAxisID:'y'}
+    ]},
+    options:wellnessChartOptions({scales:{
+      x:xScale,
+      y:{min:0,max:100,grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}}},
+      y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:colors.tick,font:{size:9}}}
+    }})
+  });
 }
 
 async function saveBackupSettings() {
