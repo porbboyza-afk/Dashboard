@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>MyDash</title>
+
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FF4D00">
@@ -11,8 +12,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -1063,6 +1064,7 @@ img, video, iframe, canvas { max-width: 100%; }
 
         <div class="nav-section-label">Health & Run</div>
         <div class="nav-item" data-page="fitness-log" onclick="showPage('fitness-log')"><span class="nav-icon">💪</span><span>Activity Log</span></div>
+        <div class="nav-item" data-page="wellness" onclick="showPage('wellness')"><span class="nav-icon">🫀</span><span>Daily Wellness</span></div>
         <div class="nav-item" data-page="fitness-stats" onclick="showPage('fitness-stats')"><span class="nav-icon">📊</span><span>Statistics</span></div>
         <div class="nav-item" data-page="coach" onclick="showPage('coach')"><span class="nav-icon">🤖</span><span>AI Coach</span></div>
         <div class="nav-item" data-page="strava" onclick="showPage('strava')"><span class="nav-icon">🚴</span><span>Strava</span></div>
@@ -1446,7 +1448,7 @@ img, video, iframe, canvas { max-width: 100%; }
         <div class="card" style="background:linear-gradient(135deg,rgba(0,122,255,.04),rgba(90,200,250,.03));border-color:rgba(0,122,255,.15)">
           <div class="flex justify-between items-center mb-12">
             <div>
-              <div style="font-size:14px;font-weight:700;color:var(--accent)">🤖 AI Analysis</div>
+              <div style="font-size:14px;font-weight:700;color:var(--accent)">🤖 AI Analysis by Claude</div>
               <div style="font-size:12px;color:var(--text2);margin-top:2px">Firebase + Strava · selected week</div>
             </div>
             <button class="btn btn-primary btn-sm" id="btn-analyze-wk" onclick="analyzeFitnessAI('week')">✨ Analyze</button>
@@ -1677,6 +1679,60 @@ img, video, iframe, canvas { max-width: 100%; }
       </div>
     </div>
 
+    <!-- ════════════ DAILY WELLNESS ════════════ -->
+    <div class="page" id="page-wellness">
+      <div class="page-header">
+        <div class="page-title">Daily Wellness 🫀</div>
+        <div class="page-subtitle">บันทึกการฟื้นตัวก่อนฝึก เพื่อดูความพร้อมและความเสี่ยงสะสม</div>
+      </div>
+
+      <div class="grid g2">
+        <div class="card">
+          <div class="card-label">Morning Check-in</div>
+          <div class="form-group"><label>Date</label><input type="date" id="w-date"></div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>Weight (kg)</label><input type="number" id="w-weight" min="20" max="300" step="0.1" placeholder="—"></div>
+            <div class="form-group"><label>Resting HR (bpm)</label><input type="number" id="w-rhr" min="30" max="220" placeholder="—"></div>
+          </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>Sleep (hours)</label><input type="number" id="w-sleep-hours" min="0" max="24" step="0.1" placeholder="7.5"></div>
+            <div class="form-group"><label>Sleep quality (1–10)</label><input type="number" id="w-sleep-quality" min="1" max="10" placeholder="7"></div>
+          </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>Fatigue (1–10)</label><input type="number" id="w-fatigue" min="1" max="10" placeholder="3"></div>
+            <div class="form-group"><label>Stress (1–10)</label><input type="number" id="w-stress" min="1" max="10" placeholder="3"></div>
+          </div>
+          <div class="grid g2" style="gap:10px">
+            <div class="form-group"><label>Soreness/Pain (0–10)</label><input type="number" id="w-soreness" min="0" max="10" placeholder="0"></div>
+            <div class="form-group"><label>Mood (1–10)</label><input type="number" id="w-mood" min="1" max="10" placeholder="7"></div>
+          </div>
+          <div class="form-group"><label>Pain location</label><input type="text" id="w-pain-location" maxlength="120" placeholder="เช่น เข่าซ้าย / น่องขวา"></div>
+          <div class="form-group"><label>Note</label><textarea id="w-note" rows="3" maxlength="500" placeholder="ป่วย พักผ่อนน้อย หรือข้อมูลอื่นที่มีผลต่อการฝึก"></textarea></div>
+          <button class="btn btn-primary w100" onclick="saveWellness()">💾 Save wellness</button>
+        </div>
+
+        <div>
+          <div class="card mb-16">
+            <div class="card-label">Recovery Score</div>
+            <div style="display:flex;align-items:center;gap:18px">
+              <div id="recovery-score" style="font-family:var(--font-display);font-size:72px;line-height:1;color:var(--green)">—</div>
+              <div>
+                <div id="recovery-label" style="font-size:16px;font-weight:800">ยังไม่มีข้อมูลวันนี้</div>
+                <div id="recovery-advice" style="font-size:12px;color:var(--text2);line-height:1.7;margin-top:5px">บันทึก Morning Check-in เพื่อรับคำแนะนำ</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="flex justify-between items-center mb-12">
+              <div class="card-label" style="margin:0">Recent Wellness</div>
+              <button class="btn btn-ghost btn-sm" onclick="exportMyDashJSON()">⬇️ Export backup</button>
+            </div>
+            <div id="wellness-list"><p class="text-sm c2">กำลังโหลด...</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ════════════ SETTINGS ════════════ -->
     <div class="page" id="page-settings">
       <div class="page-header">
@@ -1718,6 +1774,21 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="form-group"><label>Redirect URI</label><input type="text" id="set-strava-redirect" placeholder="http://localhost"></div>
           <button class="btn btn-strava w100" onclick="saveStravaSettings()">☁️ Save Strava Settings</button>
         </div>
+      </div>
+
+      <div class="card mt-16">
+        <div class="card-label">Google Sheets Backup (Apps Script)</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px">
+          ใส่ URL ที่ลงท้ายด้วย <code>/exec</code> จาก Apps Script Web App แล้ว MyDash จะส่งสำเนา Workout และ Wellness ไป Google Sheets หลังบันทึกแต่ละครั้ง
+        </div>
+        <div class="form-group"><label>Apps Script Web App URL</label><input type="url" id="set-gas-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+        <div class="form-group"><label>Backup token</label><input type="password" id="set-gas-token" placeholder="ตั้งค่าให้ตรงกับ Script Properties"></div>
+        <div class="flex gap-8 flex-wrap">
+          <button class="btn btn-green" onclick="saveBackupSettings()">Save backup settings</button>
+          <button class="btn btn-ghost" onclick="testSheetsBackup()">Test connection</button>
+          <button class="btn btn-ghost" onclick="syncAllToSheets()">Sync all data</button>
+        </div>
+        <div id="gas-status" style="font-size:12px;margin-top:10px;color:var(--text2)"></div>
       </div>
     </div>
 
@@ -1893,6 +1964,7 @@ const AppState = (() => {
     stravaWorkouts: [],
     stravaActs:     [],
     coachPlan:      null,
+    wellness:       [],
     
     claudeKey:      '',
   deepseekKey:    '',
@@ -1942,6 +2014,7 @@ Object.defineProperties(window, {
   _stravaWorkouts: { get: () => AppState.get('stravaWorkouts'), set: v => AppState.set('stravaWorkouts', v), configurable:true },
   _stravaActs:     { get: () => AppState.get('stravaActs'),     set: v => AppState.set('stravaActs', v),     configurable:true },
   _coachPlan:      { get: () => AppState.get('coachPlan'),      set: v => AppState.set('coachPlan', v),      configurable:true },
+  _wellness:       { get: () => AppState.get('wellness'),       set: v => AppState.set('wellness', v),       configurable:true },
   
   _claudeKey:      { get: () => AppState.get('claudeKey'),      set: v => AppState.set('claudeKey', v),      configurable:true },
   _deepseekKey:    { get: () => AppState.get('deepseekKey'),    set: v => AppState.set('deepseekKey', v),    configurable:true },
@@ -1964,6 +2037,7 @@ window._appReady = async (user) => {
     }
     const safe=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
     safe('set-strava-id',cfg.stravaId);safe('set-strava-secret',cfg.stravaSecret);safe('set-strava-redirect',cfg.stravaRedirect);
+    safe('set-gas-url',cfg.gasUrl);safe('set-gas-token',cfg.gasToken);
 
   } catch(e) { console.warn('Settings:',e.message); }
   try { startRealtimeListeners(); } catch(e) { showToast('Firebase: '+e.message,'error'); }
@@ -1977,6 +2051,11 @@ function startRealtimeListeners() {
   });
   window._fb.listen('coach_plan', data => {
     AppState.set('coachPlan', data || null);
+  });
+  window._fb.listen('wellness', data => {
+    AppState.set('wellness',
+      data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.date||'').localeCompare(a.date||'')) : []
+    );
   });
   window._fb.listen('strava_activities', data => {
     if (!data) return;
@@ -2002,6 +2081,10 @@ AppState.subscribe('stravaWorkouts', () => {
 
 AppState.subscribe('coachPlan', () => {
   if (document.getElementById('page-coach')?.classList.contains('active')) renderCoachTracking();
+});
+
+AppState.subscribe('wellness', () => {
+  renderWellness();
 });
 
 AppState.subscribe('claudeKey', key => {
@@ -2111,6 +2194,9 @@ window.calcAvgPace=function(){
 
 // ── WORKOUT CRUD ──
 async function saveWorkout(){
+  if (!document.getElementById('user-name')?.textContent || document.getElementById('user-name').textContent === '—') {
+    showToast('กรุณา Sign in ก่อนบันทึกข้อมูล', 'error'); return;
+  }
   const type=document.getElementById('f-type').value||'run';
   const dist=parseFloat(document.getElementById('r-distance')?.value)||0;
   if(type!=='interval'&&!dist){showToast('กรุณาใส่ระยะทาง','error');return;}
@@ -2130,7 +2216,9 @@ async function saveWorkout(){
   }
   showLoading('Saving...');
   try{
-    await window._fb.pushData('workouts',{date:document.getElementById('f-date').value||toLocalDateStr(),dist:type==='interval'?totalDist:dist,time:type==='interval'?(intervalData?.totalTime||0):(parseFloat(document.getElementById('r-time').value)||0),hr:type==='interval'?(intervalData?.repHR||0):(parseInt(document.getElementById('r-hr').value)||0),cad:parseInt(document.getElementById('r-cadence')?.value)||0,note:document.getElementById('r-note').value||'',type,avgPace,splits,...(intervalData?{interval:intervalData}:{}),createdAt:Date.now()});
+    const workout={date:document.getElementById('f-date').value||toLocalDateStr(),dist:type==='interval'?totalDist:dist,time:type==='interval'?(intervalData?.totalTime||0):(parseFloat(document.getElementById('r-time').value)||0),hr:type==='interval'?(intervalData?.repHR||0):(parseInt(document.getElementById('r-hr').value)||0),cad:parseInt(document.getElementById('r-cadence')?.value)||0,note:document.getElementById('r-note').value||'',type,avgPace,splits,...(intervalData?{interval:intervalData}:{}),createdAt:Date.now()};
+    await window._fb.pushData('workouts',workout);
+    await sendSheetsBackup('workout', workout, true);
     ['r-distance','r-time','r-hr','r-cadence','r-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
     const sa=document.getElementById('splits-area');if(sa)sa.innerHTML='<p class="text-sm c2" style="font-style:italic">กรอกระยะทางเพื่อสร้าง Splits</p>';
     showToast('✅ Saved to Cloud!');
@@ -3505,14 +3593,186 @@ async function saveClaudeKey(){const key=document.getElementById('set-claude-key
 async function saveDeepSeekKey(){const key=document.getElementById('set-deepseek-key').value.trim();if(!key){showToast('Please enter API Key','error');return;}showLoading('Saving...');try{AppState.set('deepseekKey',key);const cfg=await window._fb.getData('settings')||{};cfg.deepseekKey=key;await window._fb.setData('settings',cfg);document.getElementById('deepseek-key-status').innerHTML='<span style="color:var(--green)">✓ Saved & Ready</span>';showToast('✅ API Key saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 async function saveStravaSettings(){showLoading('Saving...');try{const cfg=await window._fb.getData('settings')||{};cfg.stravaId=document.getElementById('set-strava-id').value;cfg.stravaSecret=document.getElementById('set-strava-secret').value;cfg.stravaRedirect=document.getElementById('set-strava-redirect').value;await window._fb.setData('settings',cfg);showToast('✅ Strava settings saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 
+// ── WELLNESS + GOOGLE SHEETS BACKUP ──
+function numberValue(id) {
+  const value = parseFloat(document.getElementById(id)?.value);
+  return Number.isFinite(value) ? value : null;
+}
+
+function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+
+function calculateRecoveryScore(entry) {
+  if (!entry) return null;
+  const sleepHours = entry.sleepHours ?? 0;
+  const sleepQuality = entry.sleepQuality ?? 5;
+  const fatigue = entry.fatigue ?? 5;
+  const stress = entry.stress ?? 5;
+  const soreness = entry.soreness ?? 0;
+  const mood = entry.mood ?? 5;
+  const sleepHoursScore = clamp((sleepHours / 8) * 100, 0, 100);
+  return Math.round(
+    sleepHoursScore * .20 +
+    sleepQuality * 10 * .20 +
+    (11 - fatigue) * 10 * .20 +
+    (11 - stress) * 10 * .15 +
+    (10 - soreness) * 10 * .15 +
+    mood * 10 * .10
+  );
+}
+
+async function saveWellness() {
+  if (!window._fb || !document.getElementById('user-name')?.textContent || document.getElementById('user-name').textContent === '—') {
+    showToast('กรุณา Sign in ก่อนบันทึกข้อมูล', 'error'); return;
+  }
+  const entry = {
+    date: document.getElementById('w-date').value || toLocalDateStr(),
+    weight: numberValue('w-weight'),
+    restingHR: numberValue('w-rhr'),
+    sleepHours: numberValue('w-sleep-hours'),
+    sleepQuality: numberValue('w-sleep-quality'),
+    fatigue: numberValue('w-fatigue'),
+    stress: numberValue('w-stress'),
+    soreness: numberValue('w-soreness'),
+    mood: numberValue('w-mood'),
+    painLocation: document.getElementById('w-pain-location').value.trim(),
+    note: document.getElementById('w-note').value.trim(),
+    createdAt: Date.now()
+  };
+  if ([entry.sleepQuality,entry.fatigue,entry.stress,entry.mood].some(v => v !== null && (v < 1 || v > 10)) ||
+      (entry.soreness !== null && (entry.soreness < 0 || entry.soreness > 10))) {
+    showToast('คะแนนต้องอยู่ในช่วงที่กำหนด', 'error'); return;
+  }
+  entry.recoveryScore = calculateRecoveryScore(entry);
+  showLoading('Saving wellness...');
+  try {
+    await window._fb.setData(`wellness/${entry.date}`, entry);
+    await sendSheetsBackup('wellness', entry, true);
+    showToast('✅ Wellness saved');
+  } catch(e) { showToast('Error: ' + e.message, 'error'); }
+  finally { hideLoading(); }
+}
+
+async function deleteWellness(key) {
+  if (!confirm('ลบข้อมูล Wellness วันนี้?')) return;
+  await window._fb.removeData(`wellness/${key}`);
+}
+
+function renderWellness() {
+  const list = document.getElementById('wellness-list');
+  if (!list) return;
+  const records = AppState.get('wellness') || [];
+  const today = records.find(r => r.date === toLocalDateStr()) || records[0];
+  const score = calculateRecoveryScore(today);
+  const scoreEl = document.getElementById('recovery-score');
+  const labelEl = document.getElementById('recovery-label');
+  const adviceEl = document.getElementById('recovery-advice');
+  if (scoreEl) {
+    scoreEl.textContent = score ?? '—';
+    const color = score >= 80 ? 'var(--green)' : score >= 60 ? 'var(--orange)' : 'var(--red)';
+    scoreEl.style.color = score === null ? 'var(--text3)' : color;
+  }
+  if (labelEl && adviceEl) {
+    if (score === null) {
+      labelEl.textContent = 'ยังไม่มีข้อมูล';
+      adviceEl.textContent = 'บันทึก Morning Check-in เพื่อรับคำแนะนำ';
+    } else if (score >= 80) {
+      labelEl.textContent = 'พร้อมฝึก';
+      adviceEl.textContent = 'ร่างกายฟื้นตัวดี สามารถทำแผนตามกำหนดได้';
+    } else if (score >= 60) {
+      labelEl.textContent = 'ควรลดความหนัก';
+      adviceEl.textContent = 'เลือก Easy/Recovery และติดตาม HR กับอาการปวดระหว่างฝึก';
+    } else {
+      labelEl.textContent = 'ควรพักหรือฝึกเบา';
+      adviceEl.textContent = 'ความพร้อมต่ำ หากมีอาการปวดหรือ Resting HR สูงผิดปกติควรพัก';
+    }
+  }
+  list.innerHTML = records.length ? records.slice(0,14).map(r => `
+    <div class="workout-row">
+      <div class="workout-icon-wrap" style="background:var(--green-light)">🫀</div>
+      <div style="flex:1;min-width:0">
+        <div class="workout-title">${r.date} · Recovery ${calculateRecoveryScore(r) ?? '—'}</div>
+        <div class="workout-meta">Sleep ${r.sleepHours ?? '—'}h · RHR ${r.restingHR ?? '—'} · Fatigue ${r.fatigue ?? '—'} · Pain ${r.soreness ?? '—'}</div>
+      </div>
+      <button onclick="deleteWellness('${r._key}')" class="btn btn-ghost btn-sm">✕</button>
+    </div>`).join('') : '<p class="text-sm c2">ยังไม่มีข้อมูล Wellness</p>';
+}
+
+async function saveBackupSettings() {
+  const url = document.getElementById('set-gas-url').value.trim();
+  const token = document.getElementById('set-gas-token').value.trim();
+  if (url && !/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(url)) {
+    showToast('URL ต้องเป็น Apps Script Web App ที่ลงท้าย /exec', 'error'); return;
+  }
+  const cfg = await window._fb.getData('settings') || {};
+  cfg.gasUrl = url; cfg.gasToken = token;
+  await window._fb.setData('settings', cfg);
+  showToast('✅ Backup settings saved');
+}
+
+async function getBackupSettings() {
+  const cfg = await window._fb.getData('settings') || {};
+  return { url: cfg.gasUrl || '', token: cfg.gasToken || '' };
+}
+
+async function sendSheetsBackup(type, data, silent=false) {
+  const {url, token} = await getBackupSettings();
+  if (!url) { if (!silent) showToast('ยังไม่ได้ตั้งค่า Apps Script URL', 'error'); return false; }
+  await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type':'text/plain;charset=utf-8'},
+    mode: 'no-cors',
+    body: JSON.stringify({token, action:'upsert', type, data})
+  });
+  return true;
+}
+
+async function testSheetsBackup() {
+  const status = document.getElementById('gas-status');
+  try {
+    if (status) status.textContent = 'Testing...';
+    await sendSheetsBackup('ping', {date:toLocalDateStr(), createdAt:Date.now()});
+    if (status) status.innerHTML = '<span style="color:var(--green)">✓ ส่งคำขอทดสอบแล้ว กรุณาตรวจชีต System_Log</span>';
+  } catch(e) {
+    if (status) status.innerHTML = `<span style="color:var(--red)">✕ ${e.message}</span>`;
+  }
+}
+
+async function syncAllToSheets() {
+  showLoading('Syncing to Google Sheets...');
+  try {
+    for (const w of AppState.get('workouts')) await sendSheetsBackup('workout', {...w, _key:undefined}, true);
+    for (const w of AppState.get('wellness')) await sendSheetsBackup('wellness', {...w, _key:undefined}, true);
+    showToast('✅ Sync completed');
+  } catch(e) { showToast('Sync failed: ' + e.message, 'error'); }
+  finally { hideLoading(); }
+}
+
+function exportMyDashJSON() {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    version: 'MyDash V2',
+    workouts: AppState.get('workouts').map(({_key,...v})=>v),
+    wellness: AppState.get('wellness').map(({_key,...v})=>v),
+    coachPlan: AppState.get('coachPlan')
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `mydash-backup-${toLocalDateStr()}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
 // ── INIT ──
 document.getElementById('today-date-label').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const wellnessDate = document.getElementById('w-date'); if (wellnessDate) wellnessDate.value = toLocalDateStr();
 
 // ── MOBILE DRAWER ──
 (function() {
   const navPages = [
     { page:'today',         icon:'🏠', label:'Dashboard' },
     { page:'fitness-log',   icon:'💪', label:'Activity' },
+    { page:'wellness',      icon:'🫀', label:'Wellness' },
     { page:'fitness-stats', icon:'📊', label:'Statistics' },
     { page:'coach',         icon:'🤖', label:'AI Coach' },
     { page:'strava',        icon:'🚴', label:'Strava' },
