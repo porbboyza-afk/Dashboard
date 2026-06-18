@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260618-13">
+<link rel="manifest" href="manifest.json?v=20260618-14">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-13">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-13">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-13">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-14">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-14">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-14">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -945,6 +945,10 @@ img, video, iframe, canvas { max-width: 100%; }
 .strava-pr-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
 .strava-pr { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r); padding:12px; }
 .strava-delta { font-size:10px; margin-top:5px; font-weight:700; }
+.dashboard-insight-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.dashboard-health-values { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.dashboard-health-value { background:var(--bg2); border-radius:10px; padding:10px; text-align:center; }
+.dashboard-mini-chart { position:relative; height:150px; }
 
 /* ══════════════════════════
    UTILS
@@ -1116,6 +1120,8 @@ img, video, iframe, canvas { max-width: 100%; }
   .strava-dashboard-grid { grid-template-columns:1fr; }
   .strava-pr-grid { grid-template-columns:1fr; }
   .strava-filter-bar .form-group { min-width:calc(50% - 4px); }
+  .dashboard-insight-grid { grid-template-columns:1fr; }
+  .dashboard-health-values { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
   .page-title { font-size: 24px; }
   .hero-ring-card { flex-direction: column; }
@@ -1140,6 +1146,8 @@ img, video, iframe, canvas { max-width: 100%; }
   .main { padding:28px 24px; }
   .wellness-top-grid, .wellness-chart-grid { grid-template-columns:1fr; }
   .wellness-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .dashboard-insight-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .dashboard-insight-grid > :last-child { grid-column:1 / -1; }
 }
 @media (max-width: 768px) {
   #load-metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
@@ -1295,6 +1303,38 @@ img, video, iframe, canvas { max-width: 100%; }
         </div>
       </div>
 
+      <div class="dashboard-insight-grid mb-16">
+        <div class="card">
+          <div class="flex justify-between items-center mb-12">
+            <div class="card-label" style="margin:0">Today's Wellness</div>
+            <button class="btn btn-ghost btn-xs" onclick="showPage('wellness')">บันทึก</button>
+          </div>
+          <div class="dashboard-health-values">
+            <div class="dashboard-health-value"><div class="stat-label">Sleep</div><div class="mono bold" id="dash-sleep">—</div></div>
+            <div class="dashboard-health-value"><div class="stat-label">HRV</div><div class="mono bold" id="dash-hrv">—</div></div>
+            <div class="dashboard-health-value"><div class="stat-label">Resting HR</div><div class="mono bold" id="dash-rhr">—</div></div>
+            <div class="dashboard-health-value"><div class="stat-label">Pain</div><div class="mono bold" id="dash-pain">—</div></div>
+          </div>
+          <div class="text-xs c3 mt-8" id="dash-wellness-note">รอข้อมูล Wellness วันนี้</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">This Week vs Last Week</div>
+          <div class="dashboard-health-values">
+            <div class="dashboard-health-value"><div class="stat-label">Distance</div><div class="mono bold" id="dash-week-dist">—</div></div>
+            <div class="dashboard-health-value"><div class="stat-label">Change</div><div class="mono bold" id="dash-week-change">—</div></div>
+            <div class="dashboard-health-value"><div class="stat-label">7D Load</div><div class="mono bold" id="dash-load-au">—</div></div>
+            <div class="dashboard-health-value"><div class="stat-label">Level</div><div class="bold" id="dash-load-level">—</div></div>
+          </div>
+          <div class="text-xs c3 mt-8" id="dash-week-note">คำนวณจากกิจกรรม Firebase และ Strava</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Recovery vs Load · 7 Days</div>
+          <div class="dashboard-mini-chart"><canvas id="chart-dashboard-health"></canvas></div>
+        </div>
+      </div>
+
       <!-- Calendar + Stats: side-by-side on desktop -->
       <div class="cal-stats-row mb-16">
         <!-- Training Calendar — compact heatmap -->
@@ -1391,7 +1431,8 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="card-label" style="margin-bottom:8px">Quick Actions</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')">+ Activity</button>
-            <button class="btn btn-ghost btn-sm" onclick="showPage('coach')">🤖 Coach</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('wellness')">🫀 Wellness</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('fitness-stats')">📊 Statistics</button>
             <button class="btn btn-ghost btn-sm" onclick="showPage('strava')">🚴 Strava</button>
           </div>
         </div>
@@ -2122,6 +2163,9 @@ function rebuildCharts() {
       document.getElementById('strava-overview-view')?.style.display !== 'none') {
     setTimeout(()=>renderStravaOverview(window._stravaAllActs||[]),50);
   }
+  if (document.getElementById('page-today')?.classList.contains('active')) {
+    setTimeout(renderDashboardHomeInsights,50);
+  }
 }
 
 // ── DEEPSEEK API ──
@@ -2363,6 +2407,7 @@ AppState.subscribe('coachPlan', () => {
 AppState.subscribe('wellness', () => {
   renderWellness();
   renderIntegratedHealth();
+  if(document.getElementById('page-today')?.classList.contains('active'))renderDashboardHomeInsights();
 });
 
 AppState.subscribe('deepseekKey', key => {
@@ -2411,6 +2456,7 @@ function renderTodayStats(){
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('t-workouts',recent.length);
   setTimeout(renderDashboardExtras, 100);
+  setTimeout(renderDashboardHomeInsights, 120);
   setTimeout(renderCalendar, 200);
   setTimeout(renderDashRaceBanner, 300);
 
@@ -2440,12 +2486,6 @@ function renderTodayStats(){
       }).join('')
     : '<p class="text-sm c2">ไม่มีกิจกรรมสัปดาห์นี้</p>';
 
-  const hasKey=!!AppState.get('deepseekKey');
-  const statusEl=document.getElementById('today-status');
-  if(statusEl) statusEl.innerHTML=`
-    <div class="pill pill-green"><span class="dot"></span>Firebase: Realtime sync</div>
-    <div class="pill ${hasKey?'pill-green':'pill-orange'}"><span class="dot"></span>DeepSeek AI: ${hasKey?'Ready':'API Key not set'}</div>
-    <div class="pill pill-blue"><span class="dot"></span>${document.getElementById('user-name').textContent||'Signed in'}</div>`;
 }
 
 // ── SPLITS ──
@@ -2572,7 +2612,7 @@ function goToCurrentMonth(){_statsMonthOffset=0;document.getElementById('btn-mon
 function renderCurrentStatsView(){if(document.getElementById('stats-week-view').style.display!=='none')renderWeekStats();else renderMonthStats();}
 function switchStatsTab(tab,el){document.querySelectorAll('#page-fitness-stats .seg-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('stats-week-view').style.display=tab==='week'?'block':'none';document.getElementById('stats-month-view').style.display=tab==='month'?'block':'none';if(tab==='week')renderWeekStats();else renderMonthStats();}
 
-const charts={hrzone:null, paceTrend:null, stravaDistance:null, stravaPerformance:null};
+const charts={hrzone:null, paceTrend:null, stravaDistance:null, stravaPerformance:null, dashboardHealth:null};
 const dayNamesTH=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 function getChartColors() {
@@ -3361,6 +3401,99 @@ function renderDashboardExtras() {
 
   // Weekly goal
   renderGoalDisplay(all);
+}
+
+function dashboardLoadLevel(metrics) {
+  const load = Math.round(metrics.acute);
+  if (metrics.acwr !== null) {
+    if (metrics.acwr < .8) return {label:'เบา',color:'var(--accent)'};
+    if (metrics.acwr <= 1.3) return {label:'ปานกลาง',color:'var(--green)'};
+    if (metrics.acwr <= 1.5) return {label:'ค่อนข้างหนัก',color:'var(--orange)'};
+    return {label:'หนักมาก',color:'var(--red)'};
+  }
+  if (load < 200) return {label:'เบา',color:'var(--accent)'};
+  if (load < 400) return {label:'ปานกลาง',color:'var(--green)'};
+  if (load < 600) return {label:'ค่อนข้างหนัก',color:'var(--orange)'};
+  return {label:'หนักมาก',color:'var(--red)'};
+}
+
+async function renderDashboardHomeInsights() {
+  const set=(id,value)=>{const element=document.getElementById(id);if(element)element.textContent=value;};
+  const wellness=AppState.get('wellness')||[];
+  const todayRecord=wellness.find(record=>record.date===toLocalDateStr());
+  set('dash-sleep',todayRecord?.sleepHours!=null?`${todayRecord.sleepHours}h`:'—');
+  set('dash-hrv',todayRecord?.hrv!=null?`${todayRecord.hrv} ms`:'—');
+  set('dash-rhr',todayRecord?.restingHR!=null?`${todayRecord.restingHR} bpm`:'—');
+  set('dash-pain',todayRecord?.soreness!=null?`${todayRecord.soreness}/10`:'—');
+  const wellnessNote=document.getElementById('dash-wellness-note');
+  if(wellnessNote)wellnessNote.textContent=todayRecord
+    ? `Recovery ${calculateRecoveryScore(todayRecord)} · ${todayRecord.healthStatus==='normal'?'สถานะปกติ':todayRecord.healthStatus||'มีข้อมูลแล้ว'}`
+    : 'ยังไม่ได้บันทึก Wellness วันนี้';
+
+  const activities=getAllActivities();
+  const thisStart=getThisWeekStart();
+  const previousStart=new Date(thisStart);previousStart.setDate(previousStart.getDate()-7);
+  const thisStartString=toLocalDateStr(thisStart),previousStartString=toLocalDateStr(previousStart);
+  const thisDistance=activities.filter(row=>(row.date||'')>=thisStartString).reduce((sum,row)=>sum+parseFloat(row.dist||0),0);
+  const previousDistance=activities.filter(row=>(row.date||'')>=previousStartString&&(row.date||'')<thisStartString).reduce((sum,row)=>sum+parseFloat(row.dist||0),0);
+  const change=previousDistance>0?(thisDistance-previousDistance)/previousDistance*100:null;
+  set('dash-week-dist',`${thisDistance.toFixed(1)} km`);
+  set('dash-week-change',change===null?'—':`${change>=0?'↑':'↓'} ${Math.abs(change).toFixed(0)}%`);
+  const changeElement=document.getElementById('dash-week-change');
+  if(changeElement&&change!==null)changeElement.style.color=Math.abs(change)<=20?'var(--green)':change>20?'var(--orange)':'var(--accent)';
+  const metrics=calculateLoadMetrics(activities);
+  const level=dashboardLoadLevel(metrics);
+  set('dash-load-au',`${Math.round(metrics.acute)} AU`);
+  set('dash-load-level',level.label);
+  const levelElement=document.getElementById('dash-load-level');if(levelElement)levelElement.style.color=level.color;
+  const weekNote=document.getElementById('dash-week-note');
+  if(weekNote)weekNote.textContent=previousDistance>0
+    ? `สัปดาห์ก่อน ${previousDistance.toFixed(1)} km · ${metrics.acwr===null?'กำลังสร้างฐานโหลด':`ACWR ${metrics.acwr.toFixed(2)}`}`
+    : 'ยังไม่มีข้อมูลสัปดาห์ก่อนสำหรับเปรียบเทียบ';
+
+  const labels=[],recoveries=[],loads=[];
+  for(let index=6;index>=0;index--){
+    const date=dateDaysAgo(index),dateString=toLocalDateStr(date);
+    const record=wellness.find(row=>row.date===dateString);
+    labels.push(date.toLocaleDateString('th-TH',{weekday:'short'}));
+    recoveries.push(calculateRecoveryScore(record));
+    loads.push(activities.filter(row=>row.date===dateString).reduce((sum,row)=>sum+sessionLoad(row),0));
+  }
+  if(charts.dashboardHealth)charts.dashboardHealth.destroy();
+  const context=document.getElementById('chart-dashboard-health')?.getContext('2d');
+  if(context){
+    const colors=getChartColors();
+    charts.dashboardHealth=new Chart(context,{
+      data:{labels,datasets:[
+        {type:'bar',label:'Load',data:loads,backgroundColor:'rgba(255,77,0,.35)',borderRadius:5,yAxisID:'y1'},
+        {type:'line',label:'Recovery',data:recoveries,borderColor:'#34C759',backgroundColor:'#34C759',borderWidth:2.5,pointRadius:3,tension:.3,spanGaps:true,yAxisID:'y'}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:colors.tick,usePointStyle:true,boxWidth:8,font:{size:9}}}},scales:{
+        x:{grid:{display:false},ticks:{color:colors.tick,font:{size:9}}},
+        y:{min:0,max:100,grid:{color:colors.grid},ticks:{color:'#34C759',font:{size:8}}},
+        y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:'#FF4D00',font:{size:8}}}
+      }}
+    });
+  }
+  await renderDashboardSyncStatus();
+}
+
+async function renderDashboardSyncStatus() {
+  const element=document.getElementById('today-status');if(!element)return;
+  const queue=JSON.parse(localStorage.getItem('mydash-sync-queue')||'[]');
+  const lastSheets=+(localStorage.getItem('mydash-last-sheets-sync')||0);
+  let settings={},lastStrava=0;
+  try {
+    settings=await window._fb.getData('settings')||{};
+    lastStrava=+(await window._fb.getData('strava_last_sync')||0);
+  } catch(e) {}
+  const stravaConnected=(AppState.get('stravaActs')||[]).length>0;
+  const sheetsReady=!!(settings.gasUrl||DEFAULT_GAS_URL)&&!!settings.gasToken;
+  const relative=time=>time?new Date(time).toLocaleString('th-TH'):'ยังไม่เคยซิงค์';
+  element.innerHTML=`
+    <div class="pill pill-green"><span class="dot"></span>Firebase: Realtime sync</div>
+    <div class="pill ${stravaConnected?'pill-green':'pill-orange'}"><span class="dot"></span>Strava: ${stravaConnected?`ล่าสุด ${relative(lastStrava)}`:'ยังไม่เชื่อมต่อ/ไม่มีข้อมูล'}</div>
+    <div class="pill ${sheetsReady&&!queue.length?'pill-green':'pill-orange'}"><span class="dot"></span>Google Sheets: ${!sheetsReady?'ยังไม่พร้อม':queue.length?`รอส่ง ${queue.length} รายการ`:`ล่าสุด ${relative(lastSheets)}`}</div>`;
 }
 
 function renderGoalDisplay(all) {
@@ -4582,6 +4715,8 @@ async function sendSheetsBackup(type, data, silent=false) {
   if(!navigator.onLine){queueSheetsBackup(queuedPayload);if(!silent)showToast('ออฟไลน์: เก็บเข้าคิวรอซิงก์','warn');return false;}
   try{
     await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},mode:'no-cors',body:JSON.stringify(payload)});
+    localStorage.setItem('mydash-last-sheets-sync',String(Date.now()));
+    if(document.getElementById('page-today')?.classList.contains('active'))renderDashboardSyncStatus();
     return true;
   }catch(e){queueSheetsBackup(queuedPayload);if(!silent)showToast('ส่งไม่สำเร็จ: เก็บเข้าคิวแล้ว','warn');return false;}
 }
