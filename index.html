@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260618-8">
+<link rel="manifest" href="manifest.json?v=20260618-9">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-8">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-8">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-8">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-9">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-9">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-9">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -3683,16 +3683,48 @@ function showStatInfo(type) {
   const atlVal = document.getElementById('stat-atl')?.textContent || '—';
   const hrVal = document.getElementById('stat-wk-hr')?.textContent || '—';
   const cadVal = document.getElementById('stat-wk-cad')?.textContent || '—';
+  const loadMetrics = calculateLoadMetrics();
+  const acwr = loadMetrics.acwr;
+  const loadStatus = acwr === null
+    ? {label:'ข้อมูลฐานยังไม่พอ',color:'var(--text3)',advice:'บันทึกกิจกรรมต่อเนื่องเพื่อสร้างฐานโหลด 28 วัน'}
+    : acwr < .8
+      ? {label:'ต่ำกว่าฐาน',color:'var(--accent)',advice:'โหลดสัปดาห์นี้ต่ำกว่าที่ร่างกายคุ้นเคย อาจเป็นช่วงพักหรือกลับมาซ้อม'}
+      : acwr <= 1.3
+        ? {label:'ค่อนข้างสมดุล',color:'var(--green)',advice:'โหลดใกล้เคียงฐานที่ร่างกายคุ้นเคย ให้ดู Wellness และอาการปวดร่วมด้วย'}
+        : acwr <= 1.5
+          ? {label:'เพิ่มค่อนข้างเร็ว',color:'var(--orange)',advice:'หลีกเลี่ยงวันหนักติดกันและติดตามการฟื้นตัว'}
+          : {label:'เพิ่มเร็วมาก',color:'var(--red)',advice:'พิจารณาลดความหนักหรือเพิ่มวันพัก โดยเฉพาะเมื่อ Readiness ต่ำ'};
 
   const info = {
     atl: {
       title: '🔥 Training Load (7 วัน)',
       color: 'var(--orange)',
       current: atlVal,
-      unit: 'หน่วยสัมพัทธ์',
+      unit: 'โหลดสะสม',
       desc: `<strong>Training Load 7 วัน</strong> คือผลรวมภาระการฝึกล่าสุด โดยใช้ <strong>เวลา (นาที) × RPE</strong> หากกิจกรรมไม่ได้บันทึก RPE ระบบจะประมาณความหนักจาก HR และประเภทกิจกรรม ค่านี้ควรใช้ดูแนวโน้มของคุณเองร่วมกับ 28D Baseline และ ACWR ไม่ควรนำตัวเลขไปเทียบกับผู้อื่น`,
+      summary: `
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px">
+          <div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase">7D Load</div>
+            <div style="font-family:var(--font-mono);font-size:20px;font-weight:800;margin-top:4px">${Math.round(loadMetrics.acute)} AU</div>
+          </div>
+          <div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase">28D Baseline</div>
+            <div style="font-family:var(--font-mono);font-size:20px;font-weight:800;margin-top:4px">${Math.round(loadMetrics.chronicWeekly)} AU</div>
+          </div>
+          <div style="background:var(--bg);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase">ACWR</div>
+            <div style="font-family:var(--font-mono);font-size:20px;font-weight:800;margin-top:4px;color:${loadStatus.color}">${acwr === null ? '—' : acwr.toFixed(2)}</div>
+          </div>
+        </div>
+        <div style="border-left:4px solid ${loadStatus.color};background:var(--bg);border-radius:10px;padding:11px 12px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:800;color:${loadStatus.color}">${loadStatus.label}</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-top:3px">${loadStatus.advice}</div>
+        </div>`,
+      levelTitle: 'เกณฑ์ ACWR — ไม่ใช่เกณฑ์ของเลข AU',
       levels: [
-        { range: 'เทียบ 28D Baseline', label: 'หลักสำคัญ', color: 'var(--green)', tip: 'ตัวเลขเดี่ยวไม่มีเกณฑ์หนักหรือเบาที่ใช้ได้กับทุกคน ให้เทียบกับฐาน 28 วันของคุณ' },
+        { range: 'ตัวอย่าง', label: 'วิธีอ่าน', color: 'var(--accent)', tip: 'ถ้าโหลด 7 วัน = 255 AU และฐาน 28 วัน = 250 AU จะได้ ACWR 1.02 ซึ่งถือว่าใกล้เคียงฐาน ไม่ได้แปลว่า 255 สูงเกินไป' },
+        { range: 'ACWR < 0.8', label: 'ต่ำกว่าฐาน', color: 'var(--accent)', tip: 'โหลดล่าสุดต่ำกว่าสิ่งที่ร่างกายคุ้นเคย อาจเป็นช่วงพัก ลดโหลด หรือกลับมาซ้อม' },
         { range: 'ACWR 0.8–1.3', label: 'ค่อนข้างสมดุล', color: 'var(--green)', tip: 'โหลด 7 วันใกล้เคียงกับสิ่งที่ร่างกายคุ้นเคย แต่ยังต้องดู Wellness และอาการปวดร่วมด้วย' },
         { range: 'ACWR 1.3–1.5', label: 'เพิ่มค่อนข้างเร็ว', color: 'var(--orange)', tip: 'ควรหลีกเลี่ยงวันหนักติดกัน และติดตาม HRV, Resting HR, การนอน และความล้า' },
         { range: 'ACWR > 1.5', label: 'เพิ่มเร็วมาก', color: 'var(--red)', tip: 'พิจารณาลดความหนักหรือเพิ่มวันพัก โดยเฉพาะเมื่อ Readiness ต่ำหรือมีอาการปวด' },
@@ -3745,7 +3777,8 @@ function showStatInfo(type) {
         <div style="font-size:13px;color:var(--text2)">${d.unit} (สัปดาห์นี้)</div>
       </div>
       <div style="font-size:13px;line-height:1.8;color:var(--text2);margin-bottom:16px">${d.desc}</div>
-      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">ระดับ</div>
+      ${d.summary || ''}
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:10px">${d.levelTitle || 'ระดับ'}</div>
       <div style="display:flex;flex-direction:column;gap:8px">
         ${d.levels.map(lv => `
           <div style="background:var(--bg);border-radius:10px;padding:10px 12px;border-left:3px solid ${lv.color}">
