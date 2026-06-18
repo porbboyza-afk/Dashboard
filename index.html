@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260618-7">
+<link rel="manifest" href="manifest.json?v=20260618-8">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-7">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-7">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-7">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260618-8">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260618-8">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260618-8">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -1354,10 +1354,9 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="page-title">Activity Log 💪</div>
           <div class="page-subtitle">Realtime sync → Firebase</div>
         </div>
-        <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-          📸 Extract from Photo (AI)
-          <input type="file" accept="image/*" multiple style="display:none" onchange="processImageWithAI(event)">
-        </label>
+        <button class="btn btn-ghost btn-sm" type="button" onclick="showToast('DeepSeek Chat ยังไม่รองรับการอ่านภาพ กรุณากรอกข้อมูลด้วยตนเอง','info')">
+          📸 Photo import unavailable
+        </button>
       </div>
 
       <div class="grid g2">
@@ -1479,7 +1478,7 @@ img, video, iframe, canvas { max-width: 100%; }
     <div class="page" id="page-fitness-stats">
       <div class="page-header">
         <div class="page-title">Statistics 📊</div>
-        <div class="page-subtitle">Firebase + Strava ·AI Analysis</div>
+        <div class="page-subtitle">Firebase + Strava · DeepSeek AI Analysis</div>
       </div>
 
       <div class="seg-tabs">
@@ -1537,6 +1536,7 @@ img, video, iframe, canvas { max-width: 100%; }
             <div id="stat-atl" style="font-family:var(--font-mono);font-size:32px;font-weight:800;color:var(--orange)">—</div>
             <div style="font-size:11px;color:var(--text2);margin-top:6px;margin-bottom:10px">โหลดสะสม 7 วัน · หน่วยสัมพัทธ์</div>
             <div class="progress-wrap"><div id="atl-bar-fill" class="progress-fill" style="width:0%;background:linear-gradient(90deg,var(--green),var(--orange))"></div></div>
+            <div id="atl-comparison" style="font-size:10px;color:var(--text3);margin-top:7px">รอฐานโหลด 28 วัน</div>
           </div>
           <div class="stat-card" style="cursor:pointer;transition:box-shadow .2s" onclick="showStatInfo('hr')" onmouseover="this.style.boxShadow='var(--shadow)'" onmouseout="this.style.boxShadow='var(--shadow-card)'" title="แตะเพื่อดูคำอธิบาย">
             <div class="stat-label" style="display:flex;align-items:center;justify-content:space-between">HR Average<span style="color:var(--accent);font-size:13px;font-weight:700">ℹ</span></div>
@@ -1590,7 +1590,7 @@ img, video, iframe, canvas { max-width: 100%; }
         <div class="card" style="background:linear-gradient(135deg,rgba(0,122,255,.04),rgba(90,200,250,.03));border-color:rgba(0,122,255,.15)">
           <div class="flex justify-between items-center mb-12">
             <div>
-              <div style="font-size:14px;font-weight:700;color:var(--accent)">🤖 AI Analysis </div>
+              <div style="font-size:14px;font-weight:700;color:var(--accent)">🤖 AI Analysis by DeepSeek</div>
               <div style="font-size:12px;color:var(--text2);margin-top:2px">Firebase + Strava · selected week</div>
             </div>
             <button class="btn btn-primary btn-sm" id="btn-analyze-wk" onclick="analyzeFitnessAI('week')">✨ Analyze</button>
@@ -1804,7 +1804,7 @@ img, video, iframe, canvas { max-width: 100%; }
     <div class="page" id="page-news">
       <div class="page-header">
         <div class="page-title">AI Q&A 💬</div>
-        <div class="page-subtitle">ถามเรื่องข่าวสาร IT เศรษฐกิจ เทรนด์โลก · AI ตอบเป็นภาษาไทย</div>
+        <div class="page-subtitle">ถามเรื่องข่าวสาร IT เศรษฐกิจ เทรนด์โลก · DeepSeek AI ตอบเป็นภาษาไทย</div>
       </div>
       <div class="card" style="background:linear-gradient(135deg,rgba(0,122,255,.04),rgba(90,200,250,.03));border-color:rgba(0,122,255,.15)">
         <div class="flex gap-12 mb-12">
@@ -2029,17 +2029,14 @@ function rebuildCharts() {
   }
 }
 
-const CF_WORKER = 'https://claude-proxy2.porbboyza.workers.js';
-// Note: _claudeKey is managed by AppState — see defineProperties below
-
-// ── CLAUDE API ──
+// ── DEEPSEEK API ──
 async function askDeepSeek(userPrompt, systemMsg='', btnId='', outId='') {
   if (!userPrompt?.trim()) {
     showToast('กรุณากรอกข้อความ', 'warning');
     return null;
   }
 
-  const key = AppState.get('deepseekKey') || AppState.get('claudeKey');
+  const key = AppState.get('deepseekKey');
   if (!key) {
     showToast('กรุณาตั้งค่า DeepSeek API Key ก่อน', 'error');
     showPage('settings');
@@ -2133,22 +2130,11 @@ async function askDeepSeek(userPrompt, systemMsg='', btnId='', outId='') {
     }
   }
 }
-// Keep askClaude as fallback alias to prevent any missing ref crashes
-const askClaude = askDeepSeek;
-
 function mdToHtml(text) {
   return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
     .replace(/^### (.*)/gm,'<div style="font-weight:700;font-size:14px;margin:12px 0 4px;color:var(--accent)">$1</div>')
     .replace(/^## (.*)/gm,'<div style="font-weight:700;font-size:15px;margin:14px 0 6px;color:var(--text)">$1</div>');
-}
-
-async function askClaudeVision(imageBase64, mimeType, promptText) {
-  const key = AppState.get('claudeKey');
-  if (!key) { showToast('กรุณาตั้งค่า API Key ก่อน','error'); return null; }
-  const res = await fetch('https://claude-proxy2.porbboyza.workers.dev', {method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:512,system:'Extract fitness data from image. Return ONLY valid JSON: {distance:number,time:number,hr:number|null,cadence:number|null,splits:[{km:number,pace:string,hr:number}]|null,type:"run"|"bike"|"swim"|"walk"}',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mimeType,data:imageBase64}},{type:'text',text:promptText}]}]})});
-  const data = await res.json();
-  return data?.content?.[0]?.text||null;
 }
 
 // ══════════════════════════════════════════════════
@@ -2162,8 +2148,7 @@ const AppState = (() => {
     coachPlan:      null,
     wellness:       [],
     
-    claudeKey:      '',
-  deepseekKey:    '',
+    deepseekKey:     '',
     appReady:       false,
   };
   const _listeners = {};
@@ -2212,7 +2197,6 @@ Object.defineProperties(window, {
   _coachPlan:      { get: () => AppState.get('coachPlan'),      set: v => AppState.set('coachPlan', v),      configurable:true },
   _wellness:       { get: () => AppState.get('wellness'),       set: v => AppState.set('wellness', v),       configurable:true },
   
-  _claudeKey:      { get: () => AppState.get('claudeKey'),      set: v => AppState.set('claudeKey', v),      configurable:true },
   _deepseekKey:    { get: () => AppState.get('deepseekKey'),    set: v => AppState.set('deepseekKey', v),    configurable:true },
   _appReady:       { get: () => AppState.get('appReady'),       set: v => AppState.set('appReady', v),       configurable:true },
 });
@@ -2226,10 +2210,10 @@ window._appReady = async (user) => {
   hideLoading(); showPage('today');
   try {
     const cfg = await window._fb.getData('settings')||{};
-    if (cfg.claudeKey) {
-      AppState.set('claudeKey', cfg.claudeKey);
-      const k=document.getElementById('set-claude-key'); if(k)k.value=cfg.claudeKey;
-      const s=document.getElementById('claude-key-status'); if(s)s.innerHTML='<span style="color:var(--green)">✓ Ready</span>';
+    if (cfg.deepseekKey) {
+      AppState.set('deepseekKey', cfg.deepseekKey);
+      const k=document.getElementById('set-deepseek-key'); if(k)k.value=cfg.deepseekKey;
+      const s=document.getElementById('deepseek-key-status'); if(s)s.innerHTML='<span style="color:var(--green)">✓ Ready</span>';
     }
     const safe=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
     safe('set-strava-id',cfg.stravaId);safe('set-strava-secret',cfg.stravaSecret);safe('set-strava-redirect',cfg.stravaRedirect);
@@ -2286,9 +2270,8 @@ AppState.subscribe('wellness', () => {
   renderIntegratedHealth();
 });
 
-AppState.subscribe('claudeKey', key => {
-  // Sync to askClaude usage — no extra action needed since proxy handles it
-  if (key) console.info('[AppState] Claude API key loaded ✓');
+AppState.subscribe('deepseekKey', key => {
+  if (key) console.info('[AppState] DeepSeek API key loaded ✓');
 });
 
 // ── UI HELPERS ──
@@ -2362,11 +2345,11 @@ function renderTodayStats(){
       }).join('')
     : '<p class="text-sm c2">ไม่มีกิจกรรมสัปดาห์นี้</p>';
 
-  const hasKey=!!AppState.get('claudeKey');
+  const hasKey=!!AppState.get('deepseekKey');
   const statusEl=document.getElementById('today-status');
   if(statusEl) statusEl.innerHTML=`
     <div class="pill pill-green"><span class="dot"></span>Firebase: Realtime sync</div>
-    <div class="pill ${hasKey?'pill-green':'pill-orange'}"><span class="dot"></span>Claude AI: ${hasKey?'Ready':'API Key not set'}</div>
+    <div class="pill ${hasKey?'pill-green':'pill-orange'}"><span class="dot"></span>DeepSeek AI: ${hasKey?'Ready':'API Key not set'}</div>
     <div class="pill pill-blue"><span class="dot"></span>${document.getElementById('user-name').textContent||'Signed in'}</div>`;
 }
 
@@ -2530,8 +2513,19 @@ function renderWeekStats(){
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('stat-wk-dist',totalDist.toFixed(2));set('stat-wk-count',dayCount);set('stat-wk-time',Math.round(totalTime));set('stat-wk-pace',pace>0?formatPace(pace):'—');
   set('stat-wk-hr',hrCnt>0?Math.round(hrSum/hrCnt):'—');set('stat-wk-cad',cadCnt>0?Math.round(cadSum/cadCnt):'—');
-  const loadMetrics=calculateLoadMetrics(allWks),atl=Math.round(loadMetrics.acute);set('stat-atl',atl);
-  const atlFill=document.getElementById('atl-bar-fill');if(atlFill)atlFill.style.width=Math.min(100,atl/10)+'%';
+  const loadMetrics=calculateLoadMetrics(allWks),atl=Math.round(loadMetrics.acute);set('stat-atl',`${atl} AU`);
+  const loadRatio=loadMetrics.acwr;
+  const atlFill=document.getElementById('atl-bar-fill');
+  if(atlFill){
+    atlFill.style.width=loadRatio===null?'0%':Math.min(100,(loadRatio/1.5)*100)+'%';
+    atlFill.style.background=loadRatio===null||loadRatio<=1.3?'var(--green)':loadRatio<=1.5?'var(--orange)':'var(--red)';
+  }
+  const comparison=document.getElementById('atl-comparison');
+  if(comparison){
+    comparison.textContent=loadRatio===null
+      ? 'ต้องมีข้อมูลย้อนหลังเพื่อสร้างฐาน 28 วัน'
+      : `ฐาน 28 วัน ${Math.round(loadMetrics.chronicWeekly)} AU/สัปดาห์ · ACWR ${loadRatio.toFixed(2)}`;
+  }
   renderIntegratedHealth();
 
   if(charts.week)charts.week.destroy();
@@ -2624,7 +2618,7 @@ async function analyzeFitnessAI(period='week'){
   const wellness=(AppState.get('wellness')||[]).filter(r=>!wks.length||wks.some(w=>w.date===r.date)).slice(0,14).map(r=>`[${r.date}] Sleep ${r.sleepHours??'-'}h RHR ${r.restingHR??'-'} HRV ${r.hrv??'-'} Fatigue ${r.fatigue??'-'} Stress ${r.stress??'-'} Pain ${r.soreness??'-'} Recovery ${calculateRecoveryScore(r)??'-'}`).join('\n');
   const readiness=calculateReadiness();
   const prompt=`Activity data for ${periodLabel}:\n${summary}${statsLine}\n\nWellness:\n${wellness||'No wellness data'}\n\nCurrent integrated metrics: Readiness ${readiness.score}/100, Acute load ${Math.round(readiness.load.acute)}, Chronic weekly ${Math.round(readiness.load.chronicWeekly)}, ACWR ${readiness.load.acwr?.toFixed(2)??'n/a'}, Monotony ${readiness.load.monotony.toFixed(2)}.\n\n${wks.length===0?'No activity data available. Explain what should be logged.':'Analyze together:\n1. Training load and recovery balance\n2. Pace/HR efficiency and consistency\n3. Sleep, RHR, HRV, fatigue and pain risk signals\n4. Specific recommendation for the next 24–48 hours\n5. Three actionable changes. Do not diagnose disease.'}`;
-  await askClaude(prompt,'คุณคือนักสรีรวิทยาและโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย ตรงประเด็น',period==='week'?'btn-analyze-wk':'btn-analyze-mo',period==='week'?'ai-stats-output':'ai-month-output');
+  await askDeepSeek(prompt,'คุณคือนักสรีรวิทยาและโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย ตรงประเด็น',period==='week'?'btn-analyze-wk':'btn-analyze-mo',period==='week'?'ai-stats-output':'ai-month-output');
 }
 
 // ── AI COACH DATE HELPERS ──
@@ -2653,7 +2647,7 @@ function updateCoachWeeksFromEnd() {
 async function generateTrainingPlan(){
   const goal=document.getElementById('coach-goal')?.value?.trim();
   if(!goal){showToast('กรุณาใส่เป้าหมาย','error');return;}
-  if(!AppState.get('claudeKey')){showToast('กรุณาตั้งค่า API Key ก่อน','error');showPage('settings');return;}
+  if(!AppState.get('deepseekKey')){showToast('กรุณาตั้งค่า DeepSeek API Key ก่อน','error');showPage('settings');return;}
   const level=document.getElementById('coach-level')?.value;
   const days=document.getElementById('coach-days')?.value;
   const startDate=document.getElementById('coach-start-date')?.value||toLocalDateStr();
@@ -2672,8 +2666,11 @@ async function generateTrainingPlan(){
   if(out){out.style.color='var(--text2)';out.innerHTML='⏳ Creating plan...';}
   const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='⏳ Generating...';btn.disabled=true;}
   try{
-    const res=await fetch('https://claude-proxy2.porbboyza.workers.dev',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':AppState.get('claudeKey'),'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4096,system:'คุณเป็นโค้ชวิ่ง IAAF ตอบเป็น JSON ONLY ไม่มี markdown วางวันหนักไม่ติดกันและมี recovery/taper ตามข้อมูลสุขภาพ',messages:[{role:'user',content:`Goal:${goal}\nLevel:${level}\nDays:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nHistory:${history||'none'}\nWellness:${wellnessContext||'none'}\nCurrent readiness:${readiness.score}/100 (${readiness.level})\nLoad: acute ${Math.round(readiness.load.acute)}, chronic ${Math.round(readiness.load.chronicWeekly)}, ACWR ${readiness.load.acwr?.toFixed(2)??'n/a'}\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"..."}]}\nCreate exactly ${parseInt(days)*totalWeeks} sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Adapt the first week to current readiness and load.`}]})});
-    const data=await res.json();const rawText=data?.content?.[0]?.text||'';
+    const rawText=await askDeepSeek(
+      `Goal:${goal}\nLevel:${level}\nDays:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nHistory:${history||'none'}\nWellness:${wellnessContext||'none'}\nCurrent readiness:${readiness.score}/100 (${readiness.level})\nLoad: acute ${Math.round(readiness.load.acute)}, chronic ${Math.round(readiness.load.chronicWeekly)}, ACWR ${readiness.load.acwr?.toFixed(2)??'n/a'}\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"..."}]}\nCreate exactly ${parseInt(days)*totalWeeks} sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Adapt the first week to current readiness and load.`,
+      'คุณเป็นโค้ชวิ่ง ตอบเป็น JSON ONLY ไม่มี markdown วางวันหนักไม่ติดกันและมี recovery/taper ตามข้อมูลสุขภาพ'
+    );
+    if(!rawText)throw new Error('DeepSeek ไม่ส่งแผนกลับมา');
     let plan=null;
     try{plan=JSON.parse(rawText.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim());}
     catch(e){if(out){out.style.color='var(--text)';out.innerHTML=mdToHtml(rawText);}showToast('Plan created (no JSON save)','warn');return;}
@@ -2754,34 +2751,14 @@ async function reviewPlanAI(){
   let summary=`Plan: ${plan.goal}\n\n`,doneCount=0,missCount=0;
   plan.sessions.forEach(s=>{if(s.type==='Rest')return;const aw=allWks.find(w=>w.date===s.date);const isDone=!!completedDates[s.date]||!!aw;if(isDone)doneCount++;if(!isDone&&s.date<today)missCount++;if(s.date<=today){summary+=`[${s.date}] ${s.type} target:${s.targetDist}km `;if(aw)summary+=`→ actual:${aw.dist}km ✅\n`;else summary+=`→ ❌\n`;}});
   summary+=`\nSummary: done ${doneCount} / missed ${missCount}`;
-  await askClaude(summary+'\n\nReview progress and suggest plan adjustments','คุณคือโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย','btn-coach-review','coach-review-output');
+  await askDeepSeek(summary+'\n\nReview progress and suggest plan adjustments','คุณคือโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย','btn-coach-review','coach-review-output');
   document.getElementById('coach-review-output').style.display='block';
 }
 
 // ── NEWS ──
-async function askNewsAI(){const q=document.getElementById('news-query')?.value?.trim();if(!q){showToast('กรุณาพิมพ์คำถาม','error');return;}await askClaude(q,'คุณคือผู้เชี่ยวชาญรอบด้าน ตอบเป็นภาษาไทย ชัดเจน กระชับ','btn-news','news-output');document.getElementById('news-output').style.display='block';}
+async function askNewsAI(){const q=document.getElementById('news-query')?.value?.trim();if(!q){showToast('กรุณาพิมพ์คำถาม','error');return;}await askDeepSeek(q,'คุณคือผู้เชี่ยวชาญรอบด้าน ตอบเป็นภาษาไทย ชัดเจน กระชับ','btn-news','news-output');document.getElementById('news-output').style.display='block';}
 function setNewsQ(q){document.getElementById('news-query').value=q;}
 
-// ── IMAGE AI ──
-async function processImageWithAI(event){
-  const files=Array.from(event.target.files||[]);if(!files.length)return;
-  if(!AppState.get('claudeKey')){showToast('กรุณาตั้งค่า API Key ก่อน','error');showPage('settings');return;}
-  showLoading('AI extracting data...');
-  try{
-    const f=files[0];
-    const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});
-    const text=await askClaudeVision(b64,f.type,'Extract running data from this fitness screenshot.');
-    if(!text)throw new Error('No data from AI');
-    const d=JSON.parse(text.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim());
-    if(d.distance){document.getElementById('r-distance').value=d.distance;buildSplits();}
-    if(d.time)document.getElementById('r-time').value=d.time;
-    if(d.hr)document.getElementById('r-hr').value=d.hr;
-    if(d.cadence)document.getElementById('r-cadence').value=d.cadence;
-    if(d.splits?.length){setTimeout(()=>{document.querySelectorAll('.sp-pace').forEach((el,i)=>{if(d.splits[i]?.pace)el.value=d.splits[i].pace;});document.querySelectorAll('.sp-hr').forEach((el,i)=>{if(d.splits[i]?.hr)el.value=d.splits[i].hr;});calcAvgPace();},300);}
-    showToast('✅ Data extracted!');
-  }catch(e){showToast('Error: '+e.message,'error');}
-  finally{hideLoading();event.target.value='';}
-}
 // ── STRAVA ──
 const STRAVA_API='https://www.strava.com/api/v3';
 function stravaConnect(){const sb=document.getElementById('strava-status-box');sb.innerHTML=`<div style="width:100%;display:flex;flex-direction:column;gap:8px"><p style="font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px">Paste Refresh Token</p><div style="display:flex;gap:8px"><input type="text" id="strava-token-input" placeholder="Paste refresh_token..." style="flex:1;font-size:11px"><button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ Connect</button></div></div>`;}
@@ -2959,7 +2936,7 @@ function sbox(label,value,color){return `<div style="background:var(--bg);border
 let _leafletLoaded=false;
 function loadLeaflet(cb){if(_leafletLoaded){cb();return;}const css=document.createElement('link');css.rel='stylesheet';css.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(css);const js=document.createElement('script');js.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';js.onload=()=>{_leafletLoaded=true;cb();};document.head.appendChild(js);}
 function decodePolyline(encoded){const coords=[];let index=0,lat=0,lng=0;while(index<encoded.length){let b,shift=0,result=0;do{b=encoded.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);lat+=(result&1)?~(result>>1):(result>>1);shift=0;result=0;do{b=encoded.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);lng+=(result&1)?~(result>>1):(result>>1);coords.push([lat/1e5,lng/1e5]);}return coords;}
-async function stravaAnalyze(){const cached=await window._fb.getData('strava_activities');const acts=cached?(Array.isArray(cached)?cached:Object.values(cached)):[];if(!acts.length){showToast('Please sync first','error');return;}const summary=acts.slice(0,15).map(a=>`[${new Date(a.start_date_local).toLocaleDateString('en-GB')}] ${a.type} ${(a.distance/1000).toFixed(2)}km ${Math.floor(a.moving_time/60)}min${a.average_heartrate?' HR'+Math.round(a.average_heartrate):''}`).join('\n');await askClaude(`Strava (${acts.length} activities):\n${summary}\n\nวิเคราะห์ Training Load จุดแข็งและคำแนะนำ 3 ข้อ`,'คุณคือโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย','btn-strava-analyze','strava-ai-output');document.getElementById('strava-ai-output').style.display='block';}
+async function stravaAnalyze(){const cached=await window._fb.getData('strava_activities');const acts=cached?(Array.isArray(cached)?cached:Object.values(cached)):[];if(!acts.length){showToast('Please sync first','error');return;}const summary=acts.slice(0,15).map(a=>`[${new Date(a.start_date_local).toLocaleDateString('en-GB')}] ${a.type} ${(a.distance/1000).toFixed(2)}km ${Math.floor(a.moving_time/60)}min${a.average_heartrate?' HR'+Math.round(a.average_heartrate):''}`).join('\n');await askDeepSeek(`Strava (${acts.length} activities):\n${summary}\n\nวิเคราะห์ Training Load จุดแข็งและคำแนะนำ 3 ข้อ`,'คุณคือโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย','btn-strava-analyze','strava-ai-output');document.getElementById('strava-ai-output').style.display='block';}
 
 
 // ── ACTIVITY DETAIL POPUP ──
@@ -3843,7 +3820,6 @@ function showDashActivities() {
 
 // ── END ADDITIONS ──
 // ── SETTINGS ──
-async function saveClaudeKey(){const key=document.getElementById('set-claude-key').value.trim();if(!key){showToast('Please enter API Key','error');return;}showLoading('Saving...');try{AppState.set('claudeKey',key);const cfg=await window._fb.getData('settings')||{};cfg.claudeKey=key;await window._fb.setData('settings',cfg);document.getElementById('claude-key-status').innerHTML='<span style="color:var(--green)">✓ Saved & Ready</span>';showToast('✅ API Key saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 async function saveDeepSeekKey(){const key=document.getElementById('set-deepseek-key').value.trim();if(!key){showToast('Please enter API Key','error');return;}showLoading('Saving...');try{AppState.set('deepseekKey',key);const cfg=await window._fb.getData('settings')||{};cfg.deepseekKey=key;await window._fb.setData('settings',cfg);document.getElementById('deepseek-key-status').innerHTML='<span style="color:var(--green)">✓ Saved & Ready</span>';showToast('✅ API Key saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 async function saveStravaSettings(){showLoading('Saving...');try{const cfg=await window._fb.getData('settings')||{};cfg.stravaId=document.getElementById('set-strava-id').value;cfg.stravaSecret=document.getElementById('set-strava-secret').value;cfg.stravaRedirect=document.getElementById('set-strava-redirect').value;await window._fb.setData('settings',cfg);showToast('✅ Strava settings saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 
