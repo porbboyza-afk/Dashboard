@@ -1,10 +1,10 @@
-const CACHE_NAME = 'mydash-v3-health-20260618-14';
+const CACHE_NAME = 'mydash-v3-health-20260619-15';
 const APP_SHELL = [
   './',
   './index.html',
-  './manifest.json?v=20260618-14',
-  './icon-192.png?v=20260618-14',
-  './icon-512.png?v=20260618-14'
+  './manifest.json?v=20260619-15',
+  './icon-192.png?v=20260619-15',
+  './icon-512.png?v=20260619-15'
 ];
 
 self.addEventListener('install', event => {
