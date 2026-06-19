@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260619-17">
+<link rel="manifest" href="manifest.json?v=20260619-18">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260619-17">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260619-17">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260619-17">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260619-18">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260619-18">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260619-18">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -958,6 +958,13 @@ img, video, iframe, canvas { max-width: 100%; }
 .strava-lap-role.warmup,.strava-lap-role.cooldown { background:rgba(52,199,89,.12); color:var(--green); }
 .strava-analysis-score { width:74px; height:74px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; border:6px solid var(--border2); }
 .strava-stream-chart { position:relative; height:260px; }
+.stats-insight-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.training-mix-bar { display:flex; width:100%; height:20px; border-radius:999px; overflow:hidden; background:var(--bg2); }
+.training-mix-segment { min-width:2px; transition:width .3s; }
+.training-mix-legend { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.training-mix-item { background:var(--bg2); border-radius:10px; padding:9px; }
+.confidence-meter { height:10px; background:var(--bg2); border-radius:99px; overflow:hidden; }
+.confidence-meter > div { height:100%; border-radius:99px; transition:width .4s; }
 .dashboard-insight-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
 .dashboard-health-values { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .dashboard-health-value { background:var(--bg2); border-radius:10px; padding:10px; text-align:center; }
@@ -1139,6 +1146,8 @@ img, video, iframe, canvas { max-width: 100%; }
   .strava-filter-bar .form-group { min-width:calc(50% - 4px); }
   .dashboard-insight-grid { grid-template-columns:1fr; }
   .dashboard-health-values { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .stats-insight-grid { grid-template-columns:1fr; }
+  .training-mix-legend { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
   .page-title { font-size: 24px; }
   .hero-ring-card { flex-direction: column; }
@@ -1596,6 +1605,7 @@ img, video, iframe, canvas { max-width: 100%; }
       <div class="seg-tabs">
         <div class="seg-tab active" onclick="switchStatsTab('week',this)">Weekly</div>
         <div class="seg-tab" onclick="switchStatsTab('month',this)">Monthly</div>
+        <div class="seg-tab" onclick="switchStatsTab('insights',this)">Insights</div>
       </div>
 
       <div id="stats-week-view">
@@ -1750,6 +1760,50 @@ img, video, iframe, canvas { max-width: 100%; }
             <button class="btn btn-primary btn-sm" id="btn-analyze-mo" onclick="analyzeFitnessAI('month')">✨ Analyze</button>
           </div>
           <div id="ai-month-output" class="ai-box"></div>
+        </div>
+      </div>
+
+      <div id="stats-insights-view" style="display:none">
+        <div class="flex justify-between items-center mb-16 flex-wrap gap-10">
+          <div>
+            <div style="font-size:16px;font-weight:800">Training Insights</div>
+            <div class="text-sm c2 mt-8">ย้อนหลัง 8 สัปดาห์ · ใช้ประเภทที่ยืนยันแล้วก่อน Auto classification</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="renderStatsInsights()">รีเฟรช</button>
+        </div>
+
+        <div class="stats-insight-grid mb-16">
+          <div class="card">
+            <div class="card-label">Training Mix by Duration</div>
+            <div id="stats-training-mix"><div class="text-sm c2">กำลังวิเคราะห์...</div></div>
+          </div>
+          <div class="card">
+            <div class="card-label">Easy / Quality Balance</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="wellness-kpi"><div class="stat-label">Easy</div><div class="wellness-kpi-value" id="stats-easy-pct">—</div><div class="wellness-kpi-note">Recovery + Easy</div></div>
+              <div class="wellness-kpi"><div class="stat-label">Quality</div><div class="wellness-kpi-value" id="stats-quality-pct">—</div><div class="wellness-kpi-note">Steady ขึ้นไป</div></div>
+            </div>
+            <div id="stats-balance-note" class="text-sm c2 mt-12">รอข้อมูล</div>
+          </div>
+        </div>
+
+        <div class="stats-insight-grid mb-16">
+          <div class="card">
+            <div class="card-label">Aerobic Efficiency Trend</div>
+            <div class="chart-wrap"><canvas id="chart-stats-efficiency"></canvas></div>
+            <div id="stats-efficiency-note" class="text-xs c3 mt-8">ใช้ Easy/Recovery/Steady ที่มี Pace และ HR</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Data Confidence</div>
+            <div style="display:flex;align-items:baseline;gap:8px"><div id="stats-confidence-score" style="font:52px/1 var(--font-display)">—</div><div class="c2">/100</div></div>
+            <div class="confidence-meter mt-12"><div id="stats-confidence-bar" style="width:0;background:var(--green)"></div></div>
+            <div id="stats-confidence-details" class="wellness-summary-list mt-16"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Interpretation</div>
+          <div id="stats-insight-notes" class="wellness-alerts"></div>
         </div>
       </div>
     </div>
@@ -2663,10 +2717,20 @@ function navWeek(dir){_statsWeekOffset+=dir;document.getElementById('btn-week-ne
 function goToCurrentWeek(){_statsWeekOffset=0;document.getElementById('btn-week-next').disabled=true;renderWeekStats();}
 function navMonth(dir){_statsMonthOffset+=dir;document.getElementById('btn-month-next').disabled=_statsMonthOffset>=0;renderMonthStats();}
 function goToCurrentMonth(){_statsMonthOffset=0;document.getElementById('btn-month-next').disabled=true;renderMonthStats();}
-function renderCurrentStatsView(){if(document.getElementById('stats-week-view').style.display!=='none')renderWeekStats();else renderMonthStats();}
-function switchStatsTab(tab,el){document.querySelectorAll('#page-fitness-stats .seg-tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');document.getElementById('stats-week-view').style.display=tab==='week'?'block':'none';document.getElementById('stats-month-view').style.display=tab==='month'?'block':'none';if(tab==='week')renderWeekStats();else renderMonthStats();}
+function renderCurrentStatsView(){
+  if(document.getElementById('stats-week-view').style.display!=='none')renderWeekStats();
+  else if(document.getElementById('stats-month-view').style.display!=='none')renderMonthStats();
+  else renderStatsInsights();
+}
+function switchStatsTab(tab,el){
+  document.querySelectorAll('#page-fitness-stats .seg-tab').forEach(t=>t.classList.remove('active'));el?.classList.add('active');
+  document.getElementById('stats-week-view').style.display=tab==='week'?'block':'none';
+  document.getElementById('stats-month-view').style.display=tab==='month'?'block':'none';
+  document.getElementById('stats-insights-view').style.display=tab==='insights'?'block':'none';
+  if(tab==='week')renderWeekStats();else if(tab==='month')renderMonthStats();else renderStatsInsights();
+}
 
-const charts={hrzone:null, paceTrend:null, stravaDistance:null, stravaPerformance:null, dashboardHealth:null};
+const charts={hrzone:null, paceTrend:null, stravaDistance:null, stravaPerformance:null, dashboardHealth:null, statsEfficiency:null};
 const dayNamesTH=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 function getChartColors() {
@@ -2793,6 +2857,133 @@ function renderMonthStats(){
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
   const strTag=s=>s==='strava'?'<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>':'';
   if(listEl){listEl.innerHTML=monthWks.length?[...monthWks].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(w=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background .15s" onclick="showActivityDetail(encodeURIComponent(JSON.stringify(${JSON.stringify(JSON.stringify(w))})))" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'"><span style="font-size:15px">${em[w.type]||'🏅'}</span><div style="flex:1"><div style="font-size:12px;font-weight:600">${parseFloat(w.dist||0).toFixed(2)} km${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${strTag(w.source)}</div><div style="font-size:10px;color:var(--text2);font-family:var(--font-mono)">${w.date}${w.name?' · '+w.name:''}</div></div>${w.hr?`<span style="font-size:11px;color:var(--red)">♥${w.hr}</span>`:''}<span style="color:var(--text3);font-size:14px">›</span></div>`).join(''):'<p class="text-sm c2">ไม่มีกิจกรรมเดือนนี้</p>';}
+}
+
+function manualSessionType(workout){
+  const purpose=(workout.purpose||'').toLowerCase();
+  if(workout.type==='interval'||purpose==='interval')return {type:'interval',confidence:100,confirmed:true,detailed:false};
+  if(['recovery','easy','tempo'].includes(purpose))return {type:purpose,confidence:100,confirmed:true,detailed:false};
+  if(purpose==='long')return {type:'steady',confidence:80,confirmed:true,detailed:false};
+  const activity={
+    name:workout.name||workout.note||'',average_heartrate:+workout.hr||null,
+    average_speed:workout.avgPace?1000/(workout.avgPace*60):0,
+    distance:(+workout.dist||0)*1000,moving_time:(+workout.time||0)*60
+  };
+  const result=sessionTypeFromProfile(activity,[],getAthleteProfile());
+  return {type:result.type,confidence:result.confidence,confirmed:false,detailed:false};
+}
+
+async function getClassifiedActivitiesForInsights(){
+  const cutoff=dateDaysAgo(55);
+  const activities=getAllActivities().filter(row=>row.date&&new Date(`${row.date}T12:00:00`)>=cutoff);
+  let details=window._stravaDetailCache||{};
+  if(!Object.keys(details).length){
+    try{details=await window._fb.getData('strava_activity_details')||{};window._stravaDetailCache=details;}catch(error){}
+  }
+  return activities.map(activity=>{
+    if(activity.source==='strava'&&activity.stravaId){
+      const payload=details[activity.stravaId];
+      const analysis=payload?.analysis;
+      if(analysis){
+        return {...activity,sessionType:analysis.userType||analysis.detectedType,classificationConfidence:analysis.confidence||0,classificationConfirmed:!!analysis.confirmed,hasDetail:true};
+      }
+    }
+    const inferred=manualSessionType(activity);
+    return {...activity,sessionType:inferred.type,classificationConfidence:inferred.confidence,classificationConfirmed:inferred.confirmed,hasDetail:inferred.detailed};
+  });
+}
+
+async function renderStatsInsights(){
+  const mixElement=document.getElementById('stats-training-mix');if(!mixElement)return;
+  mixElement.innerHTML='<div class="text-sm c2">กำลังวิเคราะห์...</div>';
+  const activities=await getClassifiedActivitiesForInsights();
+  const types=['recovery','easy','steady','tempo','threshold','interval'];
+  const labels={recovery:'Recovery',easy:'Easy',steady:'Steady',tempo:'Tempo',threshold:'Threshold',interval:'Interval'};
+  const colors={recovery:'#5AC8FA',easy:'#34C759',steady:'#0E7490',tempo:'#AF52DE',threshold:'#FF2D55',interval:'#FC4C02'};
+  const totals=Object.fromEntries(types.map(type=>[type,{minutes:0,count:0}]));
+  activities.forEach(activity=>{
+    const type=types.includes(activity.sessionType)?activity.sessionType:'steady';
+    totals[type].minutes+=+activity.time||0;totals[type].count++;
+  });
+  const classifiedMinutes=types.reduce((sum,type)=>sum+totals[type].minutes,0);
+  const segments=types.filter(type=>totals[type].minutes>0).map(type=>{
+    const percent=classifiedMinutes?totals[type].minutes/classifiedMinutes*100:0;
+    return `<div class="training-mix-segment" style="width:${percent}%;background:${colors[type]}" title="${labels[type]} ${percent.toFixed(0)}%"></div>`;
+  }).join('');
+  mixElement.innerHTML=classifiedMinutes?`
+    <div class="training-mix-bar">${segments}</div>
+    <div class="training-mix-legend">${types.map(type=>`<div class="training-mix-item"><div class="stat-label" style="color:${colors[type]}">${labels[type]}</div><div class="mono bold">${totals[type].minutes.toFixed(0)} min</div><div class="text-xs c3">${totals[type].count} sessions</div></div>`).join('')}</div>`
+    :'<div class="text-sm c2">ยังไม่มีข้อมูลจำแนกใน 8 สัปดาห์ล่าสุด</div>';
+
+  const easyMinutes=totals.recovery.minutes+totals.easy.minutes;
+  const qualityMinutes=classifiedMinutes-easyMinutes;
+  const easyPercent=classifiedMinutes?easyMinutes/classifiedMinutes*100:0;
+  const qualityPercent=classifiedMinutes?qualityMinutes/classifiedMinutes*100:0;
+  const set=(id,value)=>{const element=document.getElementById(id);if(element)element.textContent=value;};
+  set('stats-easy-pct',classifiedMinutes?`${easyPercent.toFixed(0)}%`:'—');
+  set('stats-quality-pct',classifiedMinutes?`${qualityPercent.toFixed(0)}%`:'—');
+  const balance=document.getElementById('stats-balance-note');
+  if(balance)balance.textContent=!classifiedMinutes?'ข้อมูลยังไม่พอ'
+    :easyPercent>=75&&easyPercent<=85?'ใกล้สมดุล 80/20'
+    :easyPercent<75?'สัดส่วนงานคุณภาพค่อนข้างสูง':'สัดส่วนงานเบาสูง เหมาะกับ Base/Recovery';
+
+  renderStatsEfficiencyChart(activities);
+  renderStatsConfidence(activities);
+  const notes=document.getElementById('stats-insight-notes');
+  const insightNotes=[];
+  if(classifiedMinutes){
+    insightNotes.push([easyPercent>=75?'':'warn',`งานเบา ${easyPercent.toFixed(0)}% · งานคุณภาพ ${qualityPercent.toFixed(0)}% จากเวลาซ้อมทั้งหมด`]);
+    const tempoCount=totals.tempo.count+totals.threshold.count+totals.interval.count;
+    insightNotes.push([tempoCount<=2?'':'warn',`มี Tempo/Threshold/Interval ${tempoCount} เซสชันใน 8 สัปดาห์ล่าสุด`]);
+  }
+  const confirmed=activities.filter(activity=>activity.classificationConfirmed).length;
+  insightNotes.push(['',`ประเภทที่คุณยืนยันแล้ว ${confirmed}/${activities.length} เซสชัน ผลจะน่าเชื่อถือขึ้นเมื่อยืนยันกิจกรรมสำคัญ`]);
+  if(notes)notes.innerHTML=insightNotes.map(([level,text])=>`<div class="wellness-alert ${level}">${text}</div>`).join('');
+}
+
+function renderStatsEfficiencyChart(activities){
+  const aerobic=activities.filter(activity=>['recovery','easy','steady'].includes(activity.sessionType)&&+activity.avgPace>0&&+activity.hr>0);
+  const weekStarts=Array.from({length:8},(_,index)=>{const date=getThisWeekStart();date.setDate(date.getDate()-(7-index)*7);return date;});
+  const labels=[],values=[];
+  weekStarts.forEach(start=>{
+    const end=new Date(start);end.setDate(end.getDate()+7);
+    const rows=aerobic.filter(activity=>{const date=new Date(`${activity.date}T12:00:00`);return date>=start&&date<end;});
+    const efficiencies=rows.map(activity=>(1000/(activity.avgPace*60))/activity.hr).filter(Number.isFinite);
+    labels.push(start.toLocaleDateString('th-TH',{day:'numeric',month:'short'}));
+    values.push(efficiencies.length?efficiencies.reduce((sum,value)=>sum+value,0)/efficiencies.length:null);
+  });
+  if(charts.statsEfficiency)charts.statsEfficiency.destroy();
+  const context=document.getElementById('chart-stats-efficiency')?.getContext('2d');
+  if(context){
+    const colors=getChartColors();
+    charts.statsEfficiency=new Chart(context,{type:'line',data:{labels,datasets:[{label:'Speed per HR',data:values,borderColor:'#0E7490',backgroundColor:'rgba(14,116,144,.12)',fill:true,tension:.3,spanGaps:true,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:colors.tick,font:{size:9}}},y:{grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}}}}}});
+  }
+  const valid=values.filter(Number.isFinite),note=document.getElementById('stats-efficiency-note');
+  if(note){
+    if(valid.length<2)note.textContent=`มีข้อมูลที่ใช้ได้ ${aerobic.length} เซสชัน ต้องมีอย่างน้อย 2 สัปดาห์`;
+    else{
+      const change=(valid.at(-1)-valid[0])/valid[0]*100;
+      note.textContent=`ประสิทธิภาพ ${change>=0?'ดีขึ้น':'ลดลง'} ${Math.abs(change).toFixed(1)}% ระหว่างสัปดาห์แรกกับล่าสุด · ยิ่งสูงยิ่งดี`;
+    }
+  }
+}
+
+function renderStatsConfidence(activities){
+  const total=activities.length||1;
+  const classified=activities.filter(activity=>activity.sessionType).length;
+  const confirmed=activities.filter(activity=>activity.classificationConfirmed).length;
+  const detailed=activities.filter(activity=>activity.hasDetail).length;
+  const withHR=activities.filter(activity=>+activity.hr>0).length;
+  const withPace=activities.filter(activity=>+activity.avgPace>0).length;
+  const score=Math.round(classified/total*35+confirmed/total*20+detailed/total*20+withHR/total*15+withPace/total*10);
+  const set=(id,value)=>{const element=document.getElementById(id);if(element)element.textContent=value;};
+  set('stats-confidence-score',score);
+  const bar=document.getElementById('stats-confidence-bar');if(bar){bar.style.width=`${score}%`;bar.style.background=score>=75?'var(--green)':score>=50?'var(--orange)':'var(--red)';}
+  const details=document.getElementById('stats-confidence-details');
+  if(details)details.innerHTML=[
+    ['จำแนกประเภท',`${classified}/${activities.length}`],['ยืนยันแล้ว',`${confirmed}/${activities.length}`],
+    ['มี Laps/Streams',`${detailed}/${activities.length}`],['มี HR',`${withHR}/${activities.length}`],['มี Pace',`${withPace}/${activities.length}`]
+  ].map(([label,value])=>`<div class="wellness-summary-item"><span class="c2">${label}</span><span>${value}</span></div>`).join('');
 }
 
 async function analyzeFitnessAI(period='week'){
@@ -3354,7 +3545,7 @@ function renderStravaActivityCards(){
 }
 
 function renderStravaActivities(acts){
-  AppState.set('stravaWorkouts', (acts||[]).map(a=>({date:a.start_date_local?a.start_date_local.slice(0,10):'',dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava'})));
+  AppState.set('stravaWorkouts', (acts||[]).map(a=>({date:a.start_date_local?a.start_date_local.slice(0,10):'',dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava',stravaId:a.id})));
   window._stravaAllActs=acts||[];
   AppState.set('stravaActs',acts||[]);
   renderStravaOverview(acts||[]);
