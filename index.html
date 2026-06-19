@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260619-15">
+<link rel="manifest" href="manifest.json?v=20260619-16">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260619-15">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260619-15">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260619-15">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260619-16">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260619-16">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260619-16">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -1150,6 +1150,7 @@ img, video, iframe, canvas { max-width: 100%; }
   .wellness-calendar { grid-template-columns:repeat(10,minmax(14px,1fr)); }
   #wellness-list .workout-row { align-items:flex-start; gap:9px; }
   #wellness-list .workout-meta { white-space:normal; line-height:1.55; }
+  #profile-zone-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
 }
 
 @media (min-width: 769px) {
@@ -1175,6 +1176,7 @@ img, video, iframe, canvas { max-width: 100%; }
   .wellness-range-btn { flex:1; }
   .wellness-calendar { grid-template-columns:repeat(7,minmax(14px,1fr)); }
   .strava-filter-bar .form-group { min-width:100%; }
+  #profile-zone-grid { grid-template-columns:1fr !important; }
 }
 </style>
   <meta name="mobile-web-app-capable" content="yes">
@@ -2113,6 +2115,39 @@ img, video, iframe, canvas { max-width: 100%; }
       </div>
 
       <div class="card mt-16">
+        <div class="card-label">Athlete Profile · Training Zones</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:16px">
+          ระบบใช้ค่านี้เพื่อเสนอประเภทเซสชันจาก HR, Pace และ Laps แต่จะไม่แก้โซนหรือ Training Load อัตโนมัติ
+        </div>
+        <div class="wellness-form-grid">
+          <div class="form-group"><label>Date of birth</label><input type="date" id="profile-dob" value="1993-09-29"></div>
+          <div class="form-group"><label>Max HR</label><input type="number" id="profile-max-hr" value="186" min="120" max="230"></div>
+        </div>
+        <div class="wellness-form-grid">
+          <div class="form-group"><label>Lactate Threshold HR</label><input type="number" id="profile-lthr" value="169" min="100" max="220"></div>
+          <div class="form-group"><label>Threshold Pace</label><input type="text" id="profile-threshold-pace" value="4:21" placeholder="4:21"></div>
+        </div>
+        <div class="wellness-form-grid">
+          <div class="form-group"><label>Threshold Power (W)</label><input type="number" id="profile-threshold-power" value="357" min="50" max="1000"></div>
+          <div class="form-group"><label>Easy HR personal range</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input type="number" id="profile-easy-hr-min" value="130"><input type="number" id="profile-easy-hr-max" value="142"></div></div>
+        </div>
+        <div class="card-label mt-8">HR Zone upper limits</div>
+        <div id="profile-zone-grid" style="display:grid;grid-template-columns:repeat(5,minmax(70px,1fr));gap:8px">
+          <div class="form-group"><label>Z1</label><input type="number" id="profile-z1" value="130"></div>
+          <div class="form-group"><label>Z2</label><input type="number" id="profile-z2" value="145"></div>
+          <div class="form-group"><label>Z3</label><input type="number" id="profile-z3" value="155"></div>
+          <div class="form-group"><label>Z4</label><input type="number" id="profile-z4" value="169"></div>
+          <div class="form-group"><label>Z5</label><input type="number" id="profile-z5" value="186"></div>
+        </div>
+        <div class="wellness-form-grid">
+          <div class="form-group"><label>Tempo pace fastest</label><input type="text" id="profile-tempo-fast" value="4:55"></div>
+          <div class="form-group"><label>Tempo pace slowest</label><input type="text" id="profile-tempo-slow" value="5:05"></div>
+        </div>
+        <button class="btn btn-green" onclick="saveAthleteProfile()">Save Athlete Profile</button>
+        <div id="athlete-profile-status" class="text-sm c2 mt-8"></div>
+      </div>
+
+      <div class="card mt-16">
         <div class="card-label">Google Sheets Backup (Apps Script)</div>
         <div style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px">
           ใส่ URL ที่ลงท้ายด้วย <code>/exec</code> จาก Apps Script Web App แล้ว MyDash จะส่งสำเนา Workout และ Wellness ไป Google Sheets หลังบันทึกแต่ละครั้ง
@@ -2370,6 +2405,7 @@ window._appReady = async (user) => {
     const safe=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
     safe('set-strava-id',cfg.stravaId);safe('set-strava-secret',cfg.stravaSecret);safe('set-strava-redirect',cfg.stravaRedirect);
     safe('set-gas-url',cfg.gasUrl||DEFAULT_GAS_URL);safe('set-gas-token',cfg.gasToken);
+    loadAthleteProfile(cfg.athleteProfile||DEFAULT_ATHLETE_PROFILE);
 
   } catch(e) { console.warn('Settings:',e.message); }
   try { startRealtimeListeners(); } catch(e) { showToast('Firebase: '+e.message,'error'); }
@@ -2911,6 +2947,15 @@ function setNewsQ(q){document.getElementById('news-query').value=q;}
 
 // ── STRAVA ──
 const STRAVA_API='https://www.strava.com/api/v3';
+const DEFAULT_ATHLETE_PROFILE={
+  dob:'1993-09-29',maxHR:186,lthr:169,thresholdPace:'4:21',thresholdPower:357,
+  easyHRMin:130,easyHRMax:142,z1Max:130,z2Max:145,z3Max:155,z4Max:169,z5Max:186,
+  tempoFast:'4:55',tempoSlow:'5:05'
+};
+window._athleteProfile={...DEFAULT_ATHLETE_PROFILE};
+
+function getAthleteProfile(){return {...DEFAULT_ATHLETE_PROFILE,...(window._athleteProfile||{})};}
+
 function stravaConnect(){const sb=document.getElementById('strava-status-box');sb.innerHTML=`<div style="width:100%;display:flex;flex-direction:column;gap:8px"><p style="font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px">Paste Refresh Token</p><div style="display:flex;gap:8px"><input type="text" id="strava-token-input" placeholder="Paste refresh_token..." style="flex:1;font-size:11px"><button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ Connect</button></div></div>`;}
 async function stravaConnectDirect(){
   const refreshToken=(document.getElementById('strava-token-input')?.value||'').trim();
@@ -2956,7 +3001,45 @@ function lapPaceMinutes(lap){
   return speed>0?1000/speed/60:null;
 }
 
-function analyzeStravaIntervals(activity,laps=[],streams={}){
+function sessionTypeFromProfile(activity,laps,profile){
+  const usable=laps.filter(lap=>(+lap.distance||0)>=100&&(+lap.moving_time||0)>=30);
+  const core=usable.length>=3?usable.slice(1,-1):usable;
+  const totalTime=core.reduce((sum,lap)=>sum+(+lap.moving_time||0),0);
+  const weighted=(field)=>totalTime?core.reduce((sum,lap)=>sum+(+lap[field]||0)*(+lap.moving_time||0),0)/totalTime:null;
+  const avgHR=weighted('average_heartrate')||(+activity.average_heartrate||null);
+  const avgSpeed=weighted('average_speed')||(+activity.average_speed||0);
+  const avgPace=avgSpeed>0?1000/avgSpeed/60:(+activity.distance>0&&+activity.moving_time>0?activity.moving_time/activity.distance*1000/60:null);
+  const tempoFast=paceStrToDecimal(profile.tempoFast),tempoSlow=paceStrToDecimal(profile.tempoSlow);
+  const scores={recovery:0,easy:0,steady:0,tempo:0,threshold:0};
+  const evidence=[];
+  if(avgHR){
+    if(avgHR<=profile.z1Max){scores.recovery+=55;evidence.push(`HR ช่วงหลัก ${Math.round(avgHR)} อยู่ Z1`);}
+    else if(avgHR<=profile.easyHRMax){scores.easy+=58;evidence.push(`HR ช่วงหลัก ${Math.round(avgHR)} อยู่ Easy ส่วนตัว`);}
+    else if(avgHR<=profile.z2Max){scores.easy+=45;scores.steady+=15;evidence.push(`HR ช่วงหลัก ${Math.round(avgHR)} อยู่ Z2 สูง`);}
+    else if(avgHR<=profile.z3Max){scores.steady+=55;evidence.push(`HR ช่วงหลัก ${Math.round(avgHR)} อยู่ Z3`);}
+    else if(avgHR<=profile.z4Max){scores.tempo+=50;scores.threshold+=15;evidence.push(`HR ช่วงหลัก ${Math.round(avgHR)} อยู่ Z4`);}
+    else{scores.threshold+=55;evidence.push(`HR ช่วงหลัก ${Math.round(avgHR)} อยู่ Z5`);}
+  }
+  if(avgPace){
+    if(avgPace>=5.75){scores.recovery+=30;}
+    else if(avgPace>=5.33){scores.easy+=30;}
+    else if(avgPace>tempoSlow){scores.steady+=30;}
+    else if(avgPace>=tempoFast&&avgPace<=tempoSlow){scores.tempo+=38;evidence.push(`Pace ช่วงหลัก ${formatPace(avgPace)} อยู่ช่วง Tempo ที่ตั้งไว้`);}
+    else if(avgPace>=paceStrToDecimal(profile.thresholdPace)){scores.threshold+=30;}
+    else{scores.threshold+=35;}
+  }
+  const name=(activity.name||'').toLowerCase();
+  if(/recovery|ฟื้น|เบามาก/.test(name))scores.recovery+=15;
+  if(/easy|base|เบา/.test(name))scores.easy+=15;
+  if(/steady|aerobic/.test(name))scores.steady+=15;
+  if(/tempo|threshold|เทมโป/.test(name))scores.tempo+=18;
+  const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const [type,top]=ranked[0],second=ranked[1]?.[1]||0;
+  const confidence=clamp(Math.round(45+top*.55+(top-second)*.35),35,95);
+  return {type,confidence,evidence,avgHR,avgPace,scores};
+}
+
+function analyzeStravaIntervals(activity,laps=[],streams={},profile=getAthleteProfile()){
   const usable=laps.filter(lap=>(+lap.distance||0)>=100&&(+lap.moving_time||0)>=30);
   const speeds=usable.map(lap=>+lap.average_speed||(+lap.distance/(+lap.moving_time||1))).filter(value=>value>0);
   const sorted=[...speeds].sort((a,b)=>a-b);
@@ -2985,7 +3068,10 @@ function analyzeStravaIntervals(activity,laps=[],streams={}){
   if(rangeRatio>=1.2){confidence+=18;reasons.push('ความเร็วระหว่างช่วงแตกต่างชัด');}
   if(workLaps.length>=2){confidence+=10;}
   confidence=clamp(Math.round(confidence),0,100);
-  const detectedType=confidence>=65?'interval':confidence>=40?'possible_interval':'steady';
+  const steadyClassification=sessionTypeFromProfile(activity,usable,profile);
+  const detectedType=confidence>=65?'interval':confidence>=40?'possible_interval':steadyClassification.type;
+  if(confidence<40)reasons.push(...steadyClassification.evidence);
+  const finalConfidence=confidence>=40?confidence:steadyClassification.confidence;
   const workPaces=workLaps.map(lapPaceMinutes).filter(Number.isFinite);
   const workMean=workPaces.length?workPaces.reduce((sum,value)=>sum+value,0)/workPaces.length:null;
   const consistency=workMean&&workPaces.length>1
@@ -3000,9 +3086,11 @@ function analyzeStravaIntervals(activity,laps=[],streams={}){
   });
   const hrRecovery=hrDrops.length?hrDrops.reduce((sum,value)=>sum+value,0)/hrDrops.length:null;
   return {
-    analysisVersion:1,detectedType,confidence,reasons,roles,
+    analysisVersion:2,detectedType,confidence:finalConfidence,reasons,roles,
     workCount:workLaps.length,recoveryCount:recoveryLaps.length,
     consistency,paceFade,hrRecovery,
+    steadyMetrics:{avgHR:steadyClassification.avgHR,avgPace:steadyClassification.avgPace,scores:steadyClassification.scores},
+    profileSnapshot:profile,
     analyzedAt:Date.now(),userType:null,confirmed:false
   };
 }
@@ -3012,7 +3100,13 @@ async function fetchStravaActivityDetail(activity,token,{force=false}={}){
   const path=`strava_activity_details/${activity.id}`;
   if(!force){
     const cached=await window._fb.getData(path);
-    if(cached?.analysisVersion===1)return cached;
+    if(cached?.detail&&cached?.laps&&cached.analysisVersion<2){
+      cached.analysis=analyzeStravaIntervals(cached.detail,cached.laps,cached.streams||{},getAthleteProfile());
+      cached.analysisVersion=2;cached.fetchedAt=Date.now();
+      await window._fb.setData(path,cached);
+      return cached;
+    }
+    if(cached?.analysisVersion===2)return cached;
   }
   const id=activity.id;
   const results=await Promise.allSettled([
@@ -3025,9 +3119,9 @@ async function fetchStravaActivityDetail(activity,token,{force=false}={}){
   const streamRaw=results[2].status==='fulfilled'?results[2].value:{};
   if(results.every(result=>result.status==='rejected'))throw results[0].reason;
   const streams=normalizeStravaStreams(streamRaw);
-  const analysis=analyzeStravaIntervals(detail,laps,streams);
+  const analysis=analyzeStravaIntervals(detail,laps,streams,getAthleteProfile());
   const payload={
-    activityId:id,analysisVersion:1,fetchedAt:Date.now(),
+    activityId:id,analysisVersion:2,fetchedAt:Date.now(),
     detail,laps,streams,analysis,
     fetchStatus:{
       detail:results[0].status,laps:results[1].status,streams:results[2].status
@@ -3236,10 +3330,10 @@ function renderStravaActivityCards(){
     const date=new Date(a.start_date_local).toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
     const cachedAnalysis=window._stravaDetailCache?.[a.id]?.analysis;
     const effectiveType=cachedAnalysis?.userType||cachedAnalysis?.detectedType;
-    const analysisBadge=effectiveType==='interval'
-      ?`<span style="font-size:9px;padding:2px 7px;border-radius:999px;background:rgba(252,76,2,.12);color:var(--strava);font-weight:800">INTERVAL ${cachedAnalysis.confidence}%</span>`
-      :effectiveType==='possible_interval'
-        ?`<span style="font-size:9px;padding:2px 7px;border-radius:999px;background:var(--orange-light);color:var(--orange);font-weight:800">POSSIBLE INTERVAL</span>`:'';
+    const typeLabels={interval:'INTERVAL',possible_interval:'POSSIBLE INTERVAL',recovery:'RECOVERY',easy:'EASY',steady:'STEADY',tempo:'TEMPO',threshold:'THRESHOLD'};
+    const typeColors={interval:'var(--strava)',possible_interval:'var(--orange)',recovery:'#5AC8FA',easy:'var(--green)',steady:'var(--teal)',tempo:'var(--purple)',threshold:'var(--red)'};
+    const analysisBadge=effectiveType
+      ?`<span style="font-size:9px;padding:2px 7px;border-radius:999px;background:var(--bg2);color:${typeColors[effectiveType]||'var(--text2)'};font-weight:800">${typeLabels[effectiveType]||effectiveType.toUpperCase()} ${cachedAnalysis.confidence}%</span>`:'';
     return `<div class="card" style="padding:14px;cursor:pointer" onclick="openStravaDetail(${index})">
       <div class="flex justify-between gap-12">
         <div style="min-width:0"><div class="text-xs c3">${date} · ${emoji[a.type]||'🏅'} ${a.type}</div><div class="act-name" style="font-size:15px;font-weight:800;margin-top:3px">${a.name||'Activity'}</div><div class="mt-8">${analysisBadge}</div></div><span class="c3">›</span>
@@ -3392,7 +3486,7 @@ function renderStravaDetailModal(activeTab='overview',error=''){
       <button class="strava-detail-tab ${activeTab==='overview'?'active':''}" onclick="switchStravaDetailTab('overview',this)">Overview</button>
       <button class="strava-detail-tab ${activeTab==='laps'?'active':''}" onclick="switchStravaDetailTab('laps',this)">Laps</button>
       <button class="strava-detail-tab ${activeTab==='streams'?'active':''}" onclick="switchStravaDetailTab('streams',this)">Pace & HR</button>
-      <button class="strava-detail-tab ${activeTab==='analysis'?'active':''}" onclick="switchStravaDetailTab('analysis',this)">Interval Analysis</button>
+      <button class="strava-detail-tab ${activeTab==='analysis'?'active':''}" onclick="switchStravaDetailTab('analysis',this)">Session Analysis</button>
     </div>
     ${error?`<div class="wellness-alert warn mb-12">โหลดข้อมูลละเอียดไม่ได้: ${error} · ยังดูข้อมูล Summary ได้ตามปกติ</div>`:''}
     <div id="strava-detail-panel"></div>`;
@@ -3464,16 +3558,18 @@ function renderStravaDetailStreamChart(streams){
 }
 
 function renderStravaIntervalAnalysis(panel,payload,activity){
-  if(!payload?.analysis){panel.innerHTML='<div class="card text-sm c2">ยังไม่มีผลวิเคราะห์ Interval</div>';return;}
+  if(!payload?.analysis){panel.innerHTML='<div class="card text-sm c2">ยังไม่มีผลวิเคราะห์เซสชัน</div>';return;}
   const analysis=payload.analysis;
   const effective=analysis.userType||analysis.detectedType;
-  const label=effective==='interval'?'Interval':effective==='possible_interval'?'อาจเป็น Interval':'Steady / ไม่พบ Interval';
-  const color=effective==='interval'?'var(--strava)':effective==='possible_interval'?'var(--orange)':'var(--green)';
+  const labels={interval:'Interval',possible_interval:'อาจเป็น Interval',recovery:'Recovery',easy:'Easy',steady:'Steady',tempo:'Tempo',threshold:'Threshold'};
+  const colors={interval:'var(--strava)',possible_interval:'var(--orange)',recovery:'#5AC8FA',easy:'var(--green)',steady:'var(--teal)',tempo:'var(--purple)',threshold:'var(--red)'};
+  const label=labels[effective]||effective;
+  const color=colors[effective]||'var(--text)';
   panel.innerHTML=`
     <div class="card mb-16">
       <div class="flex gap-16 items-center">
         <div class="strava-analysis-score" style="border-color:${color}"><div style="font:30px/1 var(--font-display);color:${color}">${analysis.confidence}</div><div class="text-xs c3">confidence</div></div>
-        <div><div style="font-size:18px;font-weight:800;color:${color}">${label}</div><div class="text-sm c2 mt-8">${analysis.confirmed?'คุณยืนยันประเภทนี้แล้ว':'ระบบประเมินจาก Laps และความเร็วที่สลับกัน'}</div></div>
+        <div><div style="font-size:18px;font-weight:800;color:${color}">${label}</div><div class="text-sm c2 mt-8">${analysis.confirmed?'คุณยืนยันประเภทนี้แล้ว':'ระบบประเมินจาก HR, Pace และรูปแบบ Laps ตาม Athlete Profile'}</div></div>
       </div>
     </div>
     <div class="wellness-kpis mb-16">
@@ -3487,8 +3583,12 @@ function renderStravaIntervalAnalysis(panel,payload,activity){
       <div class="card-label">ยืนยันประเภทเซสชัน</div>
       <div class="text-sm c2 mb-12">การยืนยันจะเก็บเป็นข้อมูลเสริม ยังไม่เปลี่ยน Training Load และ Readiness หลักในระยะนี้</div>
       <div class="flex gap-8 flex-wrap">
+        <button class="btn btn-ghost btn-sm" onclick="confirmStravaClassification('${activity.id}','recovery')">Recovery</button>
+        <button class="btn btn-green btn-sm" onclick="confirmStravaClassification('${activity.id}','easy')">Easy</button>
+        <button class="btn btn-ghost btn-sm" onclick="confirmStravaClassification('${activity.id}','steady')">Steady</button>
+        <button class="btn btn-ghost btn-sm" onclick="confirmStravaClassification('${activity.id}','tempo')">Tempo</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmStravaClassification('${activity.id}','threshold')">Threshold</button>
         <button class="btn btn-strava btn-sm" onclick="confirmStravaClassification('${activity.id}','interval')">ยืนยัน Interval</button>
-        <button class="btn btn-green btn-sm" onclick="confirmStravaClassification('${activity.id}','steady')">ยืนยัน Steady</button>
         <button class="btn btn-ghost btn-sm" onclick="confirmStravaClassification('${activity.id}',null)">ใช้ผลอัตโนมัติ</button>
       </div>
     </div>`;
@@ -4549,6 +4649,58 @@ function showDashActivities() {
 // ── SETTINGS ──
 async function saveDeepSeekKey(){const key=document.getElementById('set-deepseek-key').value.trim();if(!key){showToast('Please enter API Key','error');return;}showLoading('Saving...');try{AppState.set('deepseekKey',key);const cfg=await window._fb.getData('settings')||{};cfg.deepseekKey=key;await window._fb.setData('settings',cfg);document.getElementById('deepseek-key-status').innerHTML='<span style="color:var(--green)">✓ Saved & Ready</span>';showToast('✅ API Key saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
 async function saveStravaSettings(){showLoading('Saving...');try{const cfg=await window._fb.getData('settings')||{};cfg.stravaId=document.getElementById('set-strava-id').value;cfg.stravaSecret=document.getElementById('set-strava-secret').value;cfg.stravaRedirect=document.getElementById('set-strava-redirect').value;await window._fb.setData('settings',cfg);showToast('✅ Strava settings saved!');}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();}}
+
+function loadAthleteProfile(profile){
+  window._athleteProfile={...DEFAULT_ATHLETE_PROFILE,...(profile||{})};
+  const mapping={
+    'profile-dob':'dob','profile-max-hr':'maxHR','profile-lthr':'lthr',
+    'profile-threshold-pace':'thresholdPace','profile-threshold-power':'thresholdPower',
+    'profile-easy-hr-min':'easyHRMin','profile-easy-hr-max':'easyHRMax',
+    'profile-z1':'z1Max','profile-z2':'z2Max','profile-z3':'z3Max','profile-z4':'z4Max','profile-z5':'z5Max',
+    'profile-tempo-fast':'tempoFast','profile-tempo-slow':'tempoSlow'
+  };
+  Object.entries(mapping).forEach(([id,key])=>{const element=document.getElementById(id);if(element)element.value=window._athleteProfile[key]??'';});
+  const status=document.getElementById('athlete-profile-status');if(status)status.textContent='กำลังใช้โซนส่วนตัวสำหรับประเมินเซสชัน';
+}
+
+async function saveAthleteProfile(){
+  const number=id=>{const value=+document.getElementById(id)?.value;return Number.isFinite(value)?value:null;};
+  const profile={
+    dob:document.getElementById('profile-dob')?.value||DEFAULT_ATHLETE_PROFILE.dob,
+    maxHR:number('profile-max-hr'),lthr:number('profile-lthr'),
+    thresholdPace:document.getElementById('profile-threshold-pace')?.value.trim(),
+    thresholdPower:number('profile-threshold-power'),
+    easyHRMin:number('profile-easy-hr-min'),easyHRMax:number('profile-easy-hr-max'),
+    z1Max:number('profile-z1'),z2Max:number('profile-z2'),z3Max:number('profile-z3'),z4Max:number('profile-z4'),z5Max:number('profile-z5'),
+    tempoFast:document.getElementById('profile-tempo-fast')?.value.trim(),
+    tempoSlow:document.getElementById('profile-tempo-slow')?.value.trim(),
+    updatedAt:Date.now()
+  };
+  if(!(profile.z1Max<profile.z2Max&&profile.z2Max<profile.z3Max&&profile.z3Max<profile.z4Max&&profile.z4Max<=profile.z5Max)){
+    showToast('ขอบเขต HR Zone ต้องเรียงจากต่ำไปสูง','error');return;
+  }
+  if(profile.easyHRMin>profile.easyHRMax||!paceStrToDecimal(profile.tempoFast)||!paceStrToDecimal(profile.tempoSlow)){
+    showToast('ตรวจช่วง Easy HR และ Tempo Pace','error');return;
+  }
+  showLoading('Saving athlete profile...');
+  try{
+    const cfg=await window._fb.getData('settings')||{};cfg.athleteProfile=profile;
+    await window._fb.setData('settings',cfg);loadAthleteProfile(profile);
+    const details=await window._fb.getData('strava_activity_details')||{};
+    for(const [id,payload] of Object.entries(details)){
+      if(!payload?.detail||!payload?.laps)continue;
+      const old=payload.analysis||{};
+      const analysis=analyzeStravaIntervals(payload.detail,payload.laps,payload.streams||{},profile);
+      analysis.userType=old.userType||null;analysis.confirmed=!!old.confirmed;analysis.confirmedAt=old.confirmedAt||null;
+      payload.analysis=analysis;payload.analysisVersion=2;
+      await window._fb.setData(`strava_activity_details/${id}`,payload);
+    }
+    window._stravaDetailCache=await window._fb.getData('strava_activity_details')||{};
+    renderStravaActivityCards();
+    showToast('บันทึก Athlete Profile และประเมินกิจกรรมใหม่แล้ว');
+  }catch(error){showToast(error.message,'error');}
+  finally{hideLoading();}
+}
 
 // ── WELLNESS + GOOGLE SHEETS BACKUP ──
 const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxyYeWVjX5VlNbusJ_nUlu4k6tEk2Jd5P9IP3VocAjiFH8ZUIXda6S8HeME6W6_s_PvFg/exec';
