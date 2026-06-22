@@ -2234,6 +2234,52 @@ function toLocalDateStr(date) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
+// Strava's start_date_local is a wall-clock time for the activity location.
+// It commonly ends in "Z", but must not be parsed as UTC: doing so adds the
+// browser offset again and turns Sunday evening into Monday in Thailand.
+function stravaLocalParts(activity) {
+  const value = String(activity?.start_date_local || '');
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2}))?/);
+  if (match) {
+    return {
+      year: +match[1], month: +match[2], day: +match[3],
+      hour: +(match[4] || 0), minute: +(match[5] || 0), second: +(match[6] || 0)
+    };
+  }
+  if (!activity?.start_date) return null;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date(activity.start_date));
+  const get = type => +(parts.find(part => part.type === type)?.value || 0);
+  return {
+    year: get('year'), month: get('month'), day: get('day'),
+    hour: get('hour'), minute: get('minute'), second: get('second')
+  };
+}
+
+function stravaLocalDate(activity) {
+  const p = stravaLocalParts(activity);
+  return p ? new Date(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) : null;
+}
+
+function stravaLocalDateStr(activity) {
+  const p = stravaLocalParts(activity);
+  return p
+    ? `${p.year}-${String(p.month).padStart(2,'0')}-${String(p.day).padStart(2,'0')}`
+    : '';
+}
+
+function formatStravaLocal(activity, locale='th-TH', options={}) {
+  const p = stravaLocalParts(activity);
+  if (!p) return '—';
+  const wallClockAsUtc = new Date(Date.UTC(
+    p.year, p.month - 1, p.day, p.hour, p.minute, p.second
+  ));
+  return wallClockAsUtc.toLocaleString(locale, {...options, timeZone:'UTC'});
+}
+
 // ── THEME ──
 function toggleTheme() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -3405,7 +3451,7 @@ function switchStravaTab(tab,element){
 
 function stravaWeekSummary(acts,start){
   const end=new Date(start);end.setDate(end.getDate()+7);
-  const rows=acts.filter(a=>{const d=new Date(a.start_date_local);return d>=start&&d<end;});
+  const rows=acts.filter(a=>{const d=stravaLocalDate(a);return d&&d>=start&&d<end;});
   const runs=rows.filter(a=>a.type==='Run'&&a.distance>0);
   const hrs=rows.map(a=>+a.average_heartrate).filter(Number.isFinite);
   return {
@@ -3490,7 +3536,7 @@ function renderStravaPRs(acts){
     const candidates=runs.filter(a=>a.distance/1000>=km*.95).map(a=>({activity:a,seconds:a.moving_time/(a.distance/1000)*km})).sort((a,b)=>a.seconds-b.seconds);
     if(!candidates.length)return `<div class="strava-pr"><div class="stat-label">${label}</div><div class="c3">ยังไม่มีข้อมูล</div></div>`;
     const best=candidates[0],minutes=Math.floor(best.seconds/60),seconds=Math.round(best.seconds%60);
-    return `<div class="strava-pr"><div class="stat-label">${label} estimate</div><div style="font:30px/1 var(--font-display);color:var(--strava)">${minutes}:${String(seconds).padStart(2,'0')}</div><div class="text-xs c3 mt-8">${new Date(best.activity.start_date_local).toLocaleDateString('th-TH')} · ${best.activity.name||'Run'}</div></div>`;
+    return `<div class="strava-pr"><div class="stat-label">${label} estimate</div><div style="font:30px/1 var(--font-display);color:var(--strava)">${minutes}:${String(seconds).padStart(2,'0')}</div><div class="text-xs c3 mt-8">${formatStravaLocal(best.activity,'th-TH',{day:'numeric',month:'numeric',year:'numeric'})} · ${best.activity.name||'Run'}</div></div>`;
   }).join('');
 }
 
@@ -3502,7 +3548,8 @@ function applyStravaFilters(){
   const cutoff=days?dateDaysAgo(days-1):null;
   stravaFilteredActs=all.filter(a=>{
     const matchesType=type==='all'||a.type===type;
-    const matchesDate=!cutoff||new Date(a.start_date_local)>=cutoff;
+    const localDate=stravaLocalDate(a);
+    const matchesDate=!cutoff||(localDate&&localDate>=cutoff);
     const matchesSearch=!search||(a.name||'').toLowerCase().includes(search);
     return matchesType&&matchesDate&&matchesSearch;
   });
@@ -3523,7 +3570,7 @@ function renderStravaActivityCards(){
   container.innerHTML=visible.map((a,index)=>{
     const distance=(a.distance/1000).toFixed(2),minutes=Math.floor(a.moving_time/60);
     const pace=(a.type==='Run'||a.type==='Walk')&&a.distance>0?formatPace(a.moving_time/a.distance*1000/60):'';
-    const date=new Date(a.start_date_local).toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
+    const date=formatStravaLocal(a,'th-TH',{weekday:'short',day:'numeric',month:'short'});
     const cachedAnalysis=window._stravaDetailCache?.[a.id]?.analysis;
     const effectiveType=cachedAnalysis?.userType||cachedAnalysis?.detectedType;
     const typeLabels={interval:'INTERVAL',possible_interval:'POSSIBLE INTERVAL',recovery:'RECOVERY',easy:'EASY',steady:'STEADY',tempo:'TEMPO',threshold:'THRESHOLD'};
@@ -3545,7 +3592,7 @@ function renderStravaActivityCards(){
 }
 
 function renderStravaActivities(acts){
-  AppState.set('stravaWorkouts', (acts||[]).map(a=>({date:a.start_date_local?a.start_date_local.slice(0,10):'',dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava',stravaId:a.id})));
+  AppState.set('stravaWorkouts', (acts||[]).map(a=>({date:stravaLocalDateStr(a),dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava',stravaId:a.id})));
   window._stravaAllActs=acts||[];
   AppState.set('stravaActs',acts||[]);
   renderStravaOverview(acts||[]);
@@ -3556,7 +3603,7 @@ function renderStravaActivities(acts){
   if(strip&&acts?.length){
     strip.style.display='grid';
     const cutoffStr=toLocalDateStr(getThisWeekStart());
-    const wk=acts.filter(a=>(a.start_date_local||'').slice(0,10)>=cutoffStr);
+    const wk=acts.filter(a=>stravaLocalDateStr(a)>=cutoffStr);
     const wkDist=wk.reduce((s,a)=>s+a.distance/1000,0);
     const wkHR=wk.filter(a=>a.average_heartrate).map(a=>a.average_heartrate);
     const wkPaceSec=wk.filter(a=>a.distance>0&&a.type==='Run').map(a=>a.moving_time/a.distance*1000);
@@ -3578,7 +3625,7 @@ function renderStravaActivities(acts){
     const hr=a.average_heartrate?Math.round(a.average_heartrate):0;
     const elev=a.total_elevation_gain?Math.round(a.total_elevation_gain):0;
     const cad=a.average_cadence?Math.round(a.average_cadence*2):0;
-    const dateStr=new Date(a.start_date_local).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    const dateStr=formatStravaLocal(a,'en-GB',{weekday:'short',day:'numeric',month:'short'});
     const color=typeCol[a.type]||'var(--text2)';
     // Map thumbnail: use Leaflet mini-map or static placeholder with polyline
     const hasMap = !!(a.map?.summary_polyline);
@@ -3642,7 +3689,7 @@ async function openStravaDetail(idx){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px';
   overlay.innerHTML=`<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-xl);padding:20px;max-width:760px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
     <div class="flex justify-between gap-12 mb-16">
-      <div><div style="font-size:20px;font-weight:800">${activity.name||'Strava Activity'}</div><div class="text-xs c2 mt-8">${new Date(activity.start_date_local).toLocaleString('th-TH')}</div></div>
+      <div><div style="font-size:20px;font-weight:800">${activity.name||'Strava Activity'}</div><div class="text-xs c2 mt-8">${formatStravaLocal(activity,'th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div></div>
       <button onclick="closeStravaDetail()" class="btn btn-ghost btn-xs">✕</button>
     </div>
     <div id="strava-detail-content"><div style="padding:40px;text-align:center;color:var(--text2)">⏳ กำลังโหลด Laps และ Streams...</div></div>
@@ -3817,7 +3864,7 @@ function sbox(label,value,color){return `<div style="background:var(--bg);border
 let _leafletLoaded=false;
 function loadLeaflet(cb){if(_leafletLoaded){cb();return;}const css=document.createElement('link');css.rel='stylesheet';css.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';document.head.appendChild(css);const js=document.createElement('script');js.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';js.onload=()=>{_leafletLoaded=true;cb();};document.head.appendChild(js);}
 function decodePolyline(encoded){const coords=[];let index=0,lat=0,lng=0;while(index<encoded.length){let b,shift=0,result=0;do{b=encoded.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);lat+=(result&1)?~(result>>1):(result>>1);shift=0;result=0;do{b=encoded.charCodeAt(index++)-63;result|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);lng+=(result&1)?~(result>>1):(result>>1);coords.push([lat/1e5,lng/1e5]);}return coords;}
-async function stravaAnalyze(){const cached=await window._fb.getData('strava_activities');const acts=cached?(Array.isArray(cached)?cached:Object.values(cached)):[];if(!acts.length){showToast('Please sync first','error');return;}const summary=acts.slice(0,15).map(a=>`[${new Date(a.start_date_local).toLocaleDateString('en-GB')}] ${a.type} ${(a.distance/1000).toFixed(2)}km ${Math.floor(a.moving_time/60)}min${a.average_heartrate?' HR'+Math.round(a.average_heartrate):''}`).join('\n');await askDeepSeek(`Strava (${acts.length} activities):\n${summary}\n\nวิเคราะห์ Training Load จุดแข็งและคำแนะนำ 3 ข้อ`,'คุณคือโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย','btn-strava-analyze','strava-ai-output');document.getElementById('strava-ai-output').style.display='block';}
+async function stravaAnalyze(){const cached=await window._fb.getData('strava_activities');const acts=cached?(Array.isArray(cached)?cached:Object.values(cached)):[];if(!acts.length){showToast('Please sync first','error');return;}const summary=acts.slice(0,15).map(a=>`[${formatStravaLocal(a,'en-GB',{day:'2-digit',month:'2-digit',year:'numeric'})}] ${a.type} ${(a.distance/1000).toFixed(2)}km ${Math.floor(a.moving_time/60)}min${a.average_heartrate?' HR'+Math.round(a.average_heartrate):''}`).join('\n');await askDeepSeek(`Strava (${acts.length} activities):\n${summary}\n\nวิเคราะห์ Training Load จุดแข็งและคำแนะนำ 3 ข้อ`,'คุณคือโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย','btn-strava-analyze','strava-ai-output');document.getElementById('strava-ai-output').style.display='block';}
 
 
 // ── ACTIVITY DETAIL POPUP ──
