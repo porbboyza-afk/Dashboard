@@ -520,6 +520,13 @@ body {
 .dashboard-hero-title { font-family:var(--font-display); font-size:56px; line-height:.88; letter-spacing:1px; color:var(--text); text-transform:uppercase; }
 .dashboard-hero-name { font-family:var(--font-display); font-size:56px; line-height:.88; letter-spacing:1px; color:var(--accent); text-transform:uppercase; }
 .dashboard-hero-sub { font-size:12px; color:var(--text2); font-weight:500; }
+.health-focus-strip { display:flex; align-items:center; justify-content:space-between; gap:16px; border:1px solid var(--border); border-left:4px solid var(--green); background:linear-gradient(135deg, rgba(52,199,89,.05), rgba(255,255,255,.8)); border-radius:var(--r-lg); padding:14px 18px; margin-bottom:16px; }
+.health-focus-copy { min-width:0; }
+.health-focus-title { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text3); font-family:var(--font-mono); margin-bottom:6px; }
+.health-focus-main { font-size:16px; font-weight:800; color:var(--text); line-height:1.35; }
+.health-focus-meta { font-size:11px; color:var(--text2); margin-top:4px; }
+.health-focus-metrics { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.health-focus-pill { background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:7px 10px; font-size:11px; color:var(--text2); white-space:nowrap; }
 .dashboard-hero-kpis { border-top:2px solid var(--text); border-bottom:2px solid var(--border); padding:14px 0; margin-bottom:16px; }
 .dashboard-kpi-note { font-size:10px; color:var(--text3); line-height:1.5; margin-top:6px; }
 .empty-state { border:1px dashed var(--border2); background:linear-gradient(135deg, rgba(255,255,255,.72), rgba(245,240,232,.88)); border-radius:var(--r-lg); padding:18px; }
@@ -1164,6 +1171,8 @@ img, video, iframe, canvas { max-width: 100%; }
   .training-mix-legend { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
   .dashboard-hero-title, .dashboard-hero-name { font-size:42px; }
+  .health-focus-strip { align-items:flex-start; }
+  .health-focus-metrics { justify-content:flex-start; }
   .page-title { font-size: 24px; }
   .hero-ring-card { flex-direction: column; }
   .doc-preview-bg, .a4-sim { display: none; }
@@ -1296,9 +1305,22 @@ img, video, iframe, canvas { max-width: 100%; }
           <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:6px" id="today-date-label"></div>
           <div class="dashboard-hero-title">Good day</div>
           <div class="dashboard-hero-name" id="greeting-name">—</div>
-          <div class="dashboard-hero-sub">Training focus · recovery · sync status in one view</div>
+          <div class="dashboard-hero-sub">Health first · training second</div>
         </div>
         <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')" style="align-self:flex-end">+ บันทึก</button>
+      </div>
+
+      <div class="health-focus-strip">
+        <div class="health-focus-copy">
+          <div class="health-focus-title">Health Focus</div>
+          <div class="health-focus-main" id="dash-health-focus-main">Log wellness first to unlock daily guidance</div>
+          <div class="health-focus-meta" id="dash-health-focus-meta">Recovery comes first. Training advice will follow your health signals.</div>
+        </div>
+        <div class="health-focus-metrics">
+          <div class="health-focus-pill" id="dash-focus-recovery">Recovery —</div>
+          <div class="health-focus-pill" id="dash-focus-sleep">Sleep —</div>
+          <div class="health-focus-pill" id="dash-focus-load">7D Load —</div>
+        </div>
       </div>
 
       <!-- Hero Stats — Editorial -->
@@ -1350,25 +1372,13 @@ img, video, iframe, canvas { max-width: 100%; }
         </div>
       </div>
 
-      <div class="grid g2" style="gap:16px;margin-bottom:16px">
+      <div style="margin-bottom:16px">
         <div class="card compact-card">
           <div class="flex justify-between items-center mb-12">
             <div class="card-label" style="margin:0">Recent Activities</div>
             <span class="pill pill-green"><span class="dot"></span>LIVE</span>
           </div>
           <div id="today-recent-workouts"><p class="text-sm c2">กำลังโหลด...</p></div>
-        </div>
-        <div class="card compact-card">
-          <div class="card-label">System Status</div>
-          <div id="today-status" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
-          <div class="divider"></div>
-          <div class="card-label" style="margin-bottom:8px">Quick Actions</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')">+ Activity</button>
-            <button class="btn btn-ghost btn-sm" onclick="showPage('wellness')">🫀 Wellness</button>
-            <button class="btn btn-ghost btn-sm" onclick="showPage('fitness-stats')">📊 Statistics</button>
-            <button class="btn btn-ghost btn-sm" onclick="showPage('strava')">🚴 Strava</button>
-          </div>
         </div>
       </div>
 
@@ -1830,6 +1840,22 @@ img, video, iframe, canvas { max-width: 100%; }
         <div class="card">
           <div class="card-label">Interpretation</div>
           <div id="stats-insight-notes" class="wellness-alerts"></div>
+        </div>
+      </div>
+
+      <div class="grid g2" style="gap:16px">
+        <div class="card compact-card">
+          <div class="card-label">Quick Actions</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')">+ Activity</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('wellness')">🫀 Wellness</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('fitness-stats')">📊 Statistics</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('strava')">🚴 Strava</button>
+          </div>
+        </div>
+        <div class="card compact-card">
+          <div class="card-label">System Status</div>
+          <div id="today-status" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
         </div>
       </div>
     </div>
@@ -4193,6 +4219,31 @@ async function renderDashboardHomeInsights() {
   if(weekNote)weekNote.textContent=previousDistance>0
     ? `สัปดาห์ก่อน ${previousDistance.toFixed(1)} km · ${metrics.acwr===null?'กำลังสร้างฐานโหลด':`ACWR ${metrics.acwr.toFixed(2)}`}`
     : 'ยังไม่มีข้อมูลสัปดาห์ก่อนสำหรับเปรียบเทียบ';
+
+  const readiness=calculateReadiness();
+  const focusMain=document.getElementById('dash-health-focus-main');
+  const focusMeta=document.getElementById('dash-health-focus-meta');
+  const focusRecovery=document.getElementById('dash-focus-recovery');
+  const focusSleep=document.getElementById('dash-focus-sleep');
+  const focusLoad=document.getElementById('dash-focus-load');
+  if(focusRecovery)focusRecovery.textContent=`Recovery ${readiness.score}`;
+  if(focusSleep)focusSleep.textContent=`Sleep ${todayRecord?.sleepHours!=null?`${todayRecord.sleepHours}h`:'—'}`;
+  if(focusLoad)focusLoad.textContent=`7D Load ${Math.round(metrics.acute)}`;
+  if(focusMain&&focusMeta){
+    if(!todayRecord){
+      focusMain.textContent='Log wellness first to unlock daily guidance';
+      focusMeta.textContent='Your health check-in should lead today’s training decision.';
+    }else if(todayRecord?.soreness>=6||todayRecord?.healthStatus==='injured'||todayRecord?.healthStatus==='sick'||readiness.score<45){
+      focusMain.textContent='Recovery comes first today';
+      focusMeta.textContent='Reduce training load, watch symptoms, and prioritize sleep, hydration and pain control.';
+    }else if(readiness.score<65){
+      focusMain.textContent='Body is moderately ready — keep training controlled';
+      focusMeta.textContent='Easy to light-moderate work is safer today. Let recovery lead before adding intensity.';
+    }else{
+      focusMain.textContent='Recovery is stable — normal training is okay';
+      focusMeta.textContent='Your health signals look supportive. Keep training in line with plan and avoid unnecessary spikes.';
+    }
+  }
 
   const labels=[],recoveries=[],loads=[];
   for(let index=6;index>=0;index--){
