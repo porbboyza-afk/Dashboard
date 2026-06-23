@@ -515,6 +515,20 @@ body {
 }
 .ring-num { font-family: var(--font-display); font-size: 32px; letter-spacing: 1px; }
 .ring-unit { font-size: 10px; color: var(--text2); font-weight: 600; letter-spacing: 1px; font-family: var(--font-mono); text-transform: uppercase; }
+.dashboard-hero { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:14px; }
+.dashboard-hero-copy { display:flex; flex-direction:column; gap:6px; }
+.dashboard-hero-title { font-family:var(--font-display); font-size:56px; line-height:.88; letter-spacing:1px; color:var(--text); text-transform:uppercase; }
+.dashboard-hero-name { font-family:var(--font-display); font-size:56px; line-height:.88; letter-spacing:1px; color:var(--accent); text-transform:uppercase; }
+.dashboard-hero-sub { font-size:12px; color:var(--text2); font-weight:500; }
+.dashboard-hero-kpis { border-top:2px solid var(--text); border-bottom:2px solid var(--border); padding:14px 0; margin-bottom:16px; }
+.dashboard-kpi-note { font-size:10px; color:var(--text3); line-height:1.5; margin-top:6px; }
+.empty-state { border:1px dashed var(--border2); background:linear-gradient(135deg, rgba(255,255,255,.72), rgba(245,240,232,.88)); border-radius:var(--r-lg); padding:18px; }
+.empty-state-title { font-size:14px; font-weight:800; color:var(--text); margin-bottom:6px; }
+.empty-state-copy { font-size:12px; color:var(--text2); line-height:1.7; }
+.empty-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.compact-card { min-height:0 !important; }
+.strava-empty-card { background:linear-gradient(135deg, rgba(252,76,2,.06), rgba(255,149,0,.04)); border-color:rgba(252,76,2,.16); }
+.strava-quiet-card .strava-chart-wrap { height:180px; }
 
 /* ══════════════════════════
    GRID
@@ -1149,6 +1163,7 @@ img, video, iframe, canvas { max-width: 100%; }
   .stats-insight-grid { grid-template-columns:1fr; }
   .training-mix-legend { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
+  .dashboard-hero-title, .dashboard-hero-name { font-size:42px; }
   .page-title { font-size: 24px; }
   .hero-ring-card { flex-direction: column; }
   .doc-preview-bg, .a4-sim { display: none; }
@@ -1176,6 +1191,7 @@ img, video, iframe, canvas { max-width: 100%; }
   .wellness-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .dashboard-insight-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .dashboard-insight-grid > :last-child { grid-column:1 / -1; }
+  .dashboard-hero-title, .dashboard-hero-name { font-size:48px; }
 }
 @media (max-width: 768px) {
   #load-metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
@@ -1275,17 +1291,18 @@ img, video, iframe, canvas { max-width: 100%; }
           </button>
         </div>
       </div>
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
-        <div>
+      <div class="dashboard-hero">
+        <div class="dashboard-hero-copy">
           <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:6px" id="today-date-label"></div>
-          <div style="font-family:var(--font-display);font-size:72px;line-height:.9;letter-spacing:2px;color:var(--text);text-transform:uppercase">Good day</div>
-          <div style="font-family:var(--font-display);font-size:72px;line-height:.9;letter-spacing:2px;color:var(--accent);text-transform:uppercase" id="greeting-name">—</div>
+          <div class="dashboard-hero-title">Good day</div>
+          <div class="dashboard-hero-name" id="greeting-name">—</div>
+          <div class="dashboard-hero-sub">Training focus · recovery · sync status in one view</div>
         </div>
         <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')" style="align-self:flex-end">+ บันทึก</button>
       </div>
 
       <!-- Hero Stats — Editorial -->
-      <div style="border-top:2px solid var(--text);border-bottom:2px solid var(--border);padding:16px 0;margin-bottom:20px">
+      <div class="dashboard-hero-kpis">
         <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
           <!-- Big numbers -->
           <div style="display:flex;align-items:baseline;gap:0;flex:1;min-width:0;flex-wrap:wrap">
@@ -1299,6 +1316,7 @@ img, video, iframe, canvas { max-width: 100%; }
             <div style="padding-left:20px">
               <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:2px">ACTIVITIES</div>
               <div style="font-family:var(--font-display);font-size:64px;line-height:1;color:var(--text);letter-spacing:1px" id="t-workouts">—</div>
+              <div class="dashboard-kpi-note">Weekly volume from Firebase + Strava</div>
             </div>
           </div>
           <!-- Ring — compact -->
@@ -1332,6 +1350,28 @@ img, video, iframe, canvas { max-width: 100%; }
         </div>
       </div>
 
+      <div class="grid g2" style="gap:16px;margin-bottom:16px">
+        <div class="card compact-card">
+          <div class="flex justify-between items-center mb-12">
+            <div class="card-label" style="margin:0">Recent Activities</div>
+            <span class="pill pill-green"><span class="dot"></span>LIVE</span>
+          </div>
+          <div id="today-recent-workouts"><p class="text-sm c2">กำลังโหลด...</p></div>
+        </div>
+        <div class="card compact-card">
+          <div class="card-label">System Status</div>
+          <div id="today-status" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
+          <div class="divider"></div>
+          <div class="card-label" style="margin-bottom:8px">Quick Actions</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')">+ Activity</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('wellness')">🫀 Wellness</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('fitness-stats')">📊 Statistics</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('strava')">🚴 Strava</button>
+          </div>
+        </div>
+      </div>
+
       <div class="dashboard-insight-grid mb-16">
         <div class="card">
           <div class="flex justify-between items-center mb-12">
@@ -1358,9 +1398,17 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="text-xs c3 mt-8" id="dash-week-note">คำนวณจากกิจกรรม Firebase และ Strava</div>
         </div>
 
-        <div class="card">
+        <div class="card compact-card">
           <div class="card-label">Recovery vs Load · 7 Days</div>
-          <div class="dashboard-mini-chart"><canvas id="chart-dashboard-health"></canvas></div>
+          <div class="dashboard-mini-chart">
+            <canvas id="chart-dashboard-health"></canvas>
+            <div id="dash-health-empty" class="empty-state" style="display:none;position:absolute;inset:0;padding:14px;align-items:center;justify-content:center;text-align:left">
+              <div>
+                <div class="empty-state-title" style="margin-bottom:4px">ยังไม่มีข้อมูลพอสำหรับเทียบ Recovery กับ Load</div>
+                <div class="empty-state-copy">เพิ่ม Wellness วันนี้ หรือบันทึก Activity อย่างน้อย 1 รายการ แล้วกราฟนี้จะเริ่มมีแนวโน้มให้ดู</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1444,28 +1492,6 @@ img, video, iframe, canvas { max-width: 100%; }
         </div>
       </div>
 
-      <!-- Recent + Status -->
-      <div class="grid g2" style="gap:16px">
-        <div class="card">
-          <div class="flex justify-between items-center mb-12">
-            <div class="card-label" style="margin:0">Recent Activities</div>
-            <span class="pill pill-green"><span class="dot"></span>LIVE</span>
-          </div>
-          <div id="today-recent-workouts"><p class="text-sm c2">กำลังโหลด...</p></div>
-        </div>
-        <div class="card">
-          <div class="card-label">System Status</div>
-          <div id="today-status" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div>
-          <div class="divider"></div>
-          <div class="card-label" style="margin-bottom:8px">Quick Actions</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')">+ Activity</button>
-            <button class="btn btn-ghost btn-sm" onclick="showPage('wellness')">🫀 Wellness</button>
-            <button class="btn btn-ghost btn-sm" onclick="showPage('fitness-stats')">📊 Statistics</button>
-            <button class="btn btn-ghost btn-sm" onclick="showPage('strava')">🚴 Strava</button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ════════════ FITNESS LOG ════════════ -->
@@ -1943,6 +1969,15 @@ img, video, iframe, canvas { max-width: 100%; }
       </div>
 
       <div id="strava-overview-view">
+        <div id="strava-empty-state" class="card strava-empty-card mb-16" style="display:none">
+          <div class="empty-state-title">Connect Strava to unlock weekly distance, pace, HR and PRs</div>
+          <div class="empty-state-copy">Once connected, this page will show synced activities, 8-week charts, estimated PRs and quick analysis without opening Strava.</div>
+          <div class="empty-actions">
+            <button class="btn btn-strava btn-sm" onclick="stravaConnect()">🔗 Connect Strava</button>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('settings')">API settings</button>
+          </div>
+        </div>
+
         <div id="strava-week-strip" class="strava-overview-grid mb-16" style="display:none">
           <div class="stat-card"><div class="stat-label">This Week</div><span class="stat-value" id="sv-dist" style="font-size:28px">—</span><span class="stat-unit">km</span><div class="strava-delta" id="sv-dist-delta">—</div></div>
           <div class="stat-card"><div class="stat-label">Activities</div><span class="stat-value" id="sv-count" style="font-size:28px">—</span><div class="strava-delta" id="sv-count-delta">—</div></div>
@@ -1950,12 +1985,12 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="stat-card"><div class="stat-label">Avg HR</div><span class="stat-value" id="sv-hr" style="font-size:28px">—</span><span class="stat-unit">bpm</span><div class="strava-delta" id="sv-hr-delta">—</div></div>
         </div>
 
-        <div class="strava-dashboard-grid mb-16">
-          <div class="card"><div class="card-label">8-week Distance</div><div class="strava-chart-wrap"><canvas id="chart-strava-distance"></canvas></div></div>
-          <div class="card"><div class="card-label">Running Pace & HR</div><div class="strava-chart-wrap"><canvas id="chart-strava-performance"></canvas></div></div>
+        <div id="strava-overview-charts" class="strava-dashboard-grid mb-16">
+          <div class="card strava-quiet-card"><div class="card-label">8-week Distance</div><div class="strava-chart-wrap"><canvas id="chart-strava-distance"></canvas></div></div>
+          <div class="card strava-quiet-card"><div class="card-label">Running Pace & HR</div><div class="strava-chart-wrap"><canvas id="chart-strava-performance"></canvas></div></div>
         </div>
 
-        <div class="card mb-16">
+        <div class="card mb-16" id="strava-pr-card">
           <div class="card-label">Personal Records from synced activities</div>
           <div class="strava-pr-grid" id="strava-pr-grid"><div class="text-sm c2">รอข้อมูล Strava</div></div>
           <div class="text-xs c3 mt-8">เป็นค่าประมาณจากความเร็วเฉลี่ยของกิจกรรม ไม่ใช่ Best Effort split อย่างเป็นทางการของ Strava</div>
@@ -2503,6 +2538,11 @@ Object.defineProperties(window, {
 window._appReady = async (user) => {
   if (!user) {
     document.getElementById('loading-overlay').style.display = 'none';
+    showPage('today');
+    renderTodayStats();
+    renderIntegratedHealth();
+    renderDashboardHomeInsights();
+    renderDashboardSyncStatus();
     return;
   }
   hideLoading(); showPage('today');
@@ -2616,7 +2656,14 @@ function renderTodayStats(){
           <div style="color:var(--text3);font-size:16px;padding-left:4px">›</div>
         </div>`;
       }).join('')
-    : '<p class="text-sm c2">ไม่มีกิจกรรมสัปดาห์นี้</p>';
+    : `<div class="empty-state">
+        <div class="empty-state-title">ยังไม่มีกิจกรรมสัปดาห์นี้</div>
+        <div class="empty-state-copy">เริ่มจากบันทึก Activity แรก หรือเชื่อม Strava เพื่อให้หน้า Dashboard แสดง volume, readiness และแนวโน้มการฝึกได้ครบขึ้น</div>
+        <div class="empty-actions">
+          <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')">+ Add activity</button>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('strava')">Connect Strava</button>
+        </div>
+      </div>`;
 
 }
 
@@ -3518,6 +3565,93 @@ function renderStravaPRs(acts){
   }).join('');
 }
 
+function setStravaOverviewState({connected=false,hasData=false}={}){
+  const empty=document.getElementById('strava-empty-state');
+  const strip=document.getElementById('strava-week-strip');
+  const chartsWrap=document.getElementById('strava-overview-charts');
+  const prCard=document.getElementById('strava-pr-card');
+  if(empty)empty.style.display=!connected?'block':'none';
+  if(strip)strip.style.display=hasData?'grid':'none';
+  if(chartsWrap)chartsWrap.style.display=hasData?'grid':'none';
+  if(prCard)prCard.style.display=hasData?'block':'none';
+}
+
+async function renderStravaPage(){
+  const td=await window._fb.getData('strava_token');
+  const sb=document.getElementById('strava-status-box'),cb=document.getElementById('btn-strava-connect'),db=document.getElementById('btn-strava-disconnect'),sync=document.getElementById('btn-strava-sync');
+  if(td?.access_token){
+    const a=td.athlete||{};
+    sb.style.cssText='background:rgba(252,76,2,.1);border:1.5px solid rgba(252,76,2,.3);border-radius:var(--r);padding:8px 14px;display:flex;align-items:center;gap:10px';
+    sb.innerHTML=`<div style="width:8px;height:8px;border-radius:50%;background:var(--strava)"></div><div><div style="font-weight:700;color:var(--strava);font-size:12px">${a.firstname||''} ${a.lastname||''}</div><div style="font-size:10px;color:var(--text2)">${td.refresh_token?'🔄 Auto-refresh':'⚠️ Manual'}</div></div>`;
+    cb.style.display='none';db.style.display='block';sync.style.display='inline-flex';
+    document.getElementById('strava-guide-box').style.display='none';
+    const cached=await window._fb.getData('strava_activities');
+    window._stravaDetailCache=await window._fb.getData('strava_activity_details')||{};
+    if(cached){
+      setStravaOverviewState({connected:true,hasData:true});
+      renderStravaActivities(Array.isArray(cached)?cached:Object.values(cached));
+    } else {
+      setStravaOverviewState({connected:true,hasData:false});
+      document.getElementById('strava-activities-list').innerHTML=`<div class="empty-state"><div class="empty-state-title">Strava connected — ready to sync</div><div class="empty-state-copy">Press Sync once to pull recent activities and populate weekly charts, activity explorer and PR estimates.</div><div class="empty-actions"><button class="btn btn-strava btn-sm" onclick="stravaSync()">🔄 Sync activities</button></div></div>`;
+    }
+    const lastSync=await window._fb.getData('strava_last_sync');
+    const lastSyncEl=document.getElementById('strava-last-sync');
+    if(lastSyncEl)lastSyncEl.textContent=lastSync?`ซิงก์ล่าสุด ${new Date(lastSync).toLocaleString('th-TH')}`:'ยังไม่เคยซิงก์';
+  }else{
+    sb.style.cssText='background:var(--surface);border-radius:var(--r);padding:8px 14px;display:flex;align-items:center;gap:8px;border:1.5px solid var(--border)';
+    sb.innerHTML='<div style="width:7px;height:7px;border-radius:50%;background:var(--text3)"></div><span style="font-size:12px;color:var(--text2)">Not connected</span>';
+    cb.style.display='block';db.style.display='none';sync.style.display='none';
+    document.getElementById('strava-guide-box').style.display='block';
+    setStravaOverviewState({connected:false,hasData:false});
+    document.getElementById('strava-activities-list').innerHTML='<div class="empty-state"><div class="empty-state-title">ยังไม่ได้เชื่อม Strava</div><div class="empty-state-copy">เชื่อมบัญชีเพื่อดึง activities, pace, heart rate และ training load analysis เข้ามาในหน้า Dashboard.</div></div>';
+  }
+}
+
+function renderStravaOverview(acts){
+  if(!acts?.length){
+    setStravaOverviewState({connected:document.getElementById('btn-strava-connect')?.style.display==='none',hasData:false});
+    return;
+  }
+  setStravaOverviewState({connected:true,hasData:true});
+  const currentStart=getThisWeekStart();
+  const previousStart=new Date(currentStart);previousStart.setDate(previousStart.getDate()-7);
+  const current=stravaWeekSummary(acts,currentStart);
+  const previous=stravaWeekSummary(acts,previousStart);
+  const strip=document.getElementById('strava-week-strip');if(strip)strip.style.display='grid';
+  const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+  set('sv-dist',current.distance.toFixed(2));set('sv-count',current.rows.length);
+  set('sv-pace',current.pace?formatPace(current.pace/60):'—');set('sv-hr',current.hr?Math.round(current.hr):'—');
+  setStravaDelta('sv-dist-delta',current.distance,previous.distance);
+  setStravaDelta('sv-count-delta',current.rows.length,previous.rows.length);
+  setStravaDelta('sv-pace-delta',current.pace,previous.pace,true);
+  setStravaDelta('sv-hr-delta',current.hr,previous.hr,true);
+
+  const labels=[],distances=[],paces=[],hrs=[];
+  for(let offset=7;offset>=0;offset--){
+    const start=new Date(currentStart);start.setDate(start.getDate()-offset*7);
+    const summary=stravaWeekSummary(acts,start);
+    labels.push(start.toLocaleDateString('th-TH',{day:'numeric',month:'short'}));
+    distances.push(+summary.distance.toFixed(1));
+    paces.push(summary.pace?+(summary.pace/60).toFixed(2):null);
+    hrs.push(summary.hr?Math.round(summary.hr):null);
+  }
+  const colors=getChartColors();
+  if(charts.stravaDistance)charts.stravaDistance.destroy();
+  const distanceContext=document.getElementById('chart-strava-distance')?.getContext('2d');
+  if(distanceContext)charts.stravaDistance=new Chart(distanceContext,{type:'bar',data:{labels,datasets:[{label:'km',data:distances,backgroundColor:'rgba(252,76,2,.65)',borderRadius:7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:colors.tick,font:{size:9}}},y:{beginAtZero:true,grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}}}}}});
+  if(charts.stravaPerformance)charts.stravaPerformance.destroy();
+  const performanceContext=document.getElementById('chart-strava-performance')?.getContext('2d');
+  if(performanceContext)charts.stravaPerformance=new Chart(performanceContext,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Pace /km',data:paces,borderColor:'#007AFF',backgroundColor:'rgba(0,122,255,.10)',borderWidth:3,pointBackgroundColor:'#007AFF',pointBorderColor:'#FFFFFF',pointBorderWidth:1.5,pointRadius:4,pointHoverRadius:6,pointStyle:'circle',fill:true,tension:.3,spanGaps:true,yAxisID:'y'},
+      {label:'HR bpm',data:hrs,borderColor:'#FF2D55',backgroundColor:'transparent',borderWidth:2.5,borderDash:[7,5],pointBackgroundColor:'#FF2D55',pointBorderColor:'#FFFFFF',pointBorderWidth:1.5,pointRadius:4,pointHoverRadius:6,pointStyle:'triangle',fill:false,tension:.3,spanGaps:true,yAxisID:'y1'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:colors.tick,usePointStyle:true,boxWidth:10,padding:18,font:{size:10}}}},scales:{x:{grid:{display:false},ticks:{color:colors.tick,font:{size:9}}},y:{reverse:true,grid:{color:colors.grid},ticks:{color:'#007AFF',callback:value=>formatPace(value),font:{size:9}},title:{display:true,text:'PACE /KM',color:'#007AFF',font:{size:9,weight:'bold'}}},y1:{position:'right',grid:{display:false},ticks:{color:'#FF2D55',font:{size:9}},title:{display:true,text:'HR BPM',color:'#FF2D55',font:{size:9,weight:'bold'}}}}}
+  });
+  renderStravaPRs(acts);
+}
+
 function applyStravaFilters(){
   const all=window._stravaAllActs||[];
   const type=document.getElementById('strava-filter-type')?.value||'all';
@@ -4068,9 +4202,13 @@ async function renderDashboardHomeInsights() {
     recoveries.push(calculateRecoveryScore(record));
     loads.push(activities.filter(row=>row.date===dateString).reduce((sum,row)=>sum+sessionLoad(row),0));
   }
+  const hasRecoveryData=recoveries.some(Number.isFinite);
+  const hasLoadData=loads.some(value=>value>0);
+  const healthEmpty=document.getElementById('dash-health-empty');
   if(charts.dashboardHealth)charts.dashboardHealth.destroy();
   const context=document.getElementById('chart-dashboard-health')?.getContext('2d');
-  if(context){
+  if(context && (hasRecoveryData || hasLoadData)){
+    if(healthEmpty)healthEmpty.style.display='none';
     const colors=getChartColors();
     charts.dashboardHealth=new Chart(context,{
       data:{labels,datasets:[
@@ -4083,6 +4221,8 @@ async function renderDashboardHomeInsights() {
         y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:'#FF4D00',font:{size:8}}}
       }}
     });
+  } else if(healthEmpty){
+    healthEmpty.style.display='flex';
   }
   await renderDashboardSyncStatus();
 }
