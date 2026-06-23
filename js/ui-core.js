@@ -65,11 +65,9 @@ function showPage(id) {
   document.querySelector(`.nav-item[data-page="${id}"]`)?.classList.add('active');
   if (id === 'today') renderTodayStats();
   if (id === 'fitness-log') document.getElementById('f-date').value = toLocalDateStr();
-  if (id === 'fitness-stats') {
-    initStatsNav();
-    renderCurrentStatsView();
-  }
+  if (id === 'fitness-stats') { initStatsNav(); renderCurrentStatsView(); }
   if (id === 'wellness') setTimeout(renderWellness, 50);
+
   if (id === 'strava') renderStravaPage();
   if (id === 'coach') {
     const sd = document.getElementById('coach-start-date');
@@ -81,6 +79,28 @@ function showPage(id) {
     updateCoachEndDate();
     renderCoachTracking();
   }
+}
+
+function getMondayOfWeek(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  d.setDate(d.getDate() - ((day + 6) % 7));
+  return d;
+}
+
+function getWeekDates(offsetWeeks = 0) {
+  const monday = getMondayOfWeek(new Date());
+  monday.setDate(monday.getDate() + offsetWeeks * 7);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+}
+
+function getThisWeekStart() {
+  return getMondayOfWeek(new Date());
 }
 
 initTheme();
