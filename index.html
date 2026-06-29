@@ -2098,13 +2098,13 @@ img, video, iframe, canvas { max-width: 100%; }
     <div class="page" id="page-news">
       <div class="page-header">
         <div class="page-title">AI Q&A 💬</div>
-        <div class="page-subtitle">ถามเรื่องข่าวสาร IT เศรษฐกิจ เทรนด์โลก · DeepSeek AI ตอบเป็นภาษาไทย</div>
+        <div class="page-subtitle">ถามเรื่องข่าวสาร IT เศรษฐกิจ เทรนด์โลก · Proxy mode ดึงข่าวล่าสุดให้ AI ก่อนตอบ</div>
       </div>
       <div class="card" style="background:linear-gradient(135deg,rgba(0,122,255,.04),rgba(90,200,250,.03));border-color:rgba(0,122,255,.15)">
         <div class="flex items-center justify-between gap-12 mb-12">
           <div>
             <div class="card-label" style="margin:0">Conversation</div>
-            <div class="text-xs c3" id="news-ai-status">Local chat history. API key is still client-side until proxy is configured.</div>
+            <div class="text-xs c3" id="news-ai-status">Proxy mode can attach current news context. Direct mode cannot search the web.</div>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="clearNewsChat()">Clear</button>
         </div>
@@ -3329,7 +3329,7 @@ async function callNewsChat(messages) {
       const res = await fetch(proxyUrl, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({model, messages, max_tokens: 4096, temperature: 0.7}),
+        body: JSON.stringify({model, messages, use_search: true, max_tokens: 4096, temperature: 0.7}),
         signal: controller.signal
       });
       if (!res.ok) {
@@ -3373,8 +3373,8 @@ async function askNewsAI() {
   if (btn) { btn.innerHTML = 'Thinking...'; btn.disabled = true; }
   const status = document.getElementById('news-ai-status');
   if (status) status.textContent = (AppState.get('aiProxyUrl') || '').trim()
-    ? 'Proxy mode: API key is kept outside the browser'
-    : 'Direct mode: API key is still stored client-side';
+    ? 'Proxy mode: searching recent news before answering'
+    : 'Direct mode: no web/news search; answers may stop at model knowledge cutoff';
 
   try {
     const trimmed = newsChatMessages.slice(-12);
