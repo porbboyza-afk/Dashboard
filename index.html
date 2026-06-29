@@ -3384,7 +3384,10 @@ async function askNewsAI() {
     newsChatMessages.push({role:'assistant', content:reply});
     renderNewsChat();
   } catch (error) {
-    const msg = error.name === 'AbortError' ? 'การเชื่อมต่อหมดเวลา' : (error.message || String(error));
+    let msg = error.name === 'AbortError' ? 'การเชื่อมต่อหมดเวลา' : (error.message || String(error));
+    if (/failed to fetch/i.test(msg)) {
+      msg = 'เชื่อมต่อ AI Proxy ไม่ได้ ตรวจสอบ AI Proxy URL, CORS ของ Worker, หรืออินเทอร์เน็ต แล้วลองใหม่';
+    }
     newsChatMessages.push({role:'assistant', content:`ขัดข้อง: ${msg}`});
     renderNewsChat();
     showToast(msg, 'error');

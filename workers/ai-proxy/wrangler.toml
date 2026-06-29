@@ -3,4 +3,4 @@ main = "src/index.js"
 compatibility_date = "2026-06-28"
 
 [vars]
-ALLOWED_ORIGINS = "https://dash-ca315.web.app,https://porbboyza-afk.github.io"
+ALLOWED_ORIGINS = "https://dash-ca315.web.app,https://dash-ca315.firebaseapp.com,https://porbboyza-afk.github.io"
