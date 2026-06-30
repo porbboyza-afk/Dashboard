@@ -954,6 +954,47 @@ tbody tr:hover td { background: var(--bg); }
   color: var(--text2);
   font-size: 12px;
 }
+.news-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 14px;
+  align-items: start;
+}
+.news-side {
+  display: grid;
+  gap: 12px;
+}
+.news-panel {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px;
+}
+.news-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  margin-top: 8px;
+  background: var(--surface);
+}
+.news-item-title {
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-bottom: 6px;
+}
+.news-item-meta {
+  color: var(--text3);
+  font-size: 10px;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+.news-note-textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  margin-top: 8px;
+}
 
 /* ══════════════════════════
    WEEK NAV
@@ -1208,6 +1249,7 @@ img, video, iframe, canvas { max-width: 100%; }
   .stats-insight-grid { grid-template-columns:1fr; }
   .training-mix-legend { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
+  .news-layout { grid-template-columns: 1fr; }
   .dashboard-hero-title, .dashboard-hero-name { font-size:42px; }
   .health-focus-strip { align-items:flex-start; }
   .health-focus-metrics { justify-content:flex-start; }
@@ -2108,18 +2150,45 @@ img, video, iframe, canvas { max-width: 100%; }
           </div>
           <button class="btn btn-ghost btn-sm" onclick="clearNewsChat()">Clear</button>
         </div>
-        <div id="news-chat" class="ai-chat mb-12"></div>
-        <div class="flex gap-12 mb-12">
-          <input type="text" id="news-query" placeholder="พิมพ์คำถาม..." style="flex:1" onkeydown="if(event.key==='Enter')askNewsAI()">
-          <button class="btn btn-primary" id="btn-news" onclick="askNewsAI()">Ask AI</button>
+        <div class="news-layout">
+          <div>
+            <div id="news-chat" class="ai-chat mb-12"></div>
+            <div class="flex gap-12 mb-12">
+              <input type="text" id="news-query" placeholder="พิมพ์คำถาม..." style="flex:1" onkeydown="if(event.key==='Enter')askNewsAI()">
+              <button class="btn btn-primary" id="btn-news" onclick="askNewsAI()">Ask AI</button>
+            </div>
+            <div class="flex gap-8 mb-12 flex-wrap">
+              <button class="btn btn-ghost btn-sm" onclick="setNewsQ('ข่าว AI และเทคโนโลยีที่น่าสนใจในปี 2026')">AI & Tech 2026</button>
+              <button class="btn btn-ghost btn-sm" onclick="setNewsQ('เศรษฐกิจไทยและตลาดหุ้นล่าสุด')">Economy</button>
+              <button class="btn btn-ghost btn-sm" onclick="setNewsQ('รถยนต์ไฟฟ้าและสินค้าเทคโนโลยีใหม่')">New Tech</button>
+              <button class="btn btn-ghost btn-sm" onclick="setNewsQ('เทรนด์การวิ่งมาราธอนและอุปกรณ์กีฬา')">Running</button>
+            </div>
+            <div id="news-output" class="ai-box"></div>
+          </div>
+          <aside class="news-side">
+            <div class="news-panel">
+              <div class="flex items-center justify-between gap-8">
+                <div>
+                  <div class="card-label" style="margin:0">Sources</div>
+                  <div class="text-xs c3">ข่าวที่ proxy ดึงให้รอบล่าสุด</div>
+                </div>
+              </div>
+              <div id="news-sources"></div>
+            </div>
+            <div class="news-panel">
+              <div class="flex items-center justify-between gap-8">
+                <div>
+                  <div class="card-label" style="margin:0">Pinned notes</div>
+                  <div class="text-xs c3">เก็บข่าวที่อยากตามต่อไว้ในเครื่องนี้</div>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="clearPinnedNewsNotes()">Clear</button>
+              </div>
+              <textarea id="news-note-input" class="news-note-textarea" placeholder="พิมพ์โน้ตส่วนตัว แล้วกด Save note"></textarea>
+              <button class="btn btn-primary btn-sm w100 mt-8" onclick="saveManualNewsNote()">Save note</button>
+              <div id="news-notes"></div>
+            </div>
+          </aside>
         </div>
-        <div class="flex gap-8 mb-12 flex-wrap">
-          <button class="btn btn-ghost btn-sm" onclick="setNewsQ('ข่าว AI และเทคโนโลยีที่น่าสนใจในปี 2025')">🤖 AI & Tech</button>
-          <button class="btn btn-ghost btn-sm" onclick="setNewsQ('เศรษฐกิจไทยและตลาดหุ้นล่าสุด')">📈 Economy</button>
-          <button class="btn btn-ghost btn-sm" onclick="setNewsQ('รถยนต์ไฟฟ้าและสินค้าเทคโนโลยีใหม่')">⚡ New Tech</button>
-          <button class="btn btn-ghost btn-sm" onclick="setNewsQ('เทรนด์การวิ่งมาราธอนและอุปกรณ์กีฬา')">🏃 Running</button>
-        </div>
-        <div id="news-output" class="ai-box"></div>
       </div>
     </div>
 
@@ -3297,7 +3366,132 @@ function setNewsQ(q){document.getElementById('news-query').value=q;}
 
 // ── STRAVA ──
 let newsChatMessages = [];
+let newsLatestSources = [];
+let pinnedNewsNotes = JSON.parse(localStorage.getItem('mydash-news-notes') || '[]');
 const NEWS_SYSTEM_PROMPT = 'คุณคือผู้ช่วย AI ส่วนตัวของผู้ใช้ ตอบเป็นภาษาไทย ชัดเจน ใช้งานจริงได้ ถ้าไม่แน่ใจให้บอกว่าไม่แน่ใจ และห้ามอ้างว่ามีข้อมูลล่าสุดถ้าไม่ได้รับข้อมูลมา';
+
+function escapeHtmlText(value='') {
+  return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function renderNewsSidePanel() {
+  const sourcesBox = document.getElementById('news-sources');
+  if (sourcesBox) {
+    sourcesBox.innerHTML = newsLatestSources.length ? newsLatestSources.map((item, index) => `
+      <div class="news-item">
+        <div class="news-item-title">${escapeHtmlText(item.title)}</div>
+        <div class="news-item-meta">${escapeHtmlText(item.source || 'Google News')} · ${escapeHtmlText(item.pubDate || '')}</div>
+        <div class="flex gap-8 flex-wrap">
+          <button class="btn btn-ghost btn-sm" onclick="pinNewsSource(${index})">Pin</button>
+          <button class="btn btn-primary btn-sm" onclick="summarizeNewsSource(${index})">Summarize</button>
+          <a class="btn btn-ghost btn-sm" href="${escapeHtmlText(item.link)}" target="_blank" rel="noopener">Open</a>
+        </div>
+      </div>
+    `).join('') : '<div class="text-xs c3" style="margin-top:8px">ถามข่าวก่อน แล้ว sources จะขึ้นตรงนี้</div>';
+  }
+  const notesBox = document.getElementById('news-notes');
+  if (notesBox) {
+    notesBox.innerHTML = pinnedNewsNotes.length ? pinnedNewsNotes.map((note, index) => `
+      <div class="news-item">
+        <div class="news-item-title">${escapeHtmlText(note.title || 'Personal note')}</div>
+        <div class="news-item-meta">${escapeHtmlText(note.source || 'Note')} · ${escapeHtmlText(note.createdAt || '')}</div>
+        ${note.note ? `<div class="text-xs c2 mb-8">${escapeHtmlText(note.note)}</div>` : ''}
+        <div class="flex gap-8 flex-wrap">
+          ${note.link ? `<a class="btn btn-ghost btn-sm" href="${escapeHtmlText(note.link)}" target="_blank" rel="noopener">Open</a>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="summarizePinnedNews(${index})">Summarize</button>
+          <button class="btn btn-ghost btn-sm" onclick="deletePinnedNews(${index})">Remove</button>
+        </div>
+      </div>
+    `).join('') : '<div class="text-xs c3" style="margin-top:8px">ยังไม่มีโน้ตที่ปักหมุด</div>';
+  }
+}
+
+function persistPinnedNewsNotes() {
+  localStorage.setItem('mydash-news-notes', JSON.stringify(pinnedNewsNotes.slice(0, 80)));
+  renderNewsSidePanel();
+}
+
+function pinNewsSource(index) {
+  const item = newsLatestSources[index];
+  if (!item) return;
+  pinnedNewsNotes = [{
+    title: item.title,
+    source: item.source || 'Google News',
+    link: item.link,
+    pubDate: item.pubDate || '',
+    snippet: item.snippet || '',
+    createdAt: new Date().toLocaleString('th-TH'),
+    note: ''
+  }, ...pinnedNewsNotes.filter(note => note.link !== item.link)].slice(0, 80);
+  persistPinnedNewsNotes();
+  showToast('Pinned news note');
+}
+
+function saveManualNewsNote() {
+  const input = document.getElementById('news-note-input');
+  const note = input?.value?.trim();
+  if (!note) return showToast('พิมพ์โน้ตก่อน', 'error');
+  pinnedNewsNotes = [{
+    title: note.slice(0, 80),
+    source: 'Personal note',
+    link: '',
+    snippet: '',
+    createdAt: new Date().toLocaleString('th-TH'),
+    note
+  }, ...pinnedNewsNotes].slice(0, 80);
+  if (input) input.value = '';
+  persistPinnedNewsNotes();
+}
+
+function deletePinnedNews(index) {
+  pinnedNewsNotes.splice(index, 1);
+  persistPinnedNewsNotes();
+}
+
+function clearPinnedNewsNotes() {
+  if (!confirm('ลบ pinned notes ทั้งหมด?')) return;
+  pinnedNewsNotes = [];
+  persistPinnedNewsNotes();
+}
+
+async function summarizeNewsSource(index) {
+  const item = newsLatestSources[index];
+  if (!item) return;
+  await summarizeNewsItem(item);
+}
+
+async function summarizePinnedNews(index) {
+  const item = pinnedNewsNotes[index];
+  if (!item) return;
+  await summarizeNewsItem(item);
+}
+
+async function summarizeNewsItem(item) {
+  try {
+    const prompt = [
+      'สรุปข่าวนี้ให้หน่อย',
+      `หัวข้อ: ${item.title || '-'}`,
+      `แหล่งข่าว: ${item.source || '-'}`,
+      `วันที่: ${item.pubDate || '-'}`,
+      `ลิงก์: ${item.link || '-'}`,
+      `เนื้อหาย่อ: ${item.snippet || item.note || '-'}`
+    ].join('\n');
+    newsChatMessages.push({role:'user', content:`สรุปข่าวที่ปักไว้: ${item.title || item.note || 'note'}`});
+    renderNewsChat();
+    const data = await callNewsChat([
+      {role:'system', content:'คุณคือผู้ช่วยสรุปข่าว ตอบภาษาไทยแบบกระชับ แยกเป็น: ประเด็นสำคัญ, ทำไมถึงสำคัญ, สิ่งที่ควรติดตามต่อ และข้อจำกัดของข้อมูล'},
+      {role:'user', content: prompt}
+    ]);
+    const reply = data?.choices?.[0]?.message?.content || 'สรุปไม่สำเร็จ';
+    newsChatMessages.push({role:'assistant', content:reply});
+    renderNewsChat();
+  } catch (error) {
+    const msg = error.message || String(error);
+    newsChatMessages.push({role:'assistant', content:`ขัดข้อง: ${msg}`});
+    renderNewsChat();
+    showToast(msg, 'error');
+  }
+}
 
 function renderNewsChat() {
   const box = document.getElementById('news-chat');
@@ -3312,10 +3506,12 @@ function renderNewsChat() {
     return `<div class="ai-msg ${cls}">${mdToHtml(msg.content || '')}</div>`;
   }).join('');
   box.scrollTop = box.scrollHeight;
+  renderNewsSidePanel();
 }
 
 function clearNewsChat() {
   newsChatMessages = [];
+  newsLatestSources = [];
   const out = document.getElementById('news-output');
   if (out) { out.style.display = 'none'; out.innerHTML = ''; }
   renderNewsChat();
@@ -3383,6 +3579,7 @@ async function askNewsAI() {
     const data = await callNewsChat([{role:'system', content:NEWS_SYSTEM_PROMPT}, ...trimmed]);
     const reply = data?.choices?.[0]?.message?.content;
     if (!reply) throw new Error('AI ไม่ส่งคำตอบกลับมา');
+    newsLatestSources = Array.isArray(data?.search_results) ? data.search_results : [];
     newsChatMessages.push({role:'assistant', content:reply});
     renderNewsChat();
   } catch (error) {

@@ -1,6 +1,7 @@
 name = "mydash-ai-proxy"
 main = "src/index.js"
 compatibility_date = "2026-06-28"
+workers_dev = true
 
 [vars]
 ALLOWED_ORIGINS = "https://dash-ca315.web.app,https://dash-ca315.firebaseapp.com,https://porbboyza-afk.github.io"

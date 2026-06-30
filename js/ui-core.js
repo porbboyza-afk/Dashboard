@@ -67,6 +67,10 @@ function showPage(id) {
   if (id === 'fitness-log') document.getElementById('f-date').value = toLocalDateStr();
   if (id === 'fitness-stats') { initStatsNav(); renderCurrentStatsView(); }
   if (id === 'wellness') setTimeout(renderWellness, 50);
+  if (id === 'news') {
+    if (typeof renderNewsChat === 'function') renderNewsChat();
+    if (typeof renderNewsSidePanel === 'function') renderNewsSidePanel();
+  }
 
   if (id === 'strava') renderStravaPage();
   if (id === 'coach') {
