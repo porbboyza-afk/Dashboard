@@ -1,6 +1,6 @@
 # AI Handoff Log
 
-Last updated: 2026-06-29 23:30 Asia/Bangkok
+Last updated: 2026-07-04 00:00 Asia/Bangkok
 
 ## Current Project
 
@@ -130,3 +130,43 @@ PowerShell note:
 2. Commit and push these MyDash changes.
 3. Ask the user to hard refresh GitHub Pages after push.
 4. If the browser still uses an old proxy URL from localStorage, clear or update MyDash Settings -> AI Proxy URL.
+
+## 2026-07-04 Strava Sync 404 Investigation
+
+User reported: MyDash Strava sync cannot sync and shows `404`.
+
+Important findings:
+
+- Repo was clean before this investigation.
+- Strava sync code is in `index.html`.
+- Strava sync does not use Apps Script or Google Sheets backup.
+- Apps Script only handles backup types `workout` and `wellness`.
+- Main Strava sync endpoint is:
+  - `https://www.strava.com/api/v3/athlete/activities?per_page=100`
+- Detail enrichment endpoints are:
+  - `https://www.strava.com/api/v3/activities/{id}`
+  - `https://www.strava.com/api/v3/activities/{id}/laps`
+  - `https://www.strava.com/api/v3/activities/{id}/streams?...`
+- Testing public Strava endpoints without a token returned `401`, not `404`, so the user's `404` likely depends on their saved token/scope/activity/privacy or a specific detail endpoint.
+- This session did not have the user's real Strava token, so a full authenticated sync could not be reproduced locally.
+
+Code changes made:
+
+- Added `stravaEndpointLabel(url)` to label failed endpoints as token refresh, activities list, athlete profile, activity detail, activity laps, or activity streams.
+- Added `stravaBuildHttpError(response, url)` to include HTTP status, endpoint label, Strava API message, and a specific 404 hint.
+- Updated Strava connect, refresh, detail fetch, and activity-list sync to use the clearer error builder.
+- Updated `fetchStravaActivityDetail()` so if all detail/laps/streams calls fail, it saves a summary-only payload instead of throwing. This prevents detail 404s from making the main sync look completely broken.
+- Existing detail enrichment already catches per-activity failures in `enrichNewStravaActivities()`, so this change makes the cache/UI more graceful and easier to debug.
+
+Verification run after the change:
+
+- `node C:\Users\pucca\Dashboard-GitHub\verify_dashboard.js`
+- `python C:\Users\pucca\Dashboard-GitHub\smoke_test_dashboard.py`
+- Both passed with no page errors, console errors, or request failures.
+
+Recommended next debugging step if the user still sees 404:
+
+- Open browser DevTools -> Network while pressing Strava Sync.
+- Capture the exact failing URL and response body.
+- If it is `activities list HTTP 404`, check whether the saved Strava app credentials/token are for the expected Strava account.
+- If it is `activity detail/laps/streams HTTP 404`, reconnect Strava using `activity:read_all` and check whether the activity is private/deleted or not owned by the authenticated athlete.

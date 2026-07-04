@@ -3646,15 +3646,16 @@ async function stravaConnectDirect(){
     const cfg=await window._fb.getData('settings')||{};
     if(!cfg.stravaId||!cfg.stravaSecret)throw new Error('Please save Client ID/Secret in Settings first');
     const exchanged=await stravaRefreshTokenCall(refreshToken,cfg.stravaId,cfg.stravaSecret);
-    const res=await fetch(`${STRAVA_API}/athlete`,{headers:{'Authorization':`Bearer ${exchanged.access_token}`}});
-    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const athleteUrl=`${STRAVA_API}/athlete`;
+    const res=await fetch(athleteUrl,{headers:{'Authorization':`Bearer ${exchanged.access_token}`}});
+    if(!res.ok)throw await stravaBuildHttpError(res,athleteUrl);
     const athlete=await res.json();
     await window._fb.setData('strava_token',{access_token:exchanged.access_token,refresh_token:refreshToken,expires_at:exchanged.expires_at,athlete});
     showToast(`✅ Welcome ${athlete.firstname}!`);renderStravaPage();
   }catch(e){showToast('Error: '+e.message,'error');}
   finally{hideLoading();}
 }
-async function stravaRefreshTokenCall(refreshToken,clientId,clientSecret){const res=await fetch('https://www.strava.com/oauth/token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:clientId,client_secret:clientSecret,refresh_token:refreshToken,grant_type:'refresh_token'})});if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.message||`HTTP ${res.status}`);}return await res.json();}
+async function stravaRefreshTokenCall(refreshToken,clientId,clientSecret){const url='https://www.strava.com/oauth/token';const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:clientId,client_secret:clientSecret,refresh_token:refreshToken,grant_type:'refresh_token'})});if(!res.ok)throw await stravaBuildHttpError(res,url);return await res.json();}
 async function stravaGetValidToken(){const td=await window._fb.getData('strava_token');if(!td?.access_token)return null;if((td.expires_at||0)-Math.floor(Date.now()/1000)>300)return td.access_token;if(!td.refresh_token){stravaTokenExpired();return null;}try{const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at});return r.access_token;}catch(e){showToast('⚠️ Refresh failed: '+e.message,'error');return null;}}
 
 function captureStravaRateLimit(response){
@@ -3666,8 +3667,34 @@ function captureStravaRateLimit(response){
 async function stravaFetchJson(url,token){
   const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
   captureStravaRateLimit(response);
-  if(!response.ok)throw new Error(`Strava HTTP ${response.status}`);
+  if(!response.ok)throw await stravaBuildHttpError(response,url);
   return response.json();
+}
+
+function stravaEndpointLabel(url=''){
+  if(url.includes('/oauth/token'))return 'token refresh';
+  if(url.includes('/athlete/activities'))return 'activities list';
+  if(/\/activities\/[^/]+\/streams/.test(url))return 'activity streams';
+  if(/\/activities\/[^/]+\/laps/.test(url))return 'activity laps';
+  if(/\/activities\/[^/?]+/.test(url))return 'activity detail';
+  if(url.endsWith('/athlete'))return 'athlete profile';
+  return 'request';
+}
+
+async function stravaBuildHttpError(response,url=''){
+  const label=stravaEndpointLabel(url);
+  let apiMessage='';
+  try{
+    const body=await response.clone().json();
+    const details=Array.isArray(body?.errors)?body.errors.map(item=>[item.resource,item.field,item.code].filter(Boolean).join('.')).filter(Boolean).join(', '):'';
+    apiMessage=body?.message||details||'';
+  }catch(_){}
+  const hint=response.status===404
+    ? 'not found. Check Strava scope/activity privacy, or reconnect with activity:read_all'
+    : apiMessage;
+  const message=`Strava ${label} HTTP ${response.status}${hint?`: ${hint}`:''}`;
+  console.warn('Strava API failed',{status:response.status,label,url});
+  return new Error(message);
 }
 
 function normalizeStravaStreams(raw){
@@ -3798,7 +3825,17 @@ async function fetchStravaActivityDetail(activity,token,{force=false}={}){
   const detail=results[0].status==='fulfilled'?results[0].value:activity;
   const laps=results[1].status==='fulfilled'?results[1].value:[];
   const streamRaw=results[2].status==='fulfilled'?results[2].value:{};
-  if(results.every(result=>result.status==='rejected'))throw results[0].reason;
+  if(results.every(result=>result.status==='rejected')){
+    const payload={
+      activityId:id,analysisVersion:2,fetchedAt:Date.now(),
+      detail:activity,laps:[],streams:{},
+      analysis:analyzeStravaIntervals(activity,[],{},getAthleteProfile()),
+      fetchStatus:{detail:'rejected',laps:'rejected',streams:'rejected'},
+      fetchError:results[0].reason?.message||'Strava detail unavailable'
+    };
+    await window._fb.setData(path,payload);
+    return payload;
+  }
   const streams=normalizeStravaStreams(streamRaw);
   const analysis=analyzeStravaIntervals(detail,laps,streams,getAthleteProfile());
   const payload={
@@ -3832,10 +3869,11 @@ async function stravaSync(){
     let at=await stravaGetValidToken();if(!at)return;
     const previousRaw=await window._fb.getData('strava_activities');
     const previousActivities=previousRaw?(Array.isArray(previousRaw)?previousRaw:Object.values(previousRaw)):[];
-    let res=await fetch(`${STRAVA_API}/athlete/activities?per_page=100`,{headers:{'Authorization':`Bearer ${at}`}});
+    const activitiesUrl=`${STRAVA_API}/athlete/activities?per_page=100`;
+    let res=await fetch(activitiesUrl,{headers:{'Authorization':`Bearer ${at}`}});
     captureStravaRateLimit(res);
-    if(res.status===401){const td=await window._fb.getData('strava_token');const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at});at=r.access_token;res=await fetch(`${STRAVA_API}/athlete/activities?per_page=100`,{headers:{'Authorization':`Bearer ${at}`}});}
-    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    if(res.status===401){const td=await window._fb.getData('strava_token');const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at});at=r.access_token;res=await fetch(activitiesUrl,{headers:{'Authorization':`Bearer ${at}`}});}
+    if(!res.ok)throw await stravaBuildHttpError(res,activitiesUrl);
     const acts=await res.json();
     await window._fb.setData('strava_activities',acts);
     const detailResult=await enrichNewStravaActivities(acts,previousActivities,at);
