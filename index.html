@@ -3669,7 +3669,7 @@ function stravaExtractCode(value=''){
 async function stravaExchangeCodeCall(code,clientId,clientSecret,redirectUri){
   const url='https://www.strava.com/oauth/token';
   const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:clientId,client_secret:clientSecret,code,grant_type:'authorization_code',redirect_uri:redirectUri})});
-  if(!res.ok)throw await stravaBuildHttpError(res,url);
+  if(!res.ok)throw await stravaBuildHttpError(res,url+'?grant_type=authorization_code');
   return await res.json();
 }
 async function stravaConnectCode(){
@@ -3766,6 +3766,7 @@ async function stravaFetchJson(url,token){
 }
 
 function stravaEndpointLabel(url=''){
+  if(url.includes('grant_type=authorization_code'))return 'authorization code exchange';
   if(url.includes('/oauth/token'))return 'token refresh';
   if(url.includes('/athlete/activities'))return 'activities list';
   if(/\/activities\/[^/]+\/streams/.test(url))return 'activity streams';
@@ -3787,6 +3788,8 @@ async function stravaBuildHttpError(response,url=''){
     ? `not found. Check Strava scope/activity privacy, or reconnect with activity:read_all${apiMessage?`. Strava says: ${apiMessage}`:''}`
     : response.status===403
       ? `forbidden. Reconnect Strava and accept activity:read_all, then sync again${apiMessage?`. Strava says: ${apiMessage}`:''}`
+      : response.status===400&&label==='authorization code exchange'
+        ? `bad request. The Strava code is one-time use or expired; press Open Strava auth again and paste the fresh code${apiMessage?`. Strava says: ${apiMessage}`:''}`
       : response.status===400&&label==='token refresh'
         ? `bad request. Saved refresh token or Client ID/Secret is no longer valid; disconnect and connect Strava again${apiMessage?`. Strava says: ${apiMessage}`:''}`
         : apiMessage;
