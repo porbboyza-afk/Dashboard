@@ -3784,10 +3784,13 @@ async function stravaBuildHttpError(response,url=''){
     const details=Array.isArray(body?.errors)?body.errors.map(item=>[item.resource,item.field,item.code].filter(Boolean).join('.')).filter(Boolean).join(', '):'';
     apiMessage=[body?.message,details].filter(Boolean).join(' / ');
   }catch(_){}
+  const isInactiveApp = /Application\.Status\.Inactive/i.test(apiMessage);
   const hint=response.status===404
     ? `not found. Check Strava scope/activity privacy, or reconnect with activity:read_all${apiMessage?`. Strava says: ${apiMessage}`:''}`
     : response.status===403
-      ? `forbidden. Reconnect Strava and accept activity:read_all, then sync again${apiMessage?`. Strava says: ${apiMessage}`:''}`
+      ? isInactiveApp
+        ? `forbidden. Your Strava API application is inactive; activate it in Strava Developer settings or use an active app before syncing${apiMessage?`. Strava says: ${apiMessage}`:''}`
+        : `forbidden. Reconnect Strava and accept activity:read_all, then sync again${apiMessage?`. Strava says: ${apiMessage}`:''}`
       : response.status===400&&label==='authorization code exchange'
         ? `bad request. The Strava code is one-time use or expired; press Open Strava auth again and paste the fresh code${apiMessage?`. Strava says: ${apiMessage}`:''}`
       : response.status===400&&label==='token refresh'
