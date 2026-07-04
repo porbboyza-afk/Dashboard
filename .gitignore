@@ -1,2 +1,7 @@
 _ui_review/
 _ui_review_local/
+android-sync-companion/local.properties
+android-sync-companion/app/google-services.json
+android-sync-companion/.gradle/
+android-sync-companion/build/
+android-sync-companion/app/build/

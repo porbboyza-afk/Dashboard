@@ -210,6 +210,325 @@ Verification run:
 - `python C:\Users\pucca\Dashboard-GitHub\smoke_test_dashboard.py`
 - Both passed with no page errors, console errors, or request failures.
 
+## 2026-07-04 Garmin / Health Connect Sync Companion Plan
+
+User context:
+
+- Strava sync stopped working because Strava returned `Application.Status.Inactive`.
+- User found Strava now requires paid/subscription/dev access for the app path they used.
+- User wants a phone-friendly sync path; exporting Garmin files from Garmin Connect Web is not acceptable because it is too manual.
+- User asked for a plan first, and wants this logged so another AI can continue safely.
+
+Project scope checked:
+
+- Repo checked: `C:\Users\pucca\Dashboard-GitHub`
+- Existing project is a static web dashboard, not an Android project.
+- Current files are web/PWA, Apps Script backup, and Cloudflare AI proxy only:
+  - `index.html`
+  - `js/ui-core.js`
+  - `js/date-utils.js`
+  - `apps-script/Code.gs`
+  - `workers/ai-proxy/src/index.js`
+- No Gradle/Kotlin/Android app scaffold exists in this repo yet.
+- Git worktree was clean before writing this log section.
+
+Relevant current MyDash data model:
+
+- Firebase app config is embedded in `index.html`.
+- User-scoped Realtime Database paths use:
+  - `users/{uid}/settings`
+  - `users/{uid}/workouts`
+  - `users/{uid}/wellness`
+  - `users/{uid}/strava_token`
+  - `users/{uid}/strava_activities`
+  - `users/{uid}/strava_activity_details`
+  - `users/{uid}/strava_last_sync`
+- Manual workouts are stored under `users/{uid}/workouts`.
+- Workout object shape used by `saveWorkout()`:
+  - `date`
+  - `dist`
+  - `time`
+  - `hr`
+  - `cad`
+  - `stride`
+  - `purpose`
+  - `rpe`
+  - `shoe`
+  - `surface`
+  - `temperature`
+  - `weather`
+  - `pain`
+  - `painLocation`
+  - `feeling`
+  - `note`
+  - `type`
+  - `avgPace`
+  - `splits`
+  - `interval`
+  - `createdAt`
+  - `updatedAt`
+- `getAllActivities()` merges manual workouts and Strava-derived workouts using `workoutFingerprint()`.
+- Existing dedupe fingerprint is:
+  - `date|type|rounded dist*20|rounded time`
+- If duplicate activity exists, Strava currently wins over manual data.
+
+Official docs checked:
+
+- Garmin Connect Developer Program:
+  - `https://developer.garmin.com/gc-developer-program/`
+  - Garmin says the API program is for enterprise/business use and requires request/review.
+- Android Health Connect:
+  - `https://developer.android.com/health-and-fitness/health-connect`
+  - Health Connect stores health/fitness records and supports app-to-app data sharing with user permission.
+  - Google Fit APIs are supported until the end of 2026, so new work should target Health Connect instead of Google Fit.
+- Health Connect raw reads:
+  - `https://developer.android.com/health-and-fitness/health-connect/read-data`
+  - Apps read records with `ReadRecordsRequest`.
+  - Default third-party historical read limit is 30 days unless requesting extra history permission.
+  - Background read requires `android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND` and should be implemented defensively.
+- Health Connect exercise session record:
+  - `https://developer.android.com/reference/kotlin/androidx/health/connect/client/records/ExerciseSessionRecord`
+  - Key fields include start/end time, `exerciseType`, title, notes, laps, route result, and optional RPE.
+- Firebase Android setup:
+  - `https://firebase.google.com/docs/android/setup`
+  - Existing Firebase project can add/register an Android app and download `google-services.json`.
+- Firebase Realtime Database Android:
+  - `https://firebase.google.com/docs/database/android/start`
+- Firebase Google Sign-In Android:
+  - `https://firebase.google.com/docs/auth/android/google-signin`
+
+Decision:
+
+- Do not rebuild MyDash as a full mobile app now.
+- Build a small Android-only sync companion first.
+- The companion app's job is only to move activity data from Health Connect into the same Firebase paths the web app already reads.
+- The web dashboard remains the source of UI/analytics truth.
+
+Target architecture:
+
+```text
+Garmin watch
+-> Garmin Connect Android app
+-> Health Connect
+-> MyDash Sync Companion Android app
+-> Firebase Realtime Database
+-> MyDash Web Dashboard
+```
+
+Why Android companion first:
+
+- It avoids Strava API restrictions.
+- It avoids manual Garmin Connect Web export.
+- It does not require Garmin Developer Program approval.
+- It reuses the existing Firebase user data and MyDash web dashboard.
+- It is smaller and safer than rewriting the web app as a full native app.
+
+Planned repo layout:
+
+```text
+C:\Users\pucca\Dashboard-GitHub
+  android-sync-companion\
+    settings.gradle.kts
+    build.gradle.kts
+    app\
+      build.gradle.kts
+      google-services.json       # local only; do not commit if it contains project config not intended for repo
+      src\main\AndroidManifest.xml
+      src\main\java\...\MainActivity.kt
+      src\main\java\...\HealthConnectSync.kt
+      src\main\java\...\FirebaseSyncRepository.kt
+```
+
+Implementation plan:
+
+1. Create Android project scaffold under `android-sync-companion`.
+2. Register Android app in existing Firebase project `dash-ca315`.
+3. Add Firebase Auth and Realtime Database Android SDK.
+4. Add Health Connect client dependency.
+5. Implement Google login so the Android app writes to the same `users/{uid}` as the web app.
+6. Request Health Connect permissions for:
+   - exercise sessions
+   - distance
+   - heart rate
+   - calories if available
+   - speed/pace if available
+   - cadence if available
+   - route only if needed and permission allows
+7. First sync should read last 30 days because Health Connect default historical access is limited.
+8. Later sync should read from `users/{uid}/sync_sources/health_connect/last_sync`.
+9. Map records into MyDash workout schema and write to `users/{uid}/workouts/{deterministicId}`.
+10. Add `source: "health_connect"` and source metadata to imported workouts.
+11. Add duplicate protection compatible with `workoutFingerprint()`.
+12. Add a minimal app UI:
+    - Sign in / signed-in user
+    - Health Connect permission status
+    - Last sync time
+    - Sync now button
+    - Last result count/errors
+13. Add optional background sync later using WorkManager after manual sync works.
+
+Proposed Health Connect to MyDash mapping:
+
+```text
+ExerciseSessionRecord.startTime -> date
+ExerciseSessionRecord.exerciseType -> type
+duration between start/end -> time
+DistanceRecord total -> dist
+HeartRateRecord average samples in session -> hr
+cadence records if available -> cad
+computed time / dist -> avgPace
+ExerciseSessionRecord.title -> name
+ExerciseSessionRecord.notes -> note
+ExerciseSessionRecord.laps -> splits when available
+source app/package -> sourceApp or dataOrigin
+```
+
+Proposed imported workout object:
+
+```js
+{
+  date: "YYYY-MM-DD",
+  type: "run" | "bike" | "swim" | "walk",
+  dist: 0,
+  time: 0,
+  hr: 0,
+  cad: 0,
+  avgPace: 0,
+  name: "...",
+  note: "...",
+  source: "health_connect",
+  sourceApp: "...",
+  healthConnectId: "...",
+  syncSource: "garmin_via_health_connect",
+  importedAt: 0,
+  createdAt: 0,
+  updatedAt: 0
+}
+```
+
+Important risks / unknowns:
+
+- Need the user's phone to confirm Garmin Connect actually writes Garmin workouts into Health Connect on that device/account.
+- Health Connect may not expose every Garmin field. FIT/Garmin API may contain more detail than Health Connect.
+- Default Health Connect read history is 30 days for third-party data. Older history needs special permission/request path.
+- Route, cadence, laps, and detailed samples may be incomplete depending on Garmin's Health Connect export.
+- Firebase Realtime Database rules must allow authenticated users to write only their own `users/{uid}` path. If current rules are weaker, fix rules before distributing the companion app.
+- Android app requires registering package name and SHA fingerprints in Firebase.
+- Do not commit secrets. Treat `google-services.json` carefully.
+
+What not to do yet:
+
+- Do not replace the web dashboard.
+- Do not deploy Cloudflare Worker for this.
+- Do not modify Lita Worker.
+- Do not rely on Google Fit REST for new work because it is being phased out by Google.
+- Do not build iOS unless the user confirms iPhone is the primary Garmin sync phone.
+
+Next action if user approves:
+
+1. Check local Android/Gradle tooling.
+2. Create `android-sync-companion` scaffold.
+3. Register or verify Firebase Android app config.
+4. Build a minimal Health Connect permission + manual sync prototype.
+5. Test on the user's Android phone with Health Connect and Garmin Connect installed.
+6. Verify new workouts appear in MyDash Web without changing the main dashboard schema.
+
+## 2026-07-04 MyDash Skill + Android Sync Prototype
+
+User approved creating a Codex skill and proceeding with the Android sync companion plan.
+
+Skill created:
+
+- Path: `C:\Users\pucca\.codex\skills\mydash-project`
+- Type: router/master project skill with references:
+  - `references/safety.md`
+  - `references/web-dashboard.md`
+  - `references/firebase-schema.md`
+  - `references/health-connect-companion.md`
+  - `references/strava-legacy.md`
+  - `references/ai-proxy.md`
+  - `references/apps-script-backup.md`
+  - `references/agent-roles.md`
+- Validation:
+  - Installed `PyYAML` because `quick_validate.py` required it.
+  - `python C:\Users\pucca\.codex\skills\.system\skill-creator\scripts\quick_validate.py C:\Users\pucca\.codex\skills\mydash-project`
+  - Result: `Skill is valid!`
+
+Android/Firebase tooling findings:
+
+- Java is installed: OpenJDK 21.
+- Global `gradle` command is not in PATH.
+- Android SDK exists at `C:\Users\pucca\AppData\Local\Android\Sdk`.
+- Installed SDK platforms include `android-34` and `android-36.1`.
+- Firebase project `dash-ca315` already has Android app:
+  - Display name: `MyDash Android`
+  - App ID: `1:431723990100:android:c507449727c9e4b58131c1`
+  - Package: `com.pucca.mydashsync`
+- Existing debug SHA was already registered in Firebase.
+
+Android prototype created:
+
+- Path: `C:\Users\pucca\Dashboard-GitHub\android-sync-companion`
+- Package: `com.pucca.mydashsync`
+- Main files:
+  - `settings.gradle.kts`
+  - `build.gradle.kts`
+  - `app/build.gradle.kts`
+  - `app/src/main/AndroidManifest.xml`
+  - `app/src/main/java/com/pucca/mydashsync/MainActivity.kt`
+  - `app/src/main/java/com/pucca/mydashsync/HealthConnectSync.kt`
+  - `README.md`
+- Local ignored files:
+  - `android-sync-companion/local.properties`
+  - `android-sync-companion/app/google-services.json`
+
+Prototype behavior:
+
+- Native Kotlin Android app, no Compose.
+- Uses Firebase Auth + Google Sign-In.
+- Uses Health Connect client.
+- Requests read permissions for:
+  - exercise sessions
+  - distance
+  - heart rate
+  - total calories burned
+- Reads Health Connect exercise sessions for the last 30 days.
+- Maps sessions to MyDash workout objects.
+- Writes imported activities to:
+  - `users/{uid}/workouts/{deterministicId}`
+- Writes sync status to:
+  - `users/{uid}/sync_sources/health_connect`
+
+Build notes:
+
+- Used cached Gradle 8.5 to create a project wrapper.
+- Gradle wrapper now exists in `android-sync-companion`.
+- Android Gradle Plugin pinned to `8.2.2` because it was already cached.
+- Health Connect pinned to `1.1.0-alpha06` to work with compile SDK 34 and available cached tooling.
+- `gradle.properties` forces `-Duser.language=en -Duser.country=US` because AGP zip packaging failed on Thai locale with a DOS-date `VerifyException`.
+- Verified command:
+  - `cd C:\Users\pucca\Dashboard-GitHub\android-sync-companion`
+  - `.\gradlew.bat assembleDebug`
+  - Result: `BUILD SUCCESSFUL`
+
+Current blocker:
+
+- No Android device was attached over ADB during this session.
+- `C:\Users\pucca\AppData\Local\Android\Sdk\platform-tools\adb.exe devices` returned no devices.
+
+Next action:
+
+1. Connect Android phone with USB debugging enabled.
+2. Run:
+   - `C:\Users\pucca\AppData\Local\Android\Sdk\platform-tools\adb.exe devices`
+3. Install:
+   - `C:\Users\pucca\AppData\Local\Android\Sdk\platform-tools\adb.exe install -r C:\Users\pucca\Dashboard-GitHub\android-sync-companion\app\build\outputs\apk\debug\app-debug.apk`
+4. On phone:
+   - Sign in with the same Google account used by MyDash Web.
+   - Grant Health Connect permissions.
+   - Run `Sync last 30 days`.
+5. Refresh MyDash Web and verify imported workouts.
+
 User action needed after GitHub Pages updates:
 
 - Hard refresh MyDash.
