@@ -216,3 +216,43 @@ User action needed after GitHub Pages updates:
 - Go to Settings and confirm Strava Client ID, Client Secret, and Redirect URI are saved.
 - On Strava page, Disconnect old token.
 - Connect again via `Open Strava auth`, accept all requested scopes, paste the returned `code`, then sync.
+
+## 2026-07-04 Strava 403 After Accepted Scope
+
+User provided a Strava redirect URL containing:
+
+- `scope=read,activity:read,activity:read_all`
+
+But MyDash still showed:
+
+- `Error: Strava activities list HTTP 403: forbidden. Reconnect Strava and accept activity:read_all, then sync again`
+
+Interpretation:
+
+- The authorization URL did include the correct scope, but the app still needs to verify the token response and activities-list access after exchanging the code.
+- The previous error builder hid the real Strava response body for 403, making the next step unclear.
+
+Code changes made:
+
+- Added `stravaNormalizeScope(scope)` to normalize comma/space-separated scopes.
+- Added `stravaHasActivityScope(scope)` to verify the exchanged token includes `activity:read` or `activity:read_all`.
+- Added `stravaValidateActivityListAccess(token)` to call `GET /api/v3/athlete/activities?per_page=1` immediately after Connect code.
+- `stravaConnectCode()` now:
+  - checks accepted token scope,
+  - validates activities-list access before saving,
+  - removes old `strava_token` before saving the new one,
+  - saves normalized scope.
+- Refresh-token flow also saves normalized scope.
+- 403 errors now include Strava's actual API message when available:
+  - `Strava says: ...`
+
+Why this matters:
+
+- If Connect code succeeds now, the token is proven to read `/athlete/activities`.
+- If it fails during Connect code, the user will see Strava's real 403 message instead of only the generic reconnect hint.
+
+Verification run:
+
+- `node C:\Users\pucca\Dashboard-GitHub\verify_dashboard.js`
+- `python C:\Users\pucca\Dashboard-GitHub\smoke_test_dashboard.py`
+- Both passed with no page errors, console errors, or request failures.

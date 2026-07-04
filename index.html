@@ -3679,8 +3679,12 @@ async function stravaConnectCode(){
   try{
     const {clientId,clientSecret,redirectUri}=await stravaGetAuthSettings();
     const exchanged=await stravaExchangeCodeCall(code,clientId,clientSecret,redirectUri);
+    const scope=stravaNormalizeScope(exchanged.scope||'');
+    if(!stravaHasActivityScope(scope))throw new Error(`Strava token missing activity scope. Accepted scope: ${scope||'none'}`);
+    await stravaValidateActivityListAccess(exchanged.access_token);
     const athlete=exchanged.athlete||await stravaFetchJson(`${STRAVA_API}/athlete`,exchanged.access_token);
-    await window._fb.setData('strava_token',{access_token:exchanged.access_token,refresh_token:exchanged.refresh_token,expires_at:exchanged.expires_at,scope:exchanged.scope||'activity:read activity:read_all',athlete});
+    await window._fb.removeData('strava_token').catch(()=>{});
+    await window._fb.setData('strava_token',{access_token:exchanged.access_token,refresh_token:exchanged.refresh_token,expires_at:exchanged.expires_at,scope,athlete});
     showToast(`✅ Welcome ${athlete.firstname||'Strava'}!`);renderStravaPage();
   }catch(e){showToast('Error: '+e.message,'error');}
   finally{hideLoading();}
@@ -3696,13 +3700,30 @@ async function stravaConnectDirect(){
     const res=await fetch(athleteUrl,{headers:{'Authorization':`Bearer ${exchanged.access_token}`}});
     if(!res.ok)throw await stravaBuildHttpError(res,athleteUrl);
     const athlete=await res.json();
-    await window._fb.setData('strava_token',{access_token:exchanged.access_token,refresh_token:exchanged.refresh_token||refreshToken,expires_at:exchanged.expires_at,scope:exchanged.scope||'',athlete});
+    await window._fb.setData('strava_token',{access_token:exchanged.access_token,refresh_token:exchanged.refresh_token||refreshToken,expires_at:exchanged.expires_at,scope:stravaNormalizeScope(exchanged.scope||''),athlete});
     showToast(`✅ Welcome ${athlete.firstname}!`);renderStravaPage();
   }catch(e){showToast('Error: '+e.message,'error');}
   finally{hideLoading();}
 }
 async function stravaRefreshTokenCall(refreshToken,clientId,clientSecret){const url='https://www.strava.com/oauth/token';const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:clientId,client_secret:clientSecret,refresh_token:refreshToken,grant_type:'refresh_token'})});if(!res.ok)throw await stravaBuildHttpError(res,url);return await res.json();}
-async function stravaGetValidToken(){const td=await window._fb.getData('strava_token');if(!td?.access_token)return null;if((td.expires_at||0)-Math.floor(Date.now()/1000)>300)return td.access_token;if(!td.refresh_token){stravaTokenExpired();return null;}try{const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at,scope:r.scope||td.scope||''});return r.access_token;}catch(e){showToast('⚠️ Refresh failed: '+e.message,'error');return null;}}
+async function stravaGetValidToken(){const td=await window._fb.getData('strava_token');if(!td?.access_token)return null;if((td.expires_at||0)-Math.floor(Date.now()/1000)>300)return td.access_token;if(!td.refresh_token){stravaTokenExpired();return null;}try{const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at,scope:stravaNormalizeScope(r.scope||td.scope||'')});return r.access_token;}catch(e){showToast('⚠️ Refresh failed: '+e.message,'error');return null;}}
+
+function stravaNormalizeScope(scope=''){
+  return String(scope).split(/[,\s]+/).map(item=>item.trim()).filter(Boolean).join(',');
+}
+
+function stravaHasActivityScope(scope=''){
+  const parts=new Set(stravaNormalizeScope(scope).split(',').filter(Boolean));
+  return parts.has('activity:read')||parts.has('activity:read_all');
+}
+
+async function stravaValidateActivityListAccess(token){
+  const url=`${STRAVA_API}/athlete/activities?per_page=1`;
+  const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
+  captureStravaRateLimit(response);
+  if(!response.ok)throw await stravaBuildHttpError(response,url);
+  return response.json();
+}
 
 function captureStravaRateLimit(response){
   const limit=response.headers.get('X-ReadRateLimit-Limit')||response.headers.get('X-RateLimit-Limit');
@@ -3738,7 +3759,7 @@ async function stravaBuildHttpError(response,url=''){
   const hint=response.status===404
     ? 'not found. Check Strava scope/activity privacy, or reconnect with activity:read_all'
     : response.status===403
-      ? 'forbidden. Reconnect Strava and accept activity:read_all, then sync again'
+      ? `forbidden. Reconnect Strava and accept activity:read_all, then sync again${apiMessage?`. Strava says: ${apiMessage}`:''}`
       : apiMessage;
   const message=`Strava ${label} HTTP ${response.status}${hint?`: ${hint}`:''}`;
   console.warn('Strava API failed',{status:response.status,label,url});
