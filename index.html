@@ -3705,8 +3705,35 @@ async function stravaConnectDirect(){
   }catch(e){showToast('Error: '+e.message,'error');}
   finally{hideLoading();}
 }
-async function stravaRefreshTokenCall(refreshToken,clientId,clientSecret){const url='https://www.strava.com/oauth/token';const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:clientId,client_secret:clientSecret,refresh_token:refreshToken,grant_type:'refresh_token'})});if(!res.ok)throw await stravaBuildHttpError(res,url);return await res.json();}
-async function stravaGetValidToken(){const td=await window._fb.getData('strava_token');if(!td?.access_token)return null;if((td.expires_at||0)-Math.floor(Date.now()/1000)>300)return td.access_token;if(!td.refresh_token){stravaTokenExpired();return null;}try{const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at,scope:stravaNormalizeScope(r.scope||td.scope||'')});return r.access_token;}catch(e){showToast('⚠️ Refresh failed: '+e.message,'error');return null;}}
+async function stravaRefreshTokenCall(refreshToken,clientId,clientSecret){
+  const url='https://www.strava.com/oauth/token';
+  if(!refreshToken)throw new Error('Missing Strava refresh token. Disconnect and connect Strava again.');
+  if(!clientId||!clientSecret)throw new Error('Missing Strava Client ID/Secret in Settings.');
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:String(clientId).trim(),client_secret:String(clientSecret).trim(),refresh_token:String(refreshToken).trim(),grant_type:'refresh_token'})});
+  if(!res.ok)throw await stravaBuildHttpError(res,url);
+  return await res.json();
+}
+async function stravaGetValidToken(){
+  const td=await window._fb.getData('strava_token');
+  if(!td?.access_token)return null;
+  if((td.expires_at||0)-Math.floor(Date.now()/1000)>300)return td.access_token;
+  if(!td.refresh_token){stravaTokenExpired();return null;}
+  try{
+    const {clientId,clientSecret}=await stravaGetAuthSettings();
+    const r=await stravaRefreshTokenCall(td.refresh_token,clientId,clientSecret);
+    await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at,scope:stravaNormalizeScope(r.scope||td.scope||'')});
+    return r.access_token;
+  }catch(e){
+    if(e.status===400||e.status===401){
+      await window._fb.removeData('strava_token').catch(()=>{});
+      renderStravaPage();
+      showToast('Strava token ใช้ไม่ได้แล้ว กรุณา Connect ใหม่ด้วย Open Strava auth','error');
+    }else{
+      showToast('Refresh failed: '+e.message,'error');
+    }
+    return null;
+  }
+}
 
 function stravaNormalizeScope(scope=''){
   return String(scope).split(/[,\s]+/).map(item=>item.trim()).filter(Boolean).join(',');
@@ -3754,16 +3781,22 @@ async function stravaBuildHttpError(response,url=''){
   try{
     const body=await response.clone().json();
     const details=Array.isArray(body?.errors)?body.errors.map(item=>[item.resource,item.field,item.code].filter(Boolean).join('.')).filter(Boolean).join(', '):'';
-    apiMessage=body?.message||details||'';
+    apiMessage=[body?.message,details].filter(Boolean).join(' / ');
   }catch(_){}
   const hint=response.status===404
-    ? 'not found. Check Strava scope/activity privacy, or reconnect with activity:read_all'
+    ? `not found. Check Strava scope/activity privacy, or reconnect with activity:read_all${apiMessage?`. Strava says: ${apiMessage}`:''}`
     : response.status===403
       ? `forbidden. Reconnect Strava and accept activity:read_all, then sync again${apiMessage?`. Strava says: ${apiMessage}`:''}`
-      : apiMessage;
+      : response.status===400&&label==='token refresh'
+        ? `bad request. Saved refresh token or Client ID/Secret is no longer valid; disconnect and connect Strava again${apiMessage?`. Strava says: ${apiMessage}`:''}`
+        : apiMessage;
   const message=`Strava ${label} HTTP ${response.status}${hint?`: ${hint}`:''}`;
   console.warn('Strava API failed',{status:response.status,label,url});
-  return new Error(message);
+  const error=new Error(message);
+  error.status=response.status;
+  error.label=label;
+  error.apiMessage=apiMessage;
+  return error;
 }
 
 function normalizeStravaStreams(raw){
@@ -3941,7 +3974,7 @@ async function stravaSync(){
     const activitiesUrl=`${STRAVA_API}/athlete/activities?per_page=100`;
     let res=await fetch(activitiesUrl,{headers:{'Authorization':`Bearer ${at}`}});
     captureStravaRateLimit(res);
-    if(res.status===401){const td=await window._fb.getData('strava_token');const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at});at=r.access_token;res=await fetch(activitiesUrl,{headers:{'Authorization':`Bearer ${at}`}});}
+    if(res.status===401){const td=await window._fb.getData('strava_token');const {clientId,clientSecret}=await stravaGetAuthSettings();const r=await stravaRefreshTokenCall(td.refresh_token,clientId,clientSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at,scope:stravaNormalizeScope(r.scope||td.scope||'')});at=r.access_token;res=await fetch(activitiesUrl,{headers:{'Authorization':`Bearer ${at}`}});}
     if(!res.ok)throw await stravaBuildHttpError(res,activitiesUrl);
     const acts=await res.json();
     await window._fb.setData('strava_activities',acts);
