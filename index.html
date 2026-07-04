@@ -2127,13 +2127,13 @@ img, video, iframe, canvas { max-width: 100%; }
       </div>
 
       <div id="strava-guide-box" class="card mt-16" style="display:none">
-        <div class="card-label">How to get Refresh Token</div>
+        <div class="card-label">How to connect Strava</div>
         <ol style="padding-left:16px;font-size:12px;color:var(--text2);line-height:2.4">
           <li>ไปที่ <a href="https://www.strava.com/settings/api" target="_blank" style="color:var(--accent)">strava.com/settings/api</a> — ดู Client ID และ Client Secret แล้วบันทึกในหน้า Settings ก่อน</li>
-          <li>เปิด URL (แทน CLIENT_ID):<br><code style="font-size:10px;color:var(--green);word-break:break-all">https://www.strava.com/oauth/authorize?client_id=CLIENT_ID&redirect_uri=http://localhost&response_type=code&scope=activity:read_all</code></li>
-          <li>กด Authorize → คัดลอก <strong style="color:var(--orange)">code=xxxx</strong> จาก URL</li>
-          <li>แลก code:<br><code style="font-size:10px;color:var(--green);word-break:break-all">curl -X POST https://www.strava.com/oauth/token -d "client_id=ID&client_secret=SECRET&code=CODE&grant_type=authorization_code"</code></li>
-          <li>คัดลอก <strong style="color:var(--green)">refresh_token</strong> → กด Connect ✅</li>
+          <li>ตั้ง Redirect URI ให้ตรงกับ Callback Domain ใน Strava app. ใช้ <code style="font-size:10px;color:var(--green)">http://localhost</code> ได้ถ้าตั้งไว้แบบเดิม</li>
+          <li>กด Connect แล้วเลือก <strong style="color:var(--green)">Open Strava auth</strong>. MyDash จะขอ scope <code style="font-size:10px;color:var(--green)">activity:read,activity:read_all</code></li>
+          <li>กด Authorize แล้วคัดลอก <strong style="color:var(--orange)">code=xxxx</strong> จาก URL กลับมาใส่ช่อง Connect code</li>
+          <li>ถ้าเจอ 403 ตอน sync ให้ Disconnect แล้วเชื่อมใหม่ด้วยวิธีนี้ เพื่อให้ token มี scope อ่านกิจกรรมครบ</li>
         </ol>
       </div>
     </div><!-- ════════════ AI Q&A ════════════ -->
@@ -3637,26 +3637,72 @@ window._athleteProfile={...DEFAULT_ATHLETE_PROFILE};
 
 function getAthleteProfile(){return {...DEFAULT_ATHLETE_PROFILE,...(window._athleteProfile||{})};}
 
-function stravaConnect(){const sb=document.getElementById('strava-status-box');sb.innerHTML=`<div style="width:100%;display:flex;flex-direction:column;gap:8px"><p style="font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px">Paste Refresh Token</p><div style="display:flex;gap:8px"><input type="text" id="strava-token-input" placeholder="Paste refresh_token..." style="flex:1;font-size:11px"><button class="btn btn-strava btn-sm" onclick="stravaConnectDirect()">✅ Connect</button></div></div>`;}
+function stravaConnect(){const sb=document.getElementById('strava-status-box');sb.innerHTML=`<div style="width:100%;display:flex;flex-direction:column;gap:8px"><p style="font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px">Connect Strava with activity:read_all</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-strava btn-sm" onclick="stravaOpenAuthorize()">Open Strava auth</button><input type="text" id="strava-code-input" placeholder="Paste code=... here" style="flex:1;min-width:180px;font-size:11px"><button class="btn btn-strava btn-sm" onclick="stravaConnectCode()">Connect code</button></div><details><summary style="cursor:pointer;font-size:11px;color:var(--text2)">Advanced: paste refresh_token</summary><div style="display:flex;gap:8px;margin-top:8px"><input type="text" id="strava-token-input" placeholder="Paste refresh_token..." style="flex:1;font-size:11px"><button class="btn btn-ghost btn-sm" onclick="stravaConnectDirect()">Connect token</button></div></details></div>`;}
+async function stravaGetAuthSettings(){
+  const cfg=await window._fb.getData('settings')||{};
+  const clientId=(cfg.stravaId||'').trim();
+  const clientSecret=(cfg.stravaSecret||'').trim();
+  const redirectUri=(cfg.stravaRedirect||'http://localhost').trim();
+  if(!clientId||!clientSecret)throw new Error('Please save Client ID/Secret in Settings first');
+  return {clientId,clientSecret,redirectUri};
+}
+async function stravaOpenAuthorize(){
+  const popup=window.open('about:blank','_blank','noopener');
+  try{
+    const {clientId,redirectUri}=await stravaGetAuthSettings();
+    const url=new URL('https://www.strava.com/oauth/authorize');
+    url.searchParams.set('client_id',clientId);
+    url.searchParams.set('redirect_uri',redirectUri);
+    url.searchParams.set('response_type','code');
+    url.searchParams.set('approval_prompt','force');
+    url.searchParams.set('scope','activity:read,activity:read_all');
+    if(popup)popup.location.href=url.toString();
+    else window.location.href=url.toString();
+    showToast('Authorize แล้วคัดลอก code=... กลับมาใส่ในช่อง Connect code');
+  }catch(e){if(popup)popup.close();showToast('Error: '+e.message,'error');}
+}
+function stravaExtractCode(value=''){
+  const text=String(value).trim();
+  if(!text)return '';
+  try{return new URL(text).searchParams.get('code')||text;}catch(_){return text.replace(/^code=/,'').trim();}
+}
+async function stravaExchangeCodeCall(code,clientId,clientSecret,redirectUri){
+  const url='https://www.strava.com/oauth/token';
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:clientId,client_secret:clientSecret,code,grant_type:'authorization_code',redirect_uri:redirectUri})});
+  if(!res.ok)throw await stravaBuildHttpError(res,url);
+  return await res.json();
+}
+async function stravaConnectCode(){
+  const code=stravaExtractCode(document.getElementById('strava-code-input')?.value||'');
+  if(!code){showToast('Paste authorization code first','error');return;}
+  showLoading('Connecting Strava...');
+  try{
+    const {clientId,clientSecret,redirectUri}=await stravaGetAuthSettings();
+    const exchanged=await stravaExchangeCodeCall(code,clientId,clientSecret,redirectUri);
+    const athlete=exchanged.athlete||await stravaFetchJson(`${STRAVA_API}/athlete`,exchanged.access_token);
+    await window._fb.setData('strava_token',{access_token:exchanged.access_token,refresh_token:exchanged.refresh_token,expires_at:exchanged.expires_at,scope:exchanged.scope||'activity:read activity:read_all',athlete});
+    showToast(`✅ Welcome ${athlete.firstname||'Strava'}!`);renderStravaPage();
+  }catch(e){showToast('Error: '+e.message,'error');}
+  finally{hideLoading();}
+}
 async function stravaConnectDirect(){
   const refreshToken=(document.getElementById('strava-token-input')?.value||'').trim();
   if(!refreshToken){showToast('Please paste Refresh Token','error');return;}
   showLoading('Verifying...');
   try{
-    const cfg=await window._fb.getData('settings')||{};
-    if(!cfg.stravaId||!cfg.stravaSecret)throw new Error('Please save Client ID/Secret in Settings first');
-    const exchanged=await stravaRefreshTokenCall(refreshToken,cfg.stravaId,cfg.stravaSecret);
+    const {clientId,clientSecret}=await stravaGetAuthSettings();
+    const exchanged=await stravaRefreshTokenCall(refreshToken,clientId,clientSecret);
     const athleteUrl=`${STRAVA_API}/athlete`;
     const res=await fetch(athleteUrl,{headers:{'Authorization':`Bearer ${exchanged.access_token}`}});
     if(!res.ok)throw await stravaBuildHttpError(res,athleteUrl);
     const athlete=await res.json();
-    await window._fb.setData('strava_token',{access_token:exchanged.access_token,refresh_token:refreshToken,expires_at:exchanged.expires_at,athlete});
+    await window._fb.setData('strava_token',{access_token:exchanged.access_token,refresh_token:exchanged.refresh_token||refreshToken,expires_at:exchanged.expires_at,scope:exchanged.scope||'',athlete});
     showToast(`✅ Welcome ${athlete.firstname}!`);renderStravaPage();
   }catch(e){showToast('Error: '+e.message,'error');}
   finally{hideLoading();}
 }
 async function stravaRefreshTokenCall(refreshToken,clientId,clientSecret){const url='https://www.strava.com/oauth/token';const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:clientId,client_secret:clientSecret,refresh_token:refreshToken,grant_type:'refresh_token'})});if(!res.ok)throw await stravaBuildHttpError(res,url);return await res.json();}
-async function stravaGetValidToken(){const td=await window._fb.getData('strava_token');if(!td?.access_token)return null;if((td.expires_at||0)-Math.floor(Date.now()/1000)>300)return td.access_token;if(!td.refresh_token){stravaTokenExpired();return null;}try{const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at});return r.access_token;}catch(e){showToast('⚠️ Refresh failed: '+e.message,'error');return null;}}
+async function stravaGetValidToken(){const td=await window._fb.getData('strava_token');if(!td?.access_token)return null;if((td.expires_at||0)-Math.floor(Date.now()/1000)>300)return td.access_token;if(!td.refresh_token){stravaTokenExpired();return null;}try{const cfg=await window._fb.getData('settings')||{};const r=await stravaRefreshTokenCall(td.refresh_token,cfg.stravaId,cfg.stravaSecret);await window._fb.setData('strava_token',{...td,access_token:r.access_token,refresh_token:r.refresh_token||td.refresh_token,expires_at:r.expires_at,scope:r.scope||td.scope||''});return r.access_token;}catch(e){showToast('⚠️ Refresh failed: '+e.message,'error');return null;}}
 
 function captureStravaRateLimit(response){
   const limit=response.headers.get('X-ReadRateLimit-Limit')||response.headers.get('X-RateLimit-Limit');
@@ -3691,7 +3737,9 @@ async function stravaBuildHttpError(response,url=''){
   }catch(_){}
   const hint=response.status===404
     ? 'not found. Check Strava scope/activity privacy, or reconnect with activity:read_all'
-    : apiMessage;
+    : response.status===403
+      ? 'forbidden. Reconnect Strava and accept activity:read_all, then sync again'
+      : apiMessage;
   const message=`Strava ${label} HTTP ${response.status}${hint?`: ${hint}`:''}`;
   console.warn('Strava API failed',{status:response.status,label,url});
   return new Error(message);

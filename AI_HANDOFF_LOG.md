@@ -170,3 +170,49 @@ Recommended next debugging step if the user still sees 404:
 - Capture the exact failing URL and response body.
 - If it is `activities list HTTP 404`, check whether the saved Strava app credentials/token are for the expected Strava account.
 - If it is `activity detail/laps/streams HTTP 404`, reconnect Strava using `activity:read_all` and check whether the activity is private/deleted or not owned by the authenticated athlete.
+
+## 2026-07-04 Strava Sync 403 Follow-up
+
+User then reported: Strava sync now shows `403`.
+
+Official Strava docs checked:
+
+- Strava OAuth authorization response includes accepted scopes, and users can opt out of requested scopes.
+- `activity:read` reads activities visible to Everyone and Followers.
+- `activity:read_all` includes `activity:read` access plus privacy zone data and activities visible as Only You.
+- Activity streams require `activity:read`; Only Me activities require `activity:read_all`.
+
+Likely cause:
+
+- The saved Strava refresh token is valid enough to authenticate but does not have the needed activity scope, or the user did not accept `activity:read_all`.
+- This is more consistent with `403` than with a missing endpoint.
+
+Code changes made:
+
+- Reworked `stravaConnect()` UI to prefer OAuth authorization-code flow:
+  - `Open Strava auth`
+  - paste `code=...`
+  - `Connect code`
+- Added `stravaGetAuthSettings()` to read saved Strava Client ID, Client Secret, and Redirect URI.
+- Added `stravaOpenAuthorize()` to generate the Strava OAuth URL with:
+  - `approval_prompt=force`
+  - `scope=activity:read,activity:read_all`
+- Added `stravaExtractCode()`.
+- Added `stravaExchangeCodeCall()` for authorization-code token exchange.
+- Added `stravaConnectCode()` to save access token, refresh token, expiry, accepted scope, and athlete.
+- Kept the old refresh-token paste flow under an Advanced section.
+- Updated 403 error hint to tell the user to reconnect and accept `activity:read_all`.
+- Updated the Strava guide card to describe the new flow instead of manual curl token exchange.
+
+Verification run:
+
+- `node C:\Users\pucca\Dashboard-GitHub\verify_dashboard.js`
+- `python C:\Users\pucca\Dashboard-GitHub\smoke_test_dashboard.py`
+- Both passed with no page errors, console errors, or request failures.
+
+User action needed after GitHub Pages updates:
+
+- Hard refresh MyDash.
+- Go to Settings and confirm Strava Client ID, Client Secret, and Redirect URI are saved.
+- On Strava page, Disconnect old token.
+- Connect again via `Open Strava auth`, accept all requested scopes, paste the returned `code`, then sync.
