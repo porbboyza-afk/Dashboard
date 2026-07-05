@@ -596,6 +596,25 @@ Firebase data check after successful Health Connect sync:
   - That would recover 7 older Strava runs without duplicating the Health Connect import.
   - If richer Strava detail is preferred for overlapping dates, build a separate review/merge path instead of blindly overwriting Health Connect workouts.
 
+Recovery action completed:
+
+- Wrote staging summaries for all 17 cached Strava detail records to:
+  - `users/4QrRDDXHyEN4TGJ4MCoLav5BK6D3/imports/strava_cache_recovery`
+- Restored 7 non-overlapping Strava runs before `2026-06-20` to `workouts`:
+  - `strava-recovered-18025941343`
+  - `strava-recovered-18619600821`
+  - `strava-recovered-18822542427`
+  - `strava-recovered-18877005982`
+  - `strava-recovered-18902196321`
+  - `strava-recovered-18956807864`
+  - `strava-recovered-18970778200`
+- Verification after write:
+  - `workouts`: 18 records.
+  - `imports/strava_cache_recovery`: 17 records.
+- Overlap handling:
+  - 8 cached Strava details matched existing Health Connect workouts by date/type/distance/time fingerprint and were left in staging only.
+  - 2 cached Strava details were close but not exact fingerprint matches (`2026-06-20`, `2026-06-25`) and were left in staging only for manual review.
+
 User action needed after GitHub Pages updates:
 
 - Hard refresh MyDash.
