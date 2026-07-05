@@ -615,6 +615,31 @@ Recovery action completed:
   - 8 cached Strava details matched existing Health Connect workouts by date/type/distance/time fingerprint and were left in staging only.
   - 2 cached Strava details were close but not exact fingerprint matches (`2026-06-20`, `2026-06-25`) and were left in staging only for manual review.
 
+## 2026-07-06 Sources Page Direction
+
+Strava is no longer treated as the primary sync page.
+
+Code changes:
+
+- Renamed the Strava navigation label to `Sources`.
+- Kept the original page id `page-strava` and existing Strava functions to avoid breaking routing, deep links, and legacy code.
+- Added a `Sync source status` card to the page.
+- The page now reads and summarizes:
+  - `users/{uid}/sync_sources/health_connect`
+  - `users/{uid}/imports/strava_cache_recovery`
+  - `users/{uid}/workouts`
+  - `users/{uid}/strava_activities`
+  - `users/{uid}/strava_token`
+- Health Connect is presented as the primary source.
+- Strava API is presented as `Legacy Strava API`.
+- The dashboard status pill now shows Health Connect first and Strava as legacy/recovery only.
+
+Verification:
+
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+- Both passed with no page errors, console errors, or request failures.
+
 User action needed after GitHub Pages updates:
 
 - Hard refresh MyDash.
