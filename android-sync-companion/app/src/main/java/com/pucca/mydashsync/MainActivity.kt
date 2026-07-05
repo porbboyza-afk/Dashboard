@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var signInButton: Button
     private lateinit var permissionButton: Button
     private lateinit var syncButton: Button
+    private var lastDetailMessage: String? = null
 
     private val signInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -96,6 +98,8 @@ class MainActivity : ComponentActivity() {
         root.addView(detail)
         signInButton = actionButton("Sign in with Google") { signInLauncher.launch(googleClient.signInIntent) }
         permissionButton = actionButton("Grant Health Connect permissions") {
+            lastDetailMessage = "Opening Health Connect permission screen..."
+            detail.text = lastDetailMessage
             permissionLauncher.launch(HealthConnectSync.REQUIRED_PERMISSIONS)
         }
         syncButton = actionButton("Sync last 30 days") {
@@ -118,7 +122,7 @@ class MainActivity : ComponentActivity() {
 
     private suspend fun render() {
         val user = auth.currentUser
-        val sdk = HealthConnectClient.getSdkStatus(this, HealthConnectSync.PROVIDER_PACKAGE)
+        val sdk = HealthConnectClient.getSdkStatus(this)
         val healthStatus = when (sdk) {
             HealthConnectClient.SDK_AVAILABLE -> "Health Connect ready"
             HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED -> "Health Connect needs install/update"
@@ -130,7 +134,7 @@ class MainActivity : ComponentActivity() {
             healthStatus,
             if (permissionsOk) "Permissions granted" else "Permissions missing"
         ).joinToString("\n")
-        detail.text = "This app only syncs activities into your existing MyDash Firebase account. Dashboard and analytics stay in the web app."
+        detail.text = lastDetailMessage ?: "This app only syncs activities into your existing MyDash Firebase account. Dashboard and analytics stay in the web app."
         signInButton.isEnabled = user == null
         permissionButton.isEnabled = sdk == HealthConnectClient.SDK_AVAILABLE
         syncButton.isEnabled = user != null && permissionsOk
@@ -149,10 +153,14 @@ class MainActivity : ComponentActivity() {
             val user = auth.currentUser ?: error("Sign in first")
             val result = sync.syncLast30Days(user.uid)
             status.text = "Sync complete"
-            detail.text = "Imported ${result.imported}, skipped ${result.skipped}, scanned ${result.scanned} sessions.\n${result.message}"
+            lastDetailMessage = "Imported ${result.imported}, skipped ${result.skipped}, scanned ${result.scanned} sessions.\n${result.message}"
+            Log.i("MyDashSync", "Sync complete: scanned=${result.scanned}, imported=${result.imported}, skipped=${result.skipped}")
+            detail.text = lastDetailMessage
         } catch (error: Exception) {
             status.text = "Sync failed"
-            detail.text = error.message ?: error.toString()
+            lastDetailMessage = error.message ?: error.toString()
+            Log.e("MyDashSync", "Sync failed", error)
+            detail.text = lastDetailMessage
         } finally {
             render()
         }

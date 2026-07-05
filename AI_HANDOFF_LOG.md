@@ -529,6 +529,73 @@ Next action:
    - Run `Sync last 30 days`.
 5. Refresh MyDash Web and verify imported workouts.
 
+## 2026-07-05 Android Sync Device Test
+
+Device test:
+
+- ADB device detected: `RRCX10685RZ`
+- Installed debug APK successfully:
+  - `adb install -r C:\Users\pucca\Dashboard-GitHub\android-sync-companion\app\build\outputs\apk\debug\app-debug.apk`
+- Opened app with monkey launcher.
+
+Issues found during device testing:
+
+- First permission attempt appeared to do nothing.
+- Fixes applied:
+  - Updated Health Connect SDK to `androidx.health.connect:connect-client:1.1.0-alpha12`.
+  - Raised `compileSdk` to 36 and added `android.suppressUnsupportedCompileSdk=36`.
+  - Changed availability check from `HealthConnectClient.getSdkStatus(context, PROVIDER_PACKAGE)` to `HealthConnectClient.getSdkStatus(context)` for Android 14+ platform Health Connect.
+  - Added `PermissionsRationaleActivity`.
+  - Added Health Connect privacy/rationale manifest entries:
+    - `androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE`
+    - `android.intent.action.VIEW_PERMISSION_USAGE`
+    - `android.intent.category.HEALTH_PERMISSIONS`
+- After reinstall, Health Connect permissions were granted.
+
+Second issue:
+
+- Sync result was overwritten by `render()`, so the user could not see imported/skipped/scanned counts after pressing `Sync last 30 days`.
+- Fix applied:
+  - Added `lastDetailMessage` in `MainActivity`.
+  - Added `Log.i("MyDashSync", ...)` on sync success.
+  - Added `Log.e("MyDashSync", ...)` on sync failure.
+
+Final result:
+
+- User confirmed activity appeared in MyDash after pressing `Sync last 30 days`.
+- This confirms the first working pipeline:
+
+```text
+Health Connect
+-> MyDash Sync Companion
+-> Firebase Realtime Database users/{uid}/workouts
+-> MyDash Web activity view
+```
+
+Remaining improvements:
+
+- Add better persisted sync history/result after app restart.
+- Add Garmin source filtering or source display once real Health Connect data origins are inspected.
+- Add duplicate review UI if Health Connect entries duplicate existing Strava/manual workouts.
+- Consider Credential Manager migration later because current GoogleSignIn client is deprecated but still works.
+
+Firebase data check after successful Health Connect sync:
+
+- Firebase project checked: `dash-ca315`.
+- User path found: `users/4QrRDDXHyEN4TGJ4MCoLav5BK6D3`.
+- `workouts` currently contains 11 records.
+- All current `workouts` records are from `health_connect`.
+- Current `workouts` date range: `2026-06-20` to `2026-07-02`.
+- `strava_activities` returned `null`, so the old Strava list cache is gone.
+- `strava_activity_details` still contains 17 cached Strava activity detail records.
+- Cached Strava detail range: `2026-04-08T18:33:19Z` to `2026-06-30T18:08:40Z`.
+- Cached Strava details are all `Run`.
+- Safe recovery plan:
+  - Do not restore all 17 Strava details directly because many overlap with Health Connect workouts from `2026-06-20` onward.
+  - First restore only cached Strava runs before `2026-06-20` into `users/{uid}/workouts/strava-recovered-{activityId}`.
+  - That would recover 7 older Strava runs without duplicating the Health Connect import.
+  - If richer Strava detail is preferred for overlapping dates, build a separate review/merge path instead of blindly overwriting Health Connect workouts.
+
 User action needed after GitHub Pages updates:
 
 - Hard refresh MyDash.

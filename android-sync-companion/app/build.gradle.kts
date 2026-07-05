@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.pucca.mydashsync"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.pucca.mydashsync"
@@ -32,7 +32,7 @@ dependencies {
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("androidx.activity:activity-ktx:1.8.2")
-    implementation("androidx.health.connect:connect-client:1.1.0-alpha06")
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 }
