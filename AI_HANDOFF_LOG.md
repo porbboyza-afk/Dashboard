@@ -778,12 +778,53 @@ Notes:
 - WorkManager timing is approximate; Android may delay the run for battery/network policy.
 - Manual `Sync last 30 days` remains necessary as a fallback and for immediate refresh.
 
-User action needed after GitHub Pages updates:
+## 2026-07-07 UI Cleanup And Source Badges
+
+Context:
+
+- User approved continuing the Qwen-derived cleanup plan.
+- This pass focused on the safe first slice:
+  - remove primary-source language that still said `Firebase + Strava`.
+  - add a source badge system.
+  - do not remove legacy Strava code.
+
+Code changes:
+
+- Added `sourceMeta()` and `sourceBadge()` helpers in `index.html`.
+- Source badge labels:
+  - `health_connect` with Garmin source app -> `GARMIN`
+  - `health_connect` without Garmin source app -> `HC`
+  - `strava_recovered` -> `STRAVA LEGACY`
+  - `strava` -> `STRAVA API`
+  - missing/other source -> `MANUAL`
+- Applied badges to:
+  - dashboard recent workouts.
+  - statistics monthly workout list.
+  - activity detail popup.
+  - dashboard weekly activities modal.
+- Updated primary-source copy:
+  - login banner now mentions MyDash Cloud and Health Connect.
+  - Statistics subtitle now mentions MyDash Cloud / Health Connect / DeepSeek.
+  - weekly volume note now says MyDash Cloud.
+  - AI weekly source note now says MyDash Cloud.
+  - Strava analysis card title now says `Advanced Training Load Analysis`.
+  - Settings Strava card now says `Legacy Data Archive - Strava API`.
+  - legacy Strava connect popup now explains it is recovery-only and not the primary sync path.
+
+Verification:
+
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+- Both passed with no page errors, console errors, or request failures.
+
+User action after GitHub Pages updates:
 
 - Hard refresh MyDash.
-- Go to Settings and confirm Strava Client ID, Client Secret, and Redirect URI are saved.
-- On Strava page, Disconnect old token.
-- Connect again via `Open Strava auth`, accept all requested scopes, paste the returned `code`, then sync.
+- Confirm recent activities show source badges:
+  - `GARMIN` / `HC` for Health Connect.
+  - `STRAVA LEGACY` for recovered Strava cache.
+  - `MANUAL` for manual entries.
+- Keep the Strava page as legacy/recovery only unless the user explicitly reactivates Strava API access.
 
 ## 2026-07-04 Strava 403 After Accepted Scope
 

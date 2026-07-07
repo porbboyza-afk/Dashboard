@@ -1367,7 +1367,7 @@ img, video, iframe, canvas { max-width: 100%; }
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
             <div style="font-size:16px;font-weight:800;margin-bottom:4px">👋 ยินดีต้อนรับสู่ MyDash</div>
-            <div style="font-size:12px;opacity:.85">เข้าสู่ระบบเพื่อซิงค์ข้อมูลกับ Firebase + Strava</div>
+            <div style="font-size:12px;opacity:.85">เข้าสู่ระบบเพื่อซิงค์ข้อมูลกับ MyDash Cloud และ Health Connect</div>
           </div>
           <button onclick="window._fb.loginGoogle()" style="display:flex;align-items:center;gap:8px;background:#fff;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;font-size:13px;font-weight:700;color:#333;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.15)">
             <svg width="16" height="16" viewBox="0 0 24 24">
@@ -1418,7 +1418,7 @@ img, video, iframe, canvas { max-width: 100%; }
             <div style="padding-left:20px">
               <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:2px">ACTIVITIES</div>
               <div style="font-family:var(--font-display);font-size:64px;line-height:1;color:var(--text);letter-spacing:1px" id="t-workouts">—</div>
-              <div class="dashboard-kpi-note">Weekly volume from Firebase + Strava</div>
+              <div class="dashboard-kpi-note">Weekly volume from MyDash Cloud</div>
             </div>
           </div>
           <!-- Ring — compact -->
@@ -1715,7 +1715,7 @@ img, video, iframe, canvas { max-width: 100%; }
     <div class="page" id="page-fitness-stats">
       <div class="page-header">
         <div class="page-title">Statistics 📊</div>
-        <div class="page-subtitle">Firebase + Strava · DeepSeek AI Analysis</div>
+        <div class="page-subtitle">MyDash Cloud · Health Connect · DeepSeek AI Analysis</div>
       </div>
 
       <div class="seg-tabs">
@@ -1829,7 +1829,7 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="flex justify-between items-center mb-12">
             <div>
               <div style="font-size:14px;font-weight:700;color:var(--accent)">🤖 AI Analysis by DeepSeek</div>
-              <div style="font-size:12px;color:var(--text2);margin-top:2px">Firebase + Strava · selected week</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:2px">MyDash Cloud · selected week</div>
             </div>
             <button class="btn btn-primary btn-sm" id="btn-analyze-wk" onclick="analyzeFitnessAI('week')">✨ Analyze</button>
           </div>
@@ -2083,7 +2083,7 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="empty-state-title">Strava is legacy now</div>
           <div class="empty-state-copy">Garmin via Health Connect is the primary sync path. Keep Strava here only for recovery, archive imports, or one-time paid export checks.</div>
           <div class="empty-actions">
-            <button class="btn btn-strava btn-sm" onclick="stravaConnect()">🔗 Connect Strava</button>
+            <button class="btn btn-strava btn-sm" onclick="stravaConnect()">Legacy Strava connect</button>
             <button class="btn btn-ghost btn-sm" onclick="showPage('settings')">API settings</button>
           </div>
         </div>
@@ -2102,7 +2102,7 @@ img, video, iframe, canvas { max-width: 100%; }
 
         <div class="card mb-16" id="strava-pr-card">
           <div class="card-label">Personal Records from synced activities</div>
-          <div class="strava-pr-grid" id="strava-pr-grid"><div class="text-sm c2">รอข้อมูล Strava</div></div>
+          <div class="strava-pr-grid" id="strava-pr-grid"><div class="text-sm c2">Waiting for legacy activity data</div></div>
           <div class="text-xs c3 mt-8">เป็นค่าประมาณจากความเร็วเฉลี่ยของกิจกรรม ไม่ใช่ Best Effort split อย่างเป็นทางการของ Strava</div>
         </div>
       </div>
@@ -2124,7 +2124,7 @@ img, video, iframe, canvas { max-width: 100%; }
 
       <div class="card mt-16" style="background:linear-gradient(135deg,rgba(0,122,255,.04),rgba(90,200,250,.03));border-color:rgba(0,122,255,.15)">
         <div class="flex justify-between items-center mb-12">
-          <div style="font-size:14px;font-weight:700;color:var(--accent)">🤖 Training Load Analysis from Strava</div>
+          <div style="font-size:14px;font-weight:700;color:var(--accent)">🤖 Advanced Training Load Analysis</div>
           <button class="btn btn-primary btn-sm" id="btn-strava-analyze" onclick="stravaAnalyze()">✨ Analyze</button>
         </div>
         <div id="strava-ai-output" class="ai-box"></div>
@@ -2350,7 +2350,8 @@ img, video, iframe, canvas { max-width: 100%; }
           <div id="deepseek-key-status" style="font-size:12px;margin-top:10px"></div>
         </div>
         <div class="card">
-          <div class="card-label">Strava API</div>
+          <div class="card-label">Legacy Data Archive - Strava API</div>
+          <div class="text-xs c3 mb-12">Optional. Keep this only for old Strava cache, archive imports, or one-time recovery.</div>
           <div class="form-group"><label>Client ID</label><input type="text" id="set-strava-id" placeholder="12345"></div>
           <div class="form-group"><label>Client Secret</label><input type="password" id="set-strava-secret" placeholder="abc123..."></div>
           <div class="form-group"><label>Redirect URI</label><input type="text" id="set-strava-redirect" placeholder="http://localhost"></div>
@@ -2796,17 +2797,16 @@ function renderTodayStats(){
 
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
   const recentEl=document.getElementById('today-recent-workouts');
-  // Show this week's activities from both Firebase + Strava
+  // Show this week's activities from all active sources.
   const allCombined=getAllActivities();
   const weekRecent=allCombined.filter(w=>(w.date||'')>=toLocalDateStr(cutoff)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
-  const stravaTag='<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>';
   window._dashWeekActs = weekRecent;
   if(recentEl) recentEl.innerHTML=weekRecent.length
     ? weekRecent.map((w,i)=>{
         return `<div class="workout-row" style="cursor:pointer;border-radius:10px;padding:10px 8px;transition:background .15s" onclick="showActivityDetail(window._dashWeekActs[${i}])" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
           <div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div>
           <div style="flex:1">
-            <div class="workout-title">${parseFloat(w.dist||0).toFixed(2)} km · ${Math.round(w.time)} min${w.hr?' · HR '+w.hr:''}${w.source==='strava'?stravaTag:''}</div>
+            <div class="workout-title">${parseFloat(w.dist||0).toFixed(2)} km · ${Math.round(w.time)} min${w.hr?' · HR '+w.hr:''}${sourceBadge(w,true)}</div>
             <div class="workout-meta">${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${w.name?' · '+w.name:''}</div>
           </div>
           <div style="color:var(--text3);font-size:16px;padding-left:4px">›</div>
@@ -2814,10 +2814,10 @@ function renderTodayStats(){
       }).join('')
     : `<div class="empty-state">
         <div class="empty-state-title">ยังไม่มีกิจกรรมสัปดาห์นี้</div>
-        <div class="empty-state-copy">เริ่มจากบันทึก Activity แรก หรือเชื่อม Strava เพื่อให้หน้า Dashboard แสดง volume, readiness และแนวโน้มการฝึกได้ครบขึ้น</div>
+        <div class="empty-state-copy">เริ่มจากบันทึก Activity แรก หรือ sync ผ่าน Health Connect เพื่อให้หน้า Dashboard แสดง volume, readiness และแนวโน้มการฝึกได้ครบขึ้น</div>
         <div class="empty-actions">
           <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')">+ Add activity</button>
-          <button class="btn btn-ghost btn-sm" onclick="showPage('strava')">Connect Strava</button>
+          <button class="btn btn-ghost btn-sm" onclick="showPage('strava')">Open Sources</button>
         </div>
       </div>`;
 
@@ -2849,6 +2849,18 @@ window.calcAvgPace=function(){
 let _editingWorkoutKey = null;
 function fieldValue(id){return document.getElementById(id)?.value?.trim()||'';}
 function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function sourceMeta(wOrSource){
+  const source=typeof wOrSource==='string'?wOrSource:(wOrSource?.source||'manual');
+  const sourceApp=typeof wOrSource==='object'?String(wOrSource.sourceApp||'').toLowerCase():'';
+  if(source==='health_connect')return {label:sourceApp.includes('garmin')?'GARMIN':'HC',title:'Health Connect',color:'var(--green)',bg:'rgba(52,199,89,.14)'};
+  if(source==='strava_recovered')return {label:'STRAVA LEGACY',title:'Recovered Strava cache',color:'var(--strava)',bg:'rgba(252,76,2,.15)'};
+  if(source==='strava')return {label:'STRAVA API',title:'Legacy Strava API',color:'var(--strava)',bg:'rgba(252,76,2,.15)'};
+  return {label:'MANUAL',title:'Manual / MyDash Cloud',color:'var(--accent)',bg:'var(--accent-light)'};
+}
+function sourceBadge(wOrSource,compact=false){
+  const meta=sourceMeta(wOrSource);
+  return `<span title="${escapeHTML(meta.title)}" style="display:inline-flex;align-items:center;vertical-align:middle;font-size:${compact?'8':'9'}px;background:${meta.bg};color:${meta.color};border-radius:999px;padding:${compact?'1px 5px':'2px 7px'};font-weight:800;margin-left:5px;letter-spacing:.2px">${meta.label}</span>`;
+}
 function workoutFingerprint(w){
   return `${w.date||''}|${String(w.type||'').toLowerCase()}|${Math.round(parseFloat(w.dist||0)*20)}|${Math.round(parseFloat(w.time||0))}`;
 }
@@ -3082,8 +3094,7 @@ function renderMonthStats(){
   renderHRZoneChart(monthWks);
   const listEl=document.getElementById('month-activity-list');
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
-  const strTag=s=>s==='strava'?'<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>':'';
-  if(listEl){listEl.innerHTML=monthWks.length?[...monthWks].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(w=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background .15s" onclick="showActivityDetail(encodeURIComponent(JSON.stringify(${JSON.stringify(JSON.stringify(w))})))" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'"><span style="font-size:15px">${em[w.type]||'🏅'}</span><div style="flex:1"><div style="font-size:12px;font-weight:600">${parseFloat(w.dist||0).toFixed(2)} km${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${strTag(w.source)}</div><div style="font-size:10px;color:var(--text2);font-family:var(--font-mono)">${w.date}${w.name?' · '+w.name:''}</div></div>${w.hr?`<span style="font-size:11px;color:var(--red)">♥${w.hr}</span>`:''}<span style="color:var(--text3);font-size:14px">›</span></div>`).join(''):'<p class="text-sm c2">ไม่มีกิจกรรมเดือนนี้</p>';}
+  if(listEl){listEl.innerHTML=monthWks.length?[...monthWks].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(w=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background .15s" onclick="showActivityDetail(encodeURIComponent(JSON.stringify(${JSON.stringify(JSON.stringify(w))})))" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'"><span style="font-size:15px">${em[w.type]||'🏅'}</span><div style="flex:1"><div style="font-size:12px;font-weight:600">${parseFloat(w.dist||0).toFixed(2)} km${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${sourceBadge(w,true)}</div><div style="font-size:10px;color:var(--text2);font-family:var(--font-mono)">${w.date}${w.name?' · '+w.name:''}</div></div>${w.hr?`<span style="font-size:11px;color:var(--red)">♥${w.hr}</span>`:''}<span style="color:var(--text3);font-size:14px">›</span></div>`).join(''):'<p class="text-sm c2">ไม่มีกิจกรรมเดือนนี้</p>';}
 }
 
 function manualSessionType(workout){
@@ -3641,7 +3652,7 @@ window._athleteProfile={...DEFAULT_ATHLETE_PROFILE};
 
 function getAthleteProfile(){return {...DEFAULT_ATHLETE_PROFILE,...(window._athleteProfile||{})};}
 
-function stravaConnect(){const sb=document.getElementById('strava-status-box');sb.innerHTML=`<div style="width:100%;display:flex;flex-direction:column;gap:8px"><p style="font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px">Connect Strava with activity:read_all</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-strava btn-sm" onclick="stravaOpenAuthorize()">Open Strava auth</button><input type="text" id="strava-code-input" placeholder="Paste code=... here" style="flex:1;min-width:180px;font-size:11px"><button class="btn btn-strava btn-sm" onclick="stravaConnectCode()">Connect code</button></div><details><summary style="cursor:pointer;font-size:11px;color:var(--text2)">Advanced: paste refresh_token</summary><div style="display:flex;gap:8px;margin-top:8px"><input type="text" id="strava-token-input" placeholder="Paste refresh_token..." style="flex:1;font-size:11px"><button class="btn btn-ghost btn-sm" onclick="stravaConnectDirect()">Connect token</button></div></details></div>`;}
+function stravaConnect(){const sb=document.getElementById('strava-status-box');sb.innerHTML=`<div style="width:100%;display:flex;flex-direction:column;gap:8px"><p style="font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px">Legacy Strava recovery connect</p><div class="text-xs c3">Primary sync is Health Connect. Use this only for old cache or one-time export recovery.</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-strava btn-sm" onclick="stravaOpenAuthorize()">Open Strava auth</button><input type="text" id="strava-code-input" placeholder="Paste code=... here" style="flex:1;min-width:180px;font-size:11px"><button class="btn btn-strava btn-sm" onclick="stravaConnectCode()">Connect code</button></div><details><summary style="cursor:pointer;font-size:11px;color:var(--text2)">Advanced: paste refresh_token</summary><div style="display:flex;gap:8px;margin-top:8px"><input type="text" id="strava-token-input" placeholder="Paste refresh_token..." style="flex:1;font-size:11px"><button class="btn btn-ghost btn-sm" onclick="stravaConnectDirect()">Connect token</button></div></details></div>`;}
 async function stravaGetAuthSettings(){
   const cfg=await window._fb.getData('settings')||{};
   const clientId=(cfg.stravaId||'').trim();
@@ -4638,7 +4649,7 @@ function showActivityDetail(wEncoded) {
   const em = {run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
   const icon = em[w.type] || '🏅';
   const typeLabel = {run:'วิ่ง',interval:'Interval',bike:'ปั่นจักรยาน',swim:'ว่ายน้ำ',walk:'เดิน'};
-  const stravaTag = w.source==='strava' ? '<span style="font-size:10px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:5px;padding:2px 7px;font-weight:700">STRAVA</span>' : '<span style="font-size:10px;background:var(--accent-light);color:var(--accent);border-radius:5px;padding:2px 7px;font-weight:700">FIREBASE</span>';
+  const source = sourceMeta(w);
 
   const row = (label, val, color='var(--text)') => val ? `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
@@ -4656,7 +4667,7 @@ function showActivityDetail(wEncoded) {
           <div style="width:40px;height:40px;border-radius:12px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:20px">${icon}</div>
           <div>
             <div style="font-size:15px;font-weight:800">${w.name || typeLabel[w.type] || w.type}</div>
-            <div style="font-size:11px;color:var(--text2);margin-top:2px">${w.date} &nbsp;${stravaTag}</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:2px">${w.date} &nbsp;${sourceBadge(w)}</div>
           </div>
         </div>
         <button onclick="document.getElementById('act-detail-overlay').remove()" style="background:var(--bg2);border:none;border-radius:8px;color:var(--text2);font-size:16px;cursor:pointer;padding:4px 10px;line-height:1">✕</button>
@@ -4676,6 +4687,7 @@ function showActivityDetail(wEncoded) {
         ${row('Weather', w.weather ? `${escapeHTML(w.weather)}${w.temperature!==null&&w.temperature!==undefined?' · '+w.temperature+'°C':''}` : (w.temperature!==null&&w.temperature!==undefined?w.temperature+'°C':null))}
         ${row('Pain', w.pain ? `${w.pain}/10${w.painLocation?' · '+escapeHTML(w.painLocation):''}` : null, 'var(--red)')}
         ${row('Feeling', w.feeling ? escapeHTML(w.feeling) : null)}
+        ${row('Source', escapeHTML(source.title), source.color)}
         ${w.note ? `<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">หมายเหตุ</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${escapeHTML(w.note)}</div></div>` : ''}
       </div>
       ${w.interval ? `
@@ -5000,7 +5012,7 @@ function showPRPanel() {
           <div style="font-size:11px;color:var(--text2);margin-top:4px">${prs.longest.date}</div>
         </div>` : ''}
       </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:14px;text-align:center">คำนวณจาก Firebase + Strava ทั้งหมด</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:14px;text-align:center">คำนวณจากกิจกรรมใน MyDash Cloud ทุกแหล่งข้อมูล</div>
     </div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
@@ -5623,7 +5635,7 @@ function showStatInfo(type) {
 
 // ── DASH ACTIVITIES MODAL ──
 function showDashActivities() {
-  // Get this week's activities from both Firebase + Strava
+  // Get this week's activities from all active sources.
   const cutoff = getThisWeekStart();
   const cutoffStr = toLocalDateStr(cutoff);
   const allActs = getAllActivities();
@@ -5636,7 +5648,6 @@ function showDashActivities() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px';
 
   const typeIcon = { run:'🏃', interval:'⚡', bike:'🚴', swim:'🏊', walk:'🚶' };
-  const sourceTag = s => s==='strava' ? '<span style="font-size:9px;background:rgba(252,76,2,.15);color:#FC4C02;border-radius:4px;padding:1px 5px;font-weight:700;margin-left:4px">STRAVA</span>' : '';
 
   const rows = weekActs.length === 0
     ? '<div style="text-align:center;padding:28px;color:var(--text3)">ไม่มีกิจกรรมสัปดาห์นี้</div>'
@@ -5649,7 +5660,7 @@ function showDashActivities() {
         return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
           <div style="width:36px;height:36px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${icon}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:600">${w.date||''} ${sourceTag(w.source)}</div>
+            <div style="font-size:13px;font-weight:600">${w.date||''} ${sourceBadge(w,true)}</div>
             ${name}
             <div style="font-size:11px;color:var(--text2);font-family:var(--font-mono)">${[dist,time,pace].filter(Boolean).join(' · ')}</div>
           </div>
