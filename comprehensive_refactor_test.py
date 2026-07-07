@@ -1,0 +1,321 @@
+import contextlib
+import http.server
+import json
+import socketserver
+import threading
+from pathlib import Path
+
+from playwright.sync_api import sync_playwright
+
+
+ROOT = Path(__file__).resolve().parent
+PORT = 8124
+URL = f"http://127.0.0.1:{PORT}/index.html"
+CHROME_CANDIDATES = [
+    Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
+    Path(r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"),
+    Path(r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"),
+    Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
+]
+
+EXPECTED_SCRIPT_ORDER = [
+    "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js",
+    "js/date-utils.js",
+    "js/ui-core.js",
+    "js/share-card.js",
+    "js/wellness.js",
+    "js/stats.js",
+    "js/news-ai.js",
+    "js/sources-strava.js",
+    "js/settings.js",
+    "js/backup-export.js",
+    "js/coach.js",
+    "js/races.js",
+]
+
+EXPECTED_GLOBALS = [
+    "showPage",
+    "renderTodayStats",
+    "renderRecentWorkouts",
+    "renderDashboardExtras",
+    "renderDashboardHomeInsights",
+    "renderDashboardSyncStatus",
+    "renderWellness",
+    "renderWellnessAnalytics",
+    "calculateReadiness",
+    "calculateLoadMetrics",
+    "renderCurrentStatsView",
+    "renderWeekStats",
+    "renderMonthStats",
+    "renderStatsInsights",
+    "renderNewsChat",
+    "renderNewsSidePanel",
+    "askNewsAI",
+    "askDeepSeek",
+    "renderStravaPage",
+    "renderSourcesOverview",
+    "renderStravaActivities",
+    "saveDeepSeekKey",
+    "saveStravaSettings",
+    "loadAthleteProfile",
+    "saveBackupSettings",
+    "renderSyncStatus",
+    "showShareStatsModal",
+    "renderShareCanvas",
+    "closeShareStats",
+    "updateCoachEndDate",
+    "renderCoachTracking",
+    "switchCoachTab",
+    "mergeRaceEntries",
+    "renderRaceList",
+]
+
+PAGES = [
+    "today",
+    "fitness-log",
+    "fitness-stats",
+    "coach",
+    "strava",
+    "news",
+    "wellness",
+    "settings",
+]
+
+
+class QuietHandler(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass
+
+
+def find_browser():
+    for path in CHROME_CANDIDATES:
+        if path.exists():
+            return str(path)
+    raise FileNotFoundError("No Chrome/Edge executable found")
+
+
+def assert_true(checks, key, value, message):
+    checks[key] = value
+    if not value:
+        raise AssertionError(message)
+
+
+def main():
+    results = {"page_errors": [], "console_errors": [], "request_failures": [], "checks": {}}
+    handler = lambda *args, **kwargs: QuietHandler(*args, directory=str(ROOT), **kwargs)
+    server = socketserver.TCPServer(("127.0.0.1", PORT), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                executable_path=find_browser(),
+                headless=True,
+                args=["--disable-gpu", "--no-first-run", "--no-default-browser-check"],
+            )
+            page = browser.new_page(viewport={"width": 390, "height": 844}, is_mobile=True)
+            page.on("pageerror", lambda exc: results["page_errors"].append(str(exc)))
+            page.on(
+                "console",
+                lambda msg: results["console_errors"].append(f"{msg.type}: {msg.text}")
+                if msg.type == "error"
+                else None,
+            )
+            page.on(
+                "requestfailed",
+                lambda req: results["request_failures"].append(
+                    f"{req.method} {req.url} :: {req.failure}"
+                ),
+            )
+
+            page.goto(URL, wait_until="domcontentloaded", timeout=30000)
+            page.wait_for_timeout(3000)
+
+            checks = results["checks"]
+            checks["title"] = page.title()
+            assert_true(checks, "title_ok", checks["title"] == "MyDash", "Wrong title")
+
+            script_order = page.evaluate(
+                "() => Array.from(document.querySelectorAll('script[src]')).map(s => s.getAttribute('src').split('?')[0])"
+            )
+            checks["script_order"] = script_order
+            assert_true(
+                checks,
+                "script_order_ok",
+                script_order == EXPECTED_SCRIPT_ORDER,
+                f"Unexpected script order: {script_order}",
+            )
+
+            missing_globals = page.evaluate(
+                "(names) => names.filter(name => typeof window[name] !== 'function')",
+                EXPECTED_GLOBALS,
+            )
+            checks["missing_globals"] = missing_globals
+            assert_true(checks, "globals_ok", missing_globals == [], f"Missing globals: {missing_globals}")
+
+            missing_onclick_handlers = page.evaluate(
+                """
+                () => {
+                  const names = new Set();
+                  document.querySelectorAll('[onclick]').forEach(el => {
+                    const code = el.getAttribute('onclick') || '';
+                    const match = code.match(/^\\s*([A-Za-z_$][\\w$]*)\\s*\\(/);
+                    if (match) names.add(match[1]);
+                  });
+                  return Array.from(names).filter(name => typeof window[name] !== 'function').sort();
+                }
+                """
+            )
+            checks["missing_onclick_handlers"] = missing_onclick_handlers
+            assert_true(
+                checks,
+                "onclick_handlers_ok",
+                missing_onclick_handlers == [],
+                f"Missing onclick handlers: {missing_onclick_handlers}",
+            )
+
+            page.evaluate(
+                """
+                () => {
+                  const workouts = [
+                    {date:'2026-07-07', type:'run', dist:8.2, time:42, hr:156, cad:172, avgPace:5.12, rpe:6, source:'health_connect', sourceApp:'com.garmin.android.apps.connectmobile', purpose:'tempo'},
+                    {date:'2026-07-05', type:'run', dist:12.0, time:68, hr:148, cad:168, avgPace:5.67, rpe:5, source:'strava_recovered'},
+                    {date:'2026-07-03', type:'bike', dist:22.0, time:55, hr:132, cad:80, avgPace:2.5, rpe:3, source:'manual'}
+                  ];
+                  const wellness = [
+                    {date:'2026-07-07', sleepHours:7.5, restingHR:52, hrv:62, spo2:98, fatigue:3, stress:3, soreness:2, mood:8, weight:66},
+                    {date:'2026-07-06', sleepHours:6.2, restingHR:55, hrv:55, spo2:97, fatigue:4, stress:4, soreness:3, mood:7, weight:66.2}
+                  ];
+                  const coachPlan = {
+                    goal:'10K sub 48',
+                    startDate:'2026-07-07',
+                    endDate:'2026-09-01',
+                    totalWeeks:8,
+                    completedDates:{},
+                    adjustments:[],
+                    goalProfile:{distance:'10K', targetTime:'47:59', targetPace:4.798, unavailableRaw:'', unavailable:[]},
+                    sessions:[
+                      {date:'2026-07-07', type:'Interval', targetDist:6, targetPace:'4:35', targetHR:165, description:'Fast reps', notes:'Fallback structured plan', priority:'key'},
+                      {date:'2026-07-09', type:'Easy', targetDist:5, targetPace:'', targetHR:145, description:'Easy run', notes:'', priority:'normal'}
+                    ]
+                  };
+                  window._workouts = workouts;
+                  window._wellness = wellness;
+                  window._coachPlan = coachPlan;
+                  if (window.AppState) {
+                    AppState.set('workouts', workouts);
+                    AppState.set('wellness', wellness);
+                    AppState.set('coachPlan', coachPlan);
+                  }
+                  localStorage.setItem('mydash-sync-queue', JSON.stringify([{action:'upsert', type:'ping', data:{date:'2026-07-07'}}]));
+                }
+                """
+            )
+
+            for page_id in PAGES:
+                page.evaluate("(id) => showPage(id)", page_id)
+                page.wait_for_timeout(350)
+                active = page.evaluate(
+                    "(id) => document.getElementById('page-' + id)?.classList.contains('active')",
+                    page_id,
+                )
+                assert_true(checks, f"page_{page_id}_active", active, f"Page did not activate: {page_id}")
+
+            page.evaluate(
+                """
+                async () => {
+                  showPage('today');
+                  renderTodayStats();
+                  renderDashboardExtras();
+                  await renderDashboardHomeInsights();
+                  await renderDashboardSyncStatus();
+                  showDashActivities();
+                  showPage('fitness-log');
+                  renderRecentWorkouts();
+                  showPage('fitness-stats');
+                  renderCurrentStatsView();
+                  switchStatsTab('month');
+                  renderMonthStats();
+                  switchStatsTab('week');
+                  renderWeekStats();
+                  await renderStatsInsights();
+                  showPage('wellness');
+                  renderIntegratedHealth();
+                  renderWellness();
+                  switchWellnessTab('analytics');
+                  renderWellnessAnalytics();
+                  showPage('news');
+                  renderNewsChat();
+                  renderNewsSidePanel();
+                  setNewsQ('ทดสอบ');
+                  showPage('strava');
+                  await renderStravaPage();
+                  renderStravaActivities([]);
+                  showPage('settings');
+                  loadAthleteProfile(window.DEFAULT_ATHLETE_PROFILE || {});
+                  renderSyncStatus();
+                  showPage('coach');
+                  switchCoachTab('track');
+                  renderCoachTracking();
+                  switchCoachTab('race');
+                  window._races = mergeRaceEntries([], window._coachPlan);
+                  renderRaceList();
+                  showShareStatsModal();
+                  renderShareCanvas();
+                  closeShareStats();
+                }
+                """
+            )
+            page.wait_for_timeout(1000)
+
+            dom_checks = page.evaluate(
+                """
+                () => ({
+                  noHorizontalOverflow: document.body.scrollWidth <= window.innerWidth + 2,
+                  recentWorkoutCards: document.querySelectorAll('#recent-workouts-list .workout-row').length,
+                  wellnessCards: document.querySelectorAll('#wellness-list .workout-row').length,
+                  statsCanvasExists: !!document.querySelector('#hrzone-chart, #pace-trend-chart, canvas'),
+                  coachPlanDays: document.querySelectorAll('.plan-day').length,
+                  raceCards: document.querySelectorAll('#race-list-container .card').length,
+                  newsPanelExists: !!document.querySelector('.news-side') && !!document.querySelector('#news-sources'),
+                  sourcesPageExists: !!document.querySelector('#strava-page-content, #strava-status-box'),
+                  syncStatusRendered: !!document.querySelector('#gas-status'),
+                  shareOverlayClosed: document.getElementById('share-stats-overlay')?.style.display === 'none'
+                })
+                """
+            )
+            checks["dom"] = dom_checks
+            for key, value in dom_checks.items():
+                assert_true(checks, f"dom_{key}", bool(value), f"DOM check failed: {key}")
+
+            browser.close()
+    finally:
+        with contextlib.suppress(Exception):
+            server.shutdown()
+        with contextlib.suppress(Exception):
+            server.server_close()
+
+    critical_console = [item for item in results["console_errors"] if "favicon" not in item.lower()]
+    if results["page_errors"] or critical_console:
+        raise AssertionError(
+            json.dumps(
+                {
+                    "page_errors": results["page_errors"],
+                    "console_errors": critical_console,
+                    "request_failures": results["request_failures"],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+
+    print(json.dumps(results, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as exc:
+        print(json.dumps({"error": str(exc)}, ensure_ascii=False, indent=2))
+        raise SystemExit(1)

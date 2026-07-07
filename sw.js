@@ -1,10 +1,21 @@
-const CACHE_NAME = 'mydash-v3-health-20260707-2';
+const CACHE_NAME = 'mydash-v3-health-20260707-3';
 const APP_SHELL = [
   './',
   './index.html',
-  './manifest.json?v=20260707-2',
-  './icon-192.png?v=20260707-2',
-  './icon-512.png?v=20260707-2'
+  './manifest.json?v=20260707-3',
+  './icon-192.png?v=20260707-3',
+  './icon-512.png?v=20260707-3',
+  './js/date-utils.js',
+  './js/ui-core.js',
+  './js/share-card.js',
+  './js/wellness.js',
+  './js/stats.js',
+  './js/news-ai.js',
+  './js/sources-strava.js',
+  './js/settings.js',
+  './js/backup-export.js',
+  './js/coach.js',
+  './js/races.js'
 ];
 
 self.addEventListener('install', event => {

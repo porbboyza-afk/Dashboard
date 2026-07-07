@@ -7,9 +7,27 @@ const indexPath = path.join(root, 'index.html');
 const manifestPath = path.join(root, 'manifest.json');
 const swPath = path.join(root, 'sw.js');
 const appsScriptPath = path.join(root, 'apps-script', 'Code.gs');
+const newsAiScriptPath = path.join(root, 'js', 'news-ai.js');
+const sourcesStravaScriptPath = path.join(root, 'js', 'sources-strava.js');
+const shareCardScriptPath = path.join(root, 'js', 'share-card.js');
+const wellnessScriptPath = path.join(root, 'js', 'wellness.js');
+const statsScriptPath = path.join(root, 'js', 'stats.js');
+const coachScriptPath = path.join(root, 'js', 'coach.js');
+const settingsScriptPath = path.join(root, 'js', 'settings.js');
+const backupExportScriptPath = path.join(root, 'js', 'backup-export.js');
+const racesScriptPath = path.join(root, 'js', 'races.js');
 const extraScripts = [
   path.join(root, 'js', 'date-utils.js'),
   path.join(root, 'js', 'ui-core.js'),
+  newsAiScriptPath,
+  sourcesStravaScriptPath,
+  shareCardScriptPath,
+  wellnessScriptPath,
+  statsScriptPath,
+  settingsScriptPath,
+  backupExportScriptPath,
+  coachScriptPath,
+  racesScriptPath,
 ];
 
 function checkJsFile(filePath) {
@@ -51,8 +69,79 @@ checkJsFile(appsScriptPath);
 ensureContains(indexPath, [
   '<script src="js/date-utils.js"></script>',
   '<script src="js/ui-core.js"></script>',
+  '<script src="js/share-card.js"></script>',
+  '<script src="js/wellness.js"></script>',
+  '<script src="js/stats.js"></script>',
+  '<script src="js/news-ai.js"></script>',
+  '<script src="js/sources-strava.js"></script>',
+  '<script src="js/settings.js"></script>',
+  '<script src="js/backup-export.js"></script>',
+  '<script src="js/coach.js"></script>',
+  '<script src="js/races.js"></script>',
   'function mdToHtml(text)',
   'out.innerHTML = mdToHtml(reply);',
+  '.coach-plan-row',
+  '.coach-adaptive-card',
+]);
+
+ensureContains(shareCardScriptPath, [
+  'function showShareStatsModal',
+  'function renderShareCanvas',
+  'function downloadShareCard',
+  'async function shareCard',
+]);
+
+ensureContains(wellnessScriptPath, [
+  'function calculateReadiness',
+  'function calculateLoadMetrics',
+  'function renderIntegratedHealth',
+  'async function saveWellness',
+  'function renderWellness',
+  'function renderWellnessAnalytics',
+]);
+
+ensureContains(statsScriptPath, [
+  'function renderWeekStats',
+  'function renderMonthStats',
+  'async function renderStatsInsights',
+  'function renderStatsEfficiencyChart',
+  'async function analyzeFitnessAI',
+]);
+
+ensureContains(newsAiScriptPath, [
+  'function renderNewsSidePanel',
+  'async function callNewsChat',
+  'async function askNewsAI',
+  'async function askDeepSeek',
+  'NEWS_SYSTEM_PROMPT',
+]);
+
+ensureContains(sourcesStravaScriptPath, [
+  'const STRAVA_API',
+  'async function stravaSync',
+  'function stravaBuildHttpError',
+  'async function renderStravaPage',
+  'function renderSourcesOverview',
+  'function renderStravaActivities',
+]);
+
+ensureContains(settingsScriptPath, [
+  'async function saveDeepSeekKey',
+  'async function saveStravaSettings',
+  'function loadAthleteProfile',
+  'async function saveAthleteProfile',
+]);
+
+ensureContains(backupExportScriptPath, [
+  'const DEFAULT_GAS_URL',
+  'async function sendSheetsBackup',
+  'async function syncAllToSheets',
+  'async function exportMyDashJSON',
+  'function exportActivitiesCSV',
+  'async function restoreMyDashJSON',
+]);
+
+ensureContains(coachScriptPath, [
   'function validateCoachPlan(plan',
   'function buildFallbackTrainingPlan',
   'function coachSessionDetails',
@@ -60,13 +149,29 @@ ensureContains(indexPath, [
   'function coachAdaptiveGuidance',
   'function showCoachSessionDetail',
   'function assertCoachCloudSaved',
+  'Cloud save failed. Please sign in again and retry.',
+  'Local fallback plan saved',
+]);
+
+ensureContains(racesScriptPath, [
   'function coachPlanRaceEntry',
   'function mergeRaceEntries',
   'function getAllRaceEntries',
-  '.coach-plan-row',
-  '.coach-adaptive-card',
-  'Cloud save failed. Please sign in again and retry.',
-  "usedFallback?'⚠️ Local fallback plan saved':'✅ AI plan saved'",
+]);
+
+ensureContains(swPath, [
+  "mydash-v3-health-20260707-3",
+  './js/date-utils.js',
+  './js/ui-core.js',
+  './js/share-card.js',
+  './js/wellness.js',
+  './js/stats.js',
+  './js/news-ai.js',
+  './js/sources-strava.js',
+  './js/settings.js',
+  './js/backup-export.js',
+  './js/coach.js',
+  './js/races.js',
 ]);
 
 console.log(`Syntax OK: ${inlineCount} inline scripts, ${extraScripts.length} external scripts, manifest, service worker, Apps Script`);

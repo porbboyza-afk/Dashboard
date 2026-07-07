@@ -2,6 +2,228 @@
 
 Last updated: 2026-07-07 Asia/Bangkok
 
+## 2026-07-07 Local Backup And Coach/Race Refactor
+
+Context:
+
+- User asked to organize the growing codebase and clarified that backup should be a copied folder, not a zip archive.
+- Work was intentionally kept local. No commit or push was performed in this pass.
+
+Backup:
+
+- Valid full-folder backup created at:
+  - `C:\Users\pucca\Dashboard-GitHub-backup-before-refactor-20260707-142194f`
+- Backup source HEAD before this refactor:
+  - `142194f`
+
+Code changes:
+
+- Extracted AI Coach logic from `index.html` into:
+  - `js/coach.js`
+- Extracted Race tab and dashboard race banner logic from `index.html` into:
+  - `js/races.js`
+- `index.html` now loads:
+  - `js/coach.js`
+  - `js/races.js`
+- Script load order is intentional:
+  - existing inline script defines shared helpers first,
+  - extracted coach/race scripts load after it,
+  - this keeps existing global onclick handlers and helper references working.
+- Updated `verify_dashboard.js` so dashboard guards now check:
+  - shared HTML/CSS snippets in `index.html`,
+  - AI Coach helpers in `js/coach.js`,
+  - Race helpers in `js/races.js`.
+
+Verification completed:
+
+- `node verify_dashboard.js`
+  - Passed.
+- `python smoke_test_dashboard.py`
+  - Passed with no page errors, console errors, or request failures.
+- Targeted Playwright AI Coach mobile smoke:
+  - Passed.
+  - Confirmed no mobile overflow, Track Plan cards render, adaptive card renders, and detail buttons exist.
+- Targeted Playwright Race tab smoke:
+  - Passed.
+  - Confirmed current plan end date creates a plan-derived race card and no delete button is shown for the virtual race.
+
+Notes:
+
+- This is a structure-only refactor; no Firebase schema, sync logic, AI prompt behavior, or Android companion code was intentionally changed.
+- The earlier desktop zip attempt should not be treated as the valid backup. The copied folder above is the valid backup.
+
+## 2026-07-07 Feature Module Refactor Continuation
+
+Context:
+
+- User challenged whether the code was actually organized yet.
+- Continued the local-only refactor using the existing copied-folder backup.
+- Goal was to reduce `index.html` without changing runtime behavior.
+
+Additional code extraction:
+
+- Extracted AI Q&A / current-news chat into:
+  - `js/news-ai.js`
+- Extracted Sources and legacy Strava API/recovery UI into:
+  - `js/sources-strava.js`
+- Extracted Statistics / Insights into:
+  - `js/stats.js`
+- Extracted Wellness, readiness, load, recovery, and wellness analytics into:
+  - `js/wellness.js`
+- Extracted Google Apps Script backup and import/export utilities into:
+  - `js/backup-export.js`
+- Extracted Settings and athlete profile logic into:
+  - `js/settings.js`
+- Extracted share-card rendering into:
+  - `js/share-card.js`
+
+Current script load order:
+
+- `js/date-utils.js`
+- `js/ui-core.js`
+- `js/share-card.js`
+- `js/wellness.js`
+- `js/stats.js`
+- `js/news-ai.js`
+- `js/sources-strava.js`
+- `js/settings.js`
+- `js/backup-export.js`
+- `js/coach.js`
+- `js/races.js`
+
+Load-order reasoning:
+
+- `wellness.js` must load before `stats.js` and `coach.js` because both use readiness/load helpers.
+- `stats.js` must load before `races.js` because `races.js` patches `renderWeekStats`.
+- `sources-strava.js` must load before `settings.js` because athlete profile saving can re-run Strava interval analysis.
+- `backup-export.js` can load after settings because backup/export handlers are user-driven, but its own initial `renderSyncStatus()` and `flushSheetsQueue()` calls must live inside `backup-export.js`.
+
+Regression caught and fixed:
+
+- After moving backup/export code, `python smoke_test_dashboard.py` caught:
+  - `renderSyncStatus is not defined`
+- Root cause:
+  - `index.html` still called `renderSyncStatus()` and `setTimeout(flushSheetsQueue,1500)` before `js/backup-export.js` loaded.
+- Fix:
+  - moved those init calls into `js/backup-export.js` after the functions are defined.
+
+Share-card extraction note:
+
+- First extraction accidentally moved `</script>` into `js/share-card.js` and left external script tags inside the inline script.
+- `node verify_dashboard.js` caught this as:
+  - `SyntaxError: Unexpected token '<'`
+- Fix:
+  - restored `</script>` before external script tags in `index.html`,
+  - removed the stray `</script>` from `js/share-card.js`.
+
+Verification completed after all extractions:
+
+- `node verify_dashboard.js`
+  - Passed.
+- `python smoke_test_dashboard.py`
+  - Passed with no page errors, console errors, or request failures.
+- Targeted Playwright AI Coach mobile smoke:
+  - Passed.
+- Targeted Playwright Race tab smoke:
+  - Passed.
+
+Current result:
+
+- `index.html` is reduced to about 4,112 lines.
+- Feature code now lives in focused files under `js/`.
+- Remaining `index.html` still contains core shell, Firebase/AppState bootstrapping, activity form/log helpers, dashboard home widgets, calendar/detail overlays, PWA shell, and HTML markup.
+- No commit or push was performed.
+
+## 2026-07-07 Local Verification Hardening Before Push
+
+Context:
+
+- User correctly noted that pushing directly after a broad refactor could break the main site.
+- Goal was to strengthen local verification before any commit/push.
+- Literal 100% runtime certainty is not possible without exhaustive user-device/browser coverage, but the local automated checks now cover the major refactor risk points.
+
+Test additions:
+
+- Added `comprehensive_refactor_test.py`.
+- The test runs the dashboard through local HTTP + Playwright and verifies:
+  - exact external script load order,
+  - all refactored global functions exist,
+  - all inline `onclick="functionName(...)"` handlers point to existing functions,
+  - every primary page can activate:
+    - Dashboard,
+    - Activity Log,
+    - Statistics,
+    - AI Coach,
+    - Sources,
+    - AI Q&A,
+    - Wellness,
+    - Settings,
+  - representative render calls for:
+    - Dashboard widgets,
+    - Activity list,
+    - Stats week/month/insights,
+    - Wellness check-in/analytics,
+    - AI Q&A side panel,
+    - Sources/Strava page,
+    - Settings athlete profile,
+    - Backup sync status,
+    - Coach track/race tabs,
+    - Share card modal/canvas,
+  - no mobile horizontal overflow in the tested viewport,
+  - no page errors, console errors, or request failures.
+
+Test fixes while building the guard:
+
+- Initial comprehensive test forgot that Chart.js CDN is the first script. Fixed expected script order.
+- Activity and Wellness list assertions initially expected `.card`, but the real UI renders `.workout-row`. Fixed selectors.
+- News panel assertion initially expected a non-existent `#news-side-panel`; changed to `.news-side` + `#news-sources`.
+
+PWA/deploy-readiness fix:
+
+- Bumped service worker cache from:
+  - `mydash-v3-health-20260707-2`
+  - to `mydash-v3-health-20260707-3`
+- Bumped manifest/icon query strings to `20260707-3`.
+- Bumped manifest id from `./?v=7` to `./?v=8`.
+- Added all local JS modules to the service worker app shell:
+  - `js/date-utils.js`
+  - `js/ui-core.js`
+  - `js/share-card.js`
+  - `js/wellness.js`
+  - `js/stats.js`
+  - `js/news-ai.js`
+  - `js/sources-strava.js`
+  - `js/settings.js`
+  - `js/backup-export.js`
+  - `js/coach.js`
+  - `js/races.js`
+- Updated `verify_dashboard.js` to guard the service worker cache version and new JS app-shell entries.
+
+Verification completed after hardening:
+
+- `node verify_dashboard.js`
+  - Passed.
+- Python syntax check via `ast.parse` for:
+  - `comprehensive_refactor_test.py`
+  - `smoke_test_dashboard.py`
+  - Passed.
+- `python smoke_test_dashboard.py`
+  - Passed with no page errors, console errors, or request failures.
+- `node --check workers\ai-proxy\src\index.js`
+  - Passed.
+- `python comprehensive_refactor_test.py`
+  - Passed with:
+    - exact script order OK,
+    - missing globals: none,
+    - missing onclick handlers: none,
+    - all primary pages active,
+    - key DOM/render checks OK.
+
+Remaining risk before push:
+
+- Local automated checks are strong enough for the refactor, but not a mathematical 100% guarantee.
+- Still worth doing one manual phone hard-refresh check after GitHub Pages updates because PWA/service-worker/browser cache behavior can differ from local headless Chrome.
+
 ## 2026-07-07 Coach End Date Race Integration
 
 Context:
