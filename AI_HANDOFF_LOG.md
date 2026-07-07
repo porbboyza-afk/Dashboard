@@ -164,6 +164,93 @@ Verification run after the change:
 - `python C:\Users\pucca\Dashboard-GitHub\smoke_test_dashboard.py`
 - Both passed with no page errors, console errors, or request failures.
 
+## 2026-07-07 Adaptive AI Coach And Strava Archive Safety
+
+Context:
+
+- User asked to implement the full recommendation set:
+  - AI coach for 10K sub-48 style planning.
+  - daily body/readiness-aware decisions.
+  - rescheduling when unavailable.
+  - Strava paid/archive import safety so Health Connect and Strava do not fight.
+
+Code changes:
+
+- Added goal-profile fields to the AI Coach create form:
+  - race distance
+  - target time
+  - latest benchmark
+  - unavailable days
+- Added deterministic coach helper layer in `index.html`:
+  - `parseTimeToMinutes()`
+  - `raceDistanceKm()`
+  - `getCoachGoalProfile()`
+  - `buildCoachContext()`
+  - `formatCoachContext()`
+  - `coachSafetyDecision()`
+- `generateTrainingPlan()` now sends a richer coach context to AI:
+  - target goal/pace
+  - 7D/30D/90D volume
+  - readiness score and reasons
+  - ACWR, monotony, strain
+  - wellness 14D including sleep, RHR, HRV, SpO2, fatigue, pain
+  - latest workouts with source labels
+  - explicit safety rules preventing catch-up load doubling and hard-day stacking
+- Saved coach plans now include:
+  - `goalProfile`
+  - `safetyPolicyVersion: 1`
+  - `adjustments: []`
+- Added adaptive track-plan controls:
+  - `Today unavailable`
+  - `Downgrade today`
+  - per-session `Move`
+  - per-session `Downgrade`
+  - per-session `Skip`
+- Added `coach_plan.adjustments` history when sessions are moved, downgraded, or skipped.
+- Added daily decision card in Track Plan:
+  - Green: do planned session.
+  - Yellow: reduce volume/intensity.
+  - Red: recovery/rest, no hard session.
+- `reviewPlanAI()` now uses the same coach context and adjustment history.
+
+Safety rules implemented in code:
+
+- No deterministic catch-up doubling after missed/unavailable sessions.
+- Hard sessions are not moved into slots with hard sessions nearby.
+- Pain/high soreness, sick status, and high ACWR block or downgrade hard sessions.
+- AI is instructed not to invent missing cadence/GPS/splits.
+
+Strava archive/dedupe changes:
+
+- Added `strava_archive` source badge.
+- `renderStravaActivities()` maps newly synced Strava API activities as:
+  - `source: "strava_archive"`
+  - `archiveOnly: true`
+- `getAllActivities()` no longer lets Strava override primary data when fingerprints duplicate.
+- Source priority is now:
+  - Health Connect
+  - manual/local
+  - recovered Strava cache
+  - Strava archive
+  - legacy Strava API
+- Activity detail shows `Merged duplicates` when lower-priority duplicate sources were merged away.
+- Sources overview now separates Strava archive count from manual/local workouts.
+
+Verification:
+
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+- Both passed with no page errors, console errors, or request failures.
+
+Next recommended checks:
+
+- Create a new 10K sub-48 plan and confirm JSON save works through AI proxy.
+- Open Track Plan and test:
+  - Today unavailable
+  - Downgrade today
+  - Move/Downgrade/Skip on a future session
+- If Strava access is restored temporarily, treat sync as archive-only and review duplicate behavior before using any Strava detail for enrichment.
+
 Recommended next debugging step if the user still sees 404:
 
 - Open browser DevTools -> Network while pressing Strava Sync.

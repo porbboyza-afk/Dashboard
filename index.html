@@ -1957,6 +1957,20 @@ img, video, iframe, canvas { max-width: 100%; }
         <div class="grid g2">
           <div class="card">
             <div class="form-group"><label>Goal</label><input type="text" id="coach-goal" placeholder="e.g. Run 10km Sub 48 min in 8 weeks"></div>
+            <div class="grid g2">
+              <div class="form-group"><label>Race Distance</label>
+                <select id="coach-race-distance">
+                  <option value="10K" selected>10K</option>
+                  <option value="5K">5K</option>
+                  <option value="Half">Half Marathon</option>
+                </select>
+              </div>
+              <div class="form-group"><label>Target Time</label><input type="text" id="coach-target-time" value="47:59" placeholder="47:59"></div>
+            </div>
+            <div class="grid g2">
+              <div class="form-group"><label>Latest Benchmark</label><input type="text" id="coach-benchmark" placeholder="e.g. 5K 24:10, 10K 52:30"></div>
+              <div class="form-group"><label>Unavailable Days</label><input type="text" id="coach-unavailable" placeholder="e.g. Mon,Fri or 2026-07-12"></div>
+            </div>
             <div class="form-group"><label>Current Level</label>
               <select id="coach-level">
                 <option value="beginner">Beginner — less than 5 km</option>
@@ -2034,7 +2048,10 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="flex gap-8 mb-16 flex-wrap">
             <button class="btn btn-green btn-sm" onclick="matchWorkoutsToPlan()">🔄 Match Activities to Plan</button>
             <button class="btn btn-primary btn-sm" id="btn-coach-review" onclick="reviewPlanAI()">🤖 AI Progress Review</button>
+            <button class="btn btn-ghost btn-sm" onclick="coachRescheduleWeek()">Today unavailable</button>
+            <button class="btn btn-ghost btn-sm" onclick="coachDowngradeToday()">Downgrade today</button>
           </div>
+          <div id="coach-daily-decision" class="card mb-16" style="display:none"></div>
           <div id="coach-review-output" class="ai-box mb-16"></div>
           <div id="coach-plan-days"></div>
         </div>
@@ -2854,6 +2871,7 @@ function sourceMeta(wOrSource){
   const sourceApp=typeof wOrSource==='object'?String(wOrSource.sourceApp||'').toLowerCase():'';
   if(source==='health_connect')return {label:sourceApp.includes('garmin')?'GARMIN':'HC',title:'Health Connect',color:'var(--green)',bg:'rgba(52,199,89,.14)'};
   if(source==='strava_recovered')return {label:'STRAVA LEGACY',title:'Recovered Strava cache',color:'var(--strava)',bg:'rgba(252,76,2,.15)'};
+  if(source==='strava_archive')return {label:'STRAVA ARCHIVE',title:'Strava archive import',color:'var(--strava)',bg:'rgba(252,76,2,.15)'};
   if(source==='strava')return {label:'STRAVA API',title:'Legacy Strava API',color:'var(--strava)',bg:'rgba(252,76,2,.15)'};
   return {label:'MANUAL',title:'Manual / MyDash Cloud',color:'var(--accent)',bg:'var(--accent-light)'};
 }
@@ -2864,12 +2882,25 @@ function sourceBadge(wOrSource,compact=false){
 function workoutFingerprint(w){
   return `${w.date||''}|${String(w.type||'').toLowerCase()}|${Math.round(parseFloat(w.dist||0)*20)}|${Math.round(parseFloat(w.time||0))}`;
 }
+function activitySourcePriority(w){
+  const source=w?.source||'manual';
+  if(source==='health_connect')return 50;
+  if(source==='manual'||!w?.source)return 45;
+  if(source==='strava_recovered')return 30;
+  if(source==='strava_archive')return 25;
+  if(source==='strava')return 20;
+  return 10;
+}
 function getAllActivities(){
   const seen=new Map();
   [...(window._workouts||[]),...(window._stravaWorkouts||[])].forEach(w=>{
     const fp=workoutFingerprint(w);
     const old=seen.get(fp);
-    if(!old||w.source==='strava')seen.set(fp,w);
+    if(!old||activitySourcePriority(w)>activitySourcePriority(old)){
+      seen.set(fp,{...w,_dedupedWith:old?[...(old._dedupedWith||[]),old.source||'manual']:w._dedupedWith});
+    }else if(old){
+      old._dedupedWith=[...(old._dedupedWith||[]),w.source||'manual'];
+    }
   });
   return [...seen.values()].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 }
@@ -3264,10 +3295,100 @@ function updateCoachWeeksFromEnd() {
 }
 
 // ── AI COACH ──
+function parseTimeToMinutes(value){
+  const parts=String(value||'').trim().split(':').map(Number);
+  if(parts.some(n=>!Number.isFinite(n)))return null;
+  if(parts.length===2)return parts[0]+parts[1]/60;
+  if(parts.length===3)return parts[0]*60+parts[1]+parts[2]/60;
+  return Number.isFinite(parts[0])?parts[0]:null;
+}
+function raceDistanceKm(distance){
+  if(distance==='5K')return 5;
+  if(distance==='Half')return 21.0975;
+  return 10;
+}
+function datePlusDays(dateStr,days){
+  const d=new Date((dateStr||toLocalDateStr())+'T12:00:00');
+  d.setDate(d.getDate()+days);
+  return toLocalDateStr(d);
+}
+function isHardSession(type){
+  return ['Tempo','Interval','Long'].includes(String(type||''));
+}
+function getCoachGoalProfile(plan=null){
+  const distance=document.getElementById('coach-race-distance')?.value||plan?.goalProfile?.distance||'10K';
+  const targetTime=document.getElementById('coach-target-time')?.value?.trim()||plan?.goalProfile?.targetTime||'47:59';
+  const targetMinutes=parseTimeToMinutes(targetTime);
+  const km=raceDistanceKm(distance);
+  const targetPace=targetMinutes?targetMinutes/km:null;
+  const unavailableRaw=document.getElementById('coach-unavailable')?.value?.trim()||plan?.goalProfile?.unavailableRaw||'';
+  const unavailable=unavailableRaw.split(/[,\s]+/).map(x=>x.trim()).filter(Boolean);
+  return {
+    distance,targetTime,targetMinutes,targetPace,benchmark:document.getElementById('coach-benchmark')?.value?.trim()||plan?.goalProfile?.benchmark||'',
+    unavailableRaw,unavailable
+  };
+}
+function coachSourceSummary(activities){
+  return activities.reduce((acc,w)=>{const key=w.source||'manual';acc[key]=(acc[key]||0)+1;return acc;},{});
+}
+function buildCoachContext(plan=null){
+  const activities=getAllActivities();
+  const wellness=AppState.get('wellness')||[];
+  const readiness=calculateReadiness();
+  const goalProfile=getCoachGoalProfile(plan);
+  const today=toLocalDateStr();
+  const since=days=>activities.filter(w=>new Date((w.date||'')+'T12:00:00')>=dateDaysAgo(days-1));
+  const volume=rows=>rows.reduce((sum,w)=>sum+(parseFloat(w.dist)||0),0);
+  const latest=activities.slice(0,12).map(w=>`${w.date} ${w.type||'run'} ${w.dist||0}km ${Math.round(w.time||0)}min${w.avgPace?' pace '+formatPace(w.avgPace):''}${w.hr?' HR'+w.hr:''}${w.rpe?' RPE'+w.rpe:''} ${sourceMeta(w).label}`).join('\n');
+  const wellnessRows=wellness.slice(0,14).map(r=>`${r.date}: sleep ${r.sleepHours??'-'}h, RHR ${r.restingHR??'-'}, HRV ${r.hrv??'-'}, SpO2 ${r.spo2??'-'}, fatigue ${r.fatigue??'-'}, pain ${r.soreness??'-'}, status ${r.healthStatus||'-'}`).join('\n');
+  return {
+    today,goalProfile,readiness,
+    load:readiness.load,
+    volumes:{d7:+volume(since(7)).toFixed(1),d30:+volume(since(30)).toFixed(1),d90:+volume(since(90)).toFixed(1)},
+    sourceSummary:coachSourceSummary(activities),
+    latestActivities:latest||'none',
+    wellnessRows:wellnessRows||'none',
+    planSummary:plan?.sessions?.slice(0,18).map(s=>`${s.date} ${s.type} ${s.targetDist||0}km ${s.targetPace||''} ${s.notes||''}`).join('\n')||'none'
+  };
+}
+function formatCoachContext(ctx){
+  const gp=ctx.goalProfile;
+  return [
+    `Today: ${ctx.today}`,
+    `Goal: ${gp.distance} ${gp.targetTime} (${gp.targetPace?formatPace(gp.targetPace)+'/km':'pace n/a'})`,
+    `Benchmark: ${gp.benchmark||'not provided'}`,
+    `Unavailable: ${gp.unavailableRaw||'none'}`,
+    `Readiness: ${ctx.readiness.score}/100 ${ctx.readiness.level}`,
+    `Readiness reasons: ${(ctx.readiness.reasons||[]).join(' | ')||'none'}`,
+    `Load: acute ${Math.round(ctx.load.acute)}, chronic ${Math.round(ctx.load.chronicWeekly)}, ACWR ${ctx.load.acwr?.toFixed(2)??'n/a'}, monotony ${ctx.load.monotony?.toFixed(2)??'n/a'}, strain ${Math.round(ctx.load.strain)}`,
+    `Volume: 7D ${ctx.volumes.d7}km, 30D ${ctx.volumes.d30}km, 90D ${ctx.volumes.d90}km`,
+    `Sources: ${JSON.stringify(ctx.sourceSummary)}`,
+    `Latest activities:\n${ctx.latestActivities}`,
+    `Wellness 14D:\n${ctx.wellnessRows}`,
+    `Current plan:\n${ctx.planSummary}`
+  ].join('\n');
+}
+function coachSafetyDecision(session=null){
+  const readiness=calculateReadiness();
+  const today=readiness.today;
+  const hard=isHardSession(session?.type);
+  const reasons=[...(readiness.reasons||[])];
+  let status=readiness.score>=80?'green':readiness.score>=60?'yellow':'red';
+  let action=status==='green'?'Do planned session':status==='yellow'?'Reduce volume/intensity':'Recovery or rest';
+  if(today?.healthStatus==='sick'||today?.soreness>=7){status='red';action='Rest or very easy only';reasons.push('Sick/high pain rule blocks hard training');}
+  if(today?.soreness>=5&&hard){status=status==='green'?'yellow':status;action='Downgrade hard session';reasons.push('Pain rule downgrades hard session');}
+  if(readiness.load.acwr!==null&&readiness.load.acwr>1.5&&hard){status='red';action='No hard session';reasons.push('ACWR > 1.5 blocks hard training');}
+  else if(readiness.load.acwr!==null&&readiness.load.acwr>1.3&&hard){status=status==='green'?'yellow':status;action='Shorten hard session';}
+  if(readiness.restHours!==null&&readiness.restHours<18&&hard){status=status==='green'?'yellow':status;action='Avoid back-to-back hard load';}
+  return {status,action,reasons:reasons.slice(0,5),readiness};
+}
+function coachDecisionColor(status){
+  return status==='green'?'var(--green)':status==='yellow'?'var(--orange)':'var(--red)';
+}
 async function generateTrainingPlan(){
   const goal=document.getElementById('coach-goal')?.value?.trim();
   if(!goal){showToast('กรุณาใส่เป้าหมาย','error');return;}
-  if(!AppState.get('deepseekKey')){showToast('กรุณาตั้งค่า DeepSeek API Key ก่อน','error');showPage('settings');return;}
+  if(!AppState.get('deepseekKey')&&!AppState.get('aiProxyUrl')){showToast('กรุณาตั้งค่า AI Proxy หรือ DeepSeek API Key ก่อน','error');showPage('settings');return;}
   const level=document.getElementById('coach-level')?.value;
   const days=document.getElementById('coach-days')?.value;
   const startDate=document.getElementById('coach-start-date')?.value||toLocalDateStr();
@@ -3278,23 +3399,21 @@ async function generateTrainingPlan(){
     const diff = Math.round((new Date(endDate+'T00:00:00') - new Date(startDate+'T00:00:00')) / (7*86400000));
     if (diff > 0) totalWeeks = diff;
   }
-  const endInfo = endDate ? `\nRace/Goal Date: ${endDate}` : '';
-  const history=getAllActivities().slice(0,21).map(w=>`${w.date}:${w.type} ${w.dist}km ${w.time}min${w.avgPace?' Pace'+formatPace(w.avgPace):''}${w.rpe?' RPE'+w.rpe:''}`).join(', ');
-  const readiness=calculateReadiness();
-  const wellnessContext=(AppState.get('wellness')||[]).slice(0,14).map(r=>`${r.date}:sleep${r.sleepHours??'-'} RHR${r.restingHR??'-'} HRV${r.hrv??'-'} fatigue${r.fatigue??'-'} pain${r.soreness??'-'}`).join(', ');
+  const context=buildCoachContext();
+  const safety=coachSafetyDecision();
   const out=document.getElementById('coach-output');
   if(out){out.style.color='var(--text2)';out.innerHTML='⏳ Creating plan...';}
   const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='⏳ Generating...';btn.disabled=true;}
   try{
     const rawText=await askDeepSeek(
-      `Goal:${goal}\nLevel:${level}\nDays:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nHistory:${history||'none'}\nWellness:${wellnessContext||'none'}\nCurrent readiness:${readiness.score}/100 (${readiness.level})\nLoad: acute ${Math.round(readiness.load.acute)}, chronic ${Math.round(readiness.load.chronicWeekly)}, ACWR ${readiness.load.acwr?.toFixed(2)??'n/a'}\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"..."}]}\nCreate exactly ${parseInt(days)*totalWeeks} sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Adapt the first week to current readiness and load.`,
-      'คุณเป็นโค้ชวิ่ง ตอบเป็น JSON ONLY ไม่มี markdown วางวันหนักไม่ติดกันและมี recovery/taper ตามข้อมูลสุขภาพ'
+      `Create an adaptive running plan.\n\n${formatCoachContext(context)}\n\nLevel:${level}\nTraining days:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nDaily safety today:${safety.status} - ${safety.action}\n\nHard rules:\n- Code-calculated health/load data is authoritative; do not invent metrics.\n- No hard sessions on consecutive days.\n- If readiness is yellow, reduce intensity or volume.\n- If readiness is red, use recovery/rest and do not compensate by doubling the next day.\n- If pain >= 6, sick status, or ACWR > 1.5, block interval/tempo.\n- Strava is legacy/archive; Health Connect/manual workouts are primary.\n- Missing cadence/GPS/splits must be marked unavailable, never estimated as fact.\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"...","priority":"key|normal|optional"}]}\nCreate exactly ${parseInt(days)*totalWeeks} non-rest sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Include taper near goal date.`,
+      'You are a conservative running coach for a 10K sub-48 goal. Return JSON only. Prioritize injury prevention and deterministic safety rules.'
     );
     if(!rawText)throw new Error('DeepSeek ไม่ส่งแผนกลับมา');
     let plan=null;
     try{plan=JSON.parse(rawText.replace(/```json\s*/gi,'').replace(/```\s*/gi,'').trim());}
     catch(e){if(out){out.style.color='var(--text)';out.innerHTML=mdToHtml(rawText);}showToast('Plan created (no JSON save)','warn');return;}
-    await window._fb.setData('coach_plan',{...plan,createdAt:Date.now(),completedDates:{}});
+    await window._fb.setData('coach_plan',{...plan,goalProfile:context.goalProfile,safetyPolicyVersion:1,createdAt:Date.now(),completedDates:{},adjustments:[]});
     if(out){out.style.color='var(--text)';out.innerHTML=`<div style="color:var(--green);font-weight:700;margin-bottom:10px">✅ Plan saved!</div><div style="font-size:12px;color:var(--text2)">Goal: <strong style="color:var(--text)">${plan.goal}</strong><br>${plan.sessions?.length||0} sessions · ${plan.totalWeeks} weeks</div>`;}
     showToast('✅ Plan created and saved!');
   }catch(e){if(out)out.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;}
@@ -3332,6 +3451,7 @@ function renderCoachTracking(){
   const pct=totalNonRest>0?Math.round(doneCount/totalNonRest*100):0;
   set('coach-progress-pct',pct+'%');
   const pb=document.getElementById('coach-progress-bar');if(pb)pb.style.width=pct+'%';
+  renderCoachDailyDecision(plan);
   const daysEl=document.getElementById('coach-plan-days');if(!daysEl)return;
   const typeEmoji={Easy:'🟢',Tempo:'🟡',Interval:'🔴',Long:'🔵',Rest:'⚪'};
   const typeColor={Easy:'var(--green)',Tempo:'var(--orange)',Interval:'var(--red)',Long:'var(--accent)',Rest:'var(--text3)'};
@@ -3356,13 +3476,99 @@ function renderCoachTracking(){
       <div style="flex:1"><div style="font-size:14px;font-weight:700;color:${typeColor[s.type]||'var(--text)'};margin-bottom:2px">${s.type}${s.targetDist>0?' · '+s.targetDist+' km':''}</div>
       <div style="font-size:12px;color:var(--text2)">${s.description||''}${s.targetPace?' · '+s.targetPace:''}${s.targetHR?' · HR<'+s.targetHR:''}</div>
       ${s.notes?`<div style="font-size:10px;color:var(--text3);margin-top:3px">💡 ${s.notes}</div>`:''}${actualLine}</div>
-      ${(!isDone&&!isFuture&&!isRest)?`<button onclick="markDone('${s.date}')" class="btn btn-green btn-xs">✓ Done</button>`:''}</div></div>`;
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        ${(!isDone&&!isFuture&&!isRest)?`<button onclick="markDone('${s.date}')" class="btn btn-green btn-xs">✓ Done</button>`:''}
+        ${(!isDone&&!isRest)?`<button onclick="coachMoveSession('${s.date}')" class="btn btn-ghost btn-xs">Move</button>`:''}
+        ${(!isDone&&isHardSession(s.type))?`<button onclick="coachDowngradeSession('${s.date}')" class="btn btn-ghost btn-xs">Downgrade</button>`:''}
+        ${(!isDone&&!isRest)?`<button onclick="coachSkipSession('${s.date}')" class="btn btn-ghost btn-xs">Skip</button>`:''}
+      </div></div></div>`;
   }).join('');
+}
+
+function renderCoachDailyDecision(plan){
+  const el=document.getElementById('coach-daily-decision');if(!el)return;
+  const today=toLocalDateStr();
+  const todaySession=(plan.sessions||[]).find(s=>s.date===today&&!['Rest','Recovery'].includes(s.type));
+  const decision=coachSafetyDecision(todaySession);
+  const color=coachDecisionColor(decision.status);
+  el.style.display='block';
+  el.style.borderLeft=`4px solid ${color}`;
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <div class="card-label">Adaptive Coach Today</div>
+        <div style="font-size:18px;font-weight:800;color:${color};margin-bottom:4px">${decision.status.toUpperCase()} - ${escapeHTML(decision.action)}</div>
+        <div class="text-sm c2">${todaySession?`${escapeHTML(todaySession.type)} ${todaySession.targetDist||''}km ${todaySession.targetPace||''}`:'No key workout today'}</div>
+        <div class="text-xs c3 mt-8">${decision.reasons.map(escapeHTML).join(' · ')||'No major risk flags'}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${todaySession?`<button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${today}')">Today unavailable</button>`:''}
+        ${todaySession&&isHardSession(todaySession.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${today}')">Downgrade</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="reviewPlanAI()">Ask AI</button>
+      </div>
+    </div>`;
 }
 
 async function matchWorkoutsToPlan(silent=false){if(!window._coachPlan?.sessions)return;if(document.getElementById('page-coach').classList.contains('active')&&document.getElementById('coach-track-tab').style.display!=='none')renderCoachTracking();if(!silent)showToast('🔄 Activities matched');}
 async function markDone(date){const plan=window._coachPlan;if(!plan)return;const c=plan.completedDates||{};c[date]=Date.now();await window._fb.setData('coach_plan/completedDates',c);showToast('✅ Marked as done');}
 async function clearCoachPlan(){if(!confirm('Delete training plan?'))return;await window._fb.removeData('coach_plan');AppState.set('coachPlan',null);showToast('Plan deleted');}
+function coachSessionsOn(plan,date){return (plan.sessions||[]).filter(s=>s.date===date);}
+function coachHasHardNear(plan,date){
+  return [-1,0,1].some(offset=>coachSessionsOn(plan,datePlusDays(date,offset)).some(s=>isHardSession(s.type)));
+}
+function coachFindMoveDate(plan,session){
+  for(let offset=1;offset<=10;offset++){
+    const candidate=datePlusDays(session.date,offset);
+    const rows=coachSessionsOn(plan,candidate);
+    if(rows.some(s=>s.type!=='Rest'))continue;
+    if(isHardSession(session.type)&&coachHasHardNear(plan,candidate))continue;
+    return candidate;
+  }
+  return null;
+}
+async function saveCoachPlanWithAdjustment(plan,adjustment){
+  const next={...plan,adjustments:[...(plan.adjustments||[]),{...adjustment,createdAt:Date.now()}]};
+  await window._fb.setData('coach_plan',next);
+  AppState.set('coachPlan',next);
+  renderCoachTracking();
+}
+async function coachMoveSession(date){
+  const plan=window._coachPlan;if(!plan?.sessions)return;
+  const session=plan.sessions.find(s=>s.date===date&&s.type!=='Rest');if(!session)return showToast('No movable session','error');
+  const target=coachFindMoveDate(plan,session);if(!target)return showToast('No safe slot found in next 10 days','error');
+  const oldDate=session.date;
+  session.date=target;
+  session.notes=[session.notes,`Moved from ${oldDate}; no catch-up load added`].filter(Boolean).join(' · ');
+  await saveCoachPlanWithAdjustment(plan,{type:'move',from:oldDate,to:target,sessionType:session.type,reason:'unavailable_or_manual_move'});
+  showToast(`Moved to ${target}`);
+}
+async function coachDowngradeSession(date){
+  const plan=window._coachPlan;if(!plan?.sessions)return;
+  const session=plan.sessions.find(s=>s.date===date&&s.type!=='Rest');if(!session)return showToast('No session to downgrade','error');
+  const before={type:session.type,targetDist:session.targetDist,targetPace:session.targetPace};
+  session.type='Easy';
+  session.targetDist=Math.max(3,+(parseFloat(session.targetDist||5)*0.65).toFixed(1));
+  session.targetPace='';
+  session.targetHR=session.targetHR?Math.min(+session.targetHR,145):145;
+  session.notes=[session.notes,'Downgraded by safety/adaptive coach'].filter(Boolean).join(' · ');
+  await saveCoachPlanWithAdjustment(plan,{type:'downgrade',date,from:before,to:{type:session.type,targetDist:session.targetDist,targetHR:session.targetHR},reason:'readiness_or_manual_downgrade'});
+  showToast('Session downgraded');
+}
+async function coachSkipSession(date){
+  const plan=window._coachPlan;if(!plan?.sessions)return;
+  const session=plan.sessions.find(s=>s.date===date&&s.type!=='Rest');if(!session)return showToast('No session to skip','error');
+  const before={type:session.type,targetDist:session.targetDist,targetPace:session.targetPace};
+  session.type='Rest';
+  session.description='Skipped - no catch-up load';
+  session.targetDist=0;
+  session.targetPace='';
+  session.targetHR='';
+  session.notes=[session.notes,'Skipped without doubling a later session'].filter(Boolean).join(' · ');
+  await saveCoachPlanWithAdjustment(plan,{type:'skip',date,from:before,reason:'unavailable_or_recovery'});
+  showToast('Session skipped safely');
+}
+async function coachRescheduleWeek(){await coachMoveSession(toLocalDateStr());}
+async function coachDowngradeToday(){await coachDowngradeSession(toLocalDateStr());}
 async function reviewPlanAI(){
   const plan=window._coachPlan;if(!plan?.sessions){showToast('No plan','error');return;}
   const today=toLocalDateStr();
@@ -3370,8 +3576,10 @@ async function reviewPlanAI(){
   const completedDates=plan.completedDates||{};
   let summary=`Plan: ${plan.goal}\n\n`,doneCount=0,missCount=0;
   plan.sessions.forEach(s=>{if(s.type==='Rest')return;const aw=allWks.find(w=>w.date===s.date);const isDone=!!completedDates[s.date]||!!aw;if(isDone)doneCount++;if(!isDone&&s.date<today)missCount++;if(s.date<=today){summary+=`[${s.date}] ${s.type} target:${s.targetDist}km `;if(aw)summary+=`→ actual:${aw.dist}km ✅\n`;else summary+=`→ ❌\n`;}});
-  summary+=`\nSummary: done ${doneCount} / missed ${missCount}`;
-  await askDeepSeek(summary+'\n\nReview progress and suggest plan adjustments','คุณคือโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย','btn-coach-review','coach-review-output');
+  summary+=`\nSummary: done ${doneCount} / missed ${missCount}\nAdjustments: ${JSON.stringify((plan.adjustments||[]).slice(-12))}`;
+  const context=buildCoachContext(plan);
+  const safety=coachSafetyDecision((plan.sessions||[]).find(s=>s.date===today));
+  await askDeepSeek(`${formatCoachContext(context)}\n\n${summary}\n\nDaily safety decision: ${safety.status} - ${safety.action}\nReasons: ${safety.reasons.join(' | ')}\n\nReview progress and suggest safe adjustments. Do not recommend catch-up doubling. Separate facts from AI estimate.`, 'คุณคือโค้ชวิ่งสาย conservative สำหรับเป้า 10K sub 48 วิเคราะห์เป็นภาษาไทย ใช้ข้อมูลจริงเท่านั้น ถ้าเป็นการประเมินให้บอกว่า AI estimate', 'btn-coach-review', 'coach-review-output');
   document.getElementById('coach-review-output').style.display='block';
 }
 
@@ -4172,7 +4380,8 @@ function renderSourcesOverview({healthStatus={},recovery={},workouts=[],stravaTo
   const card=document.getElementById('sources-overview-card');if(!card)return;
   const healthCount=sourceCountBy(workouts,'source','health_connect');
   const recoveredCount=sourceCountBy(workouts,'source','strava_recovered');
-  const manualCount=(workouts||[]).filter(w=>!['health_connect','strava_recovered'].includes(w?.source)).length;
+  const archiveCount=sourceCountBy(workouts,'source','strava_archive')+sourceCountBy(workouts,'source','strava');
+  const manualCount=(workouts||[]).filter(w=>!['health_connect','strava_recovered','strava_archive','strava'].includes(w?.source)).length;
   const recoveryCounts=recoveryStatusCounts(recovery);
   const stagedTotal=Object.keys(recovery||{}).length;
   const duplicateCount=recoveryCounts.duplicate_candidate||0;
@@ -4208,7 +4417,7 @@ function renderSourcesOverview({healthStatus={},recovery={},workouts=[],stravaTo
       <div class="stat-card">
         <div class="stat-label">Legacy Strava API</div>
         <div style="font-size:20px;font-weight:900;color:${stravaActive?'var(--strava)':'var(--text3)'}">${stravaActive?'Connected':'Inactive'}</div>
-        <div class="text-xs c3 mt-8">${stravaActivities.length} legacy activities cached · ${manualCount} manual/local workouts</div>
+        <div class="text-xs c3 mt-8">${stravaActivities.length} cached · ${archiveCount} archive workouts · ${manualCount} manual/local workouts</div>
       </div>
     </div>
     <div class="empty-state" style="border-style:solid">
@@ -4358,7 +4567,7 @@ function renderStravaActivityCards(){
 }
 
 function renderStravaActivities(acts){
-  AppState.set('stravaWorkouts', (acts||[]).map(a=>({date:stravaLocalDateStr(a),dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava',stravaId:a.id})));
+  AppState.set('stravaWorkouts', (acts||[]).map(a=>({date:stravaLocalDateStr(a),dist:+(a.distance/1000).toFixed(2),time:+(a.moving_time/60).toFixed(1),hr:a.average_heartrate?Math.round(a.average_heartrate):0,cad:a.average_cadence?Math.round(a.average_cadence*2):0,avgPace:a.distance>0?a.moving_time/a.distance*1000/60:0,type:a.type==='Run'?'run':a.type==='Ride'?'bike':a.type==='Swim'?'swim':'run',name:a.name,source:'strava_archive',stravaId:a.id,archiveOnly:true})));
   window._stravaAllActs=acts||[];
   AppState.set('stravaActs',acts||[]);
   renderStravaOverview(acts||[]);
@@ -4688,6 +4897,7 @@ function showActivityDetail(wEncoded) {
         ${row('Pain', w.pain ? `${w.pain}/10${w.painLocation?' · '+escapeHTML(w.painLocation):''}` : null, 'var(--red)')}
         ${row('Feeling', w.feeling ? escapeHTML(w.feeling) : null)}
         ${row('Source', escapeHTML(source.title), source.color)}
+        ${row('Merged duplicates', w._dedupedWith?.length ? escapeHTML([...new Set(w._dedupedWith)].join(', ')) : null, 'var(--orange)')}
         ${w.note ? `<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">หมายเหตุ</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${escapeHTML(w.note)}</div></div>` : ''}
       </div>
       ${w.interval ? `
