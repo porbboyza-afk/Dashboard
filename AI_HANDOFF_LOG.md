@@ -683,6 +683,56 @@ Next device-test steps:
 6. Check `sync_sources/health_connect/cadence_sessions` and `cadence_samples`.
 7. Check Health Connect workouts in Firebase for `cad > 0`.
 
+## 2026-07-07 Health Connect Wellness Sync
+
+Goal:
+
+- Extend the Android sync companion so Health Connect can fill Daily Wellness automatically where possible.
+- Required fields requested by user:
+  - sleep
+  - resting HR
+  - HRV RMSSD
+  - weight
+  - SpO2
+
+Code changes:
+
+- Added manifest permissions:
+  - `READ_SLEEP`
+  - `READ_RESTING_HEART_RATE`
+  - `READ_HEART_RATE_VARIABILITY`
+  - `READ_WEIGHT`
+  - `READ_OXYGEN_SATURATION`
+- Added Health Connect readers:
+  - `SleepSessionRecord` -> `wellness/{date}/sleepHours`
+  - `RestingHeartRateRecord` -> `wellness/{date}/restingHR`
+  - `HeartRateVariabilityRmssdRecord` -> `wellness/{date}/hrv`
+  - `WeightRecord` -> `wellness/{date}/weight`
+  - `OxygenSaturationRecord` -> `wellness/{date}/spo2`
+- Sleep records are assigned to the local date of `endTime`.
+- Existing manual wellness values are not overwritten.
+  - The sync only fills missing/blank/zero fields.
+- Sync status now stores:
+  - `wellness_days_scanned`
+  - `wellness_days_updated`
+  - `wellness_fields_updated`
+- The Android result message now includes wellness days/fields updated.
+
+Verification:
+
+- `.\gradlew.bat assembleDebug` passed.
+- Installed the debug APK on device `RRCX10685RZ`.
+- Opened the app with ADB.
+
+User/device action needed:
+
+1. Grant the new Health Connect permissions when prompted.
+2. Tap `Sync last 30 days`.
+3. Verify Firebase:
+   - `users/{uid}/sync_sources/health_connect/wellness_days_updated`
+   - `users/{uid}/sync_sources/health_connect/wellness_fields_updated`
+   - `users/{uid}/wellness/{YYYY-MM-DD}` fields.
+
 User action needed after GitHub Pages updates:
 
 - Hard refresh MyDash.

@@ -7,8 +7,13 @@ import androidx.health.connect.client.records.CyclingPedalingCadenceRecord
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
+import androidx.health.connect.client.records.OxygenSaturationRecord
+import androidx.health.connect.client.records.RestingHeartRateRecord
+import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsCadenceRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
+import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import com.google.firebase.database.FirebaseDatabase
@@ -74,6 +79,8 @@ class HealthConnectSync(private val context: Context) {
             imported++
         }
 
+        val wellness = syncWellnessLast30Days(uid, start, now)
+
         val syncStatus = mapOf(
             "last_sync" to System.currentTimeMillis(),
             "source" to "health_connect",
@@ -82,7 +89,10 @@ class HealthConnectSync(private val context: Context) {
             "updated" to updated,
             "skipped" to skipped,
             "cadence_sessions" to cadenceSessions,
-            "cadence_samples" to cadenceSamples
+            "cadence_samples" to cadenceSamples,
+            "wellness_days_scanned" to wellness.daysScanned,
+            "wellness_days_updated" to wellness.daysUpdated,
+            "wellness_fields_updated" to wellness.fieldsUpdated
         )
         database.reference.child("users").child(uid)
             .child("sync_sources").child("health_connect")
@@ -93,10 +103,12 @@ class HealthConnectSync(private val context: Context) {
             imported = imported,
             updated = updated,
             skipped = skipped,
+            wellnessDaysUpdated = wellness.daysUpdated,
+            wellnessFieldsUpdated = wellness.fieldsUpdated,
             message = if (sessions.isEmpty()) {
-                "No Health Connect exercise sessions found in the last 30 days. Confirm Garmin Connect is writing to Health Connect."
+                "No Health Connect exercise sessions found. Wellness updated ${wellness.daysUpdated} days (${wellness.fieldsUpdated} fields)."
             } else {
-                "Cadence found in $cadenceSessions sessions ($cadenceSamples samples). Open MyDash Web and refresh."
+                "Cadence found in $cadenceSessions sessions ($cadenceSamples samples). Wellness updated ${wellness.daysUpdated} days (${wellness.fieldsUpdated} fields)."
             }
         )
     }
@@ -194,6 +206,134 @@ class HealthConnectSync(private val context: Context) {
         }
     }
 
+    private suspend fun syncWellnessLast30Days(uid: String, start: Instant, end: Instant): WellnessSyncResult {
+        val wellnessByDate = mutableMapOf<String, MutableMap<String, Any>>()
+
+        readSleepByDate(start, end).forEach { (date, value) ->
+            wellnessByDate.getOrPut(date) { mutableMapOf() }["sleepHours"] = value
+        }
+        readRestingHrByDate(start, end).forEach { (date, value) ->
+            wellnessByDate.getOrPut(date) { mutableMapOf() }["restingHR"] = value
+        }
+        readHrvByDate(start, end).forEach { (date, value) ->
+            wellnessByDate.getOrPut(date) { mutableMapOf() }["hrv"] = value
+        }
+        readWeightByDate(start, end).forEach { (date, value) ->
+            wellnessByDate.getOrPut(date) { mutableMapOf() }["weight"] = value
+        }
+        readSpo2ByDate(start, end).forEach { (date, value) ->
+            wellnessByDate.getOrPut(date) { mutableMapOf() }["spo2"] = value
+        }
+
+        val wellnessRef = database.reference.child("users").child(uid).child("wellness")
+        var daysUpdated = 0
+        var fieldsUpdated = 0
+        val nowMs = System.currentTimeMillis()
+
+        for ((date, values) in wellnessByDate) {
+            val existing = wellnessRef.child(date).get().await()
+            val updates = mutableMapOf<String, Any>()
+            for ((field, value) in values) {
+                if (isEmptyWellnessValue(existing.child(field).value)) {
+                    updates[field] = value
+                }
+            }
+            if (updates.isNotEmpty()) {
+                updates["date"] = date
+                updates["healthConnectSyncedAt"] = nowMs
+                updates["updatedAt"] = nowMs
+                if (!existing.exists()) updates["createdAt"] = nowMs
+                wellnessRef.child(date).updateChildren(updates).await()
+                daysUpdated++
+                fieldsUpdated += updates.keys.count {
+                    it !in setOf("date", "healthConnectSyncedAt", "createdAt", "updatedAt")
+                }
+            }
+        }
+
+        return WellnessSyncResult(
+            daysScanned = wellnessByDate.size,
+            daysUpdated = daysUpdated,
+            fieldsUpdated = fieldsUpdated
+        )
+    }
+
+    private suspend fun readSleepByDate(start: Instant, end: Instant): Map<String, Double> {
+        val records = client.readRecords(
+            ReadRecordsRequest(
+                recordType = SleepSessionRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end)
+            )
+        ).records
+        return records.groupBy { dateString(it.endTime) }
+            .mapValues { (_, sessions) ->
+                round(sessions.sumOf { Duration.between(it.startTime, it.endTime).toMinutes() } / 60.0, 2)
+            }
+            .filterValues { it > 0.0 }
+    }
+
+    private suspend fun readRestingHrByDate(start: Instant, end: Instant): Map<String, Int> {
+        val records = client.readRecords(
+            ReadRecordsRequest(
+                recordType = RestingHeartRateRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end)
+            )
+        ).records
+        return records.groupBy { dateString(it.time) }
+            .mapValues { (_, rows) -> rows.map { it.beatsPerMinute }.average().roundToInt() }
+            .filterValues { it > 0 }
+    }
+
+    private suspend fun readHrvByDate(start: Instant, end: Instant): Map<String, Double> {
+        val records = client.readRecords(
+            ReadRecordsRequest(
+                recordType = HeartRateVariabilityRmssdRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end)
+            )
+        ).records
+        return records.groupBy { dateString(it.time) }
+            .mapValues { (_, rows) -> round(rows.map { it.heartRateVariabilityMillis }.average(), 1) }
+            .filterValues { it > 0.0 }
+    }
+
+    private suspend fun readWeightByDate(start: Instant, end: Instant): Map<String, Double> {
+        val records = client.readRecords(
+            ReadRecordsRequest(
+                recordType = WeightRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end)
+            )
+        ).records
+        return records.groupBy { dateString(it.time) }
+            .mapValues { (_, rows) -> round(rows.maxBy { it.time }.weight.inKilograms, 1) }
+            .filterValues { it > 0.0 }
+    }
+
+    private suspend fun readSpo2ByDate(start: Instant, end: Instant): Map<String, Double> {
+        val records = client.readRecords(
+            ReadRecordsRequest(
+                recordType = OxygenSaturationRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end)
+            )
+        ).records
+        return records.groupBy { dateString(it.time) }
+            .mapValues { (_, rows) -> round(rows.map { it.percentage.value }.average(), 1) }
+            .filterValues { it > 0.0 }
+    }
+
+    private fun isEmptyWellnessValue(value: Any?): Boolean {
+        return when (value) {
+            null -> true
+            is String -> value.isBlank()
+            is Number -> value.toDouble() <= 0.0
+            else -> false
+        }
+    }
+
+    private fun dateString(instant: Instant): String {
+        return LocalDateTime.ofInstant(instant, zoneId).toLocalDate()
+            .format(DateTimeFormatter.ISO_LOCAL_DATE)
+    }
+
     private fun mapExerciseType(type: Int): String {
         return when (type) {
             ExerciseSessionRecord.EXERCISE_TYPE_BIKING,
@@ -232,9 +372,14 @@ class HealthConnectSync(private val context: Context) {
             HealthPermission.getReadPermission(ExerciseSessionRecord::class),
             HealthPermission.getReadPermission(DistanceRecord::class),
             HealthPermission.getReadPermission(HeartRateRecord::class),
+            HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),
+            HealthPermission.getReadPermission(OxygenSaturationRecord::class),
+            HealthPermission.getReadPermission(RestingHeartRateRecord::class),
+            HealthPermission.getReadPermission(SleepSessionRecord::class),
             HealthPermission.getReadPermission(StepsCadenceRecord::class),
             HealthPermission.getReadPermission(CyclingPedalingCadenceRecord::class),
-            HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class)
+            HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
+            HealthPermission.getReadPermission(WeightRecord::class)
         )
     }
 }
@@ -244,12 +389,20 @@ data class SyncResult(
     val imported: Int,
     val updated: Int,
     val skipped: Int,
+    val wellnessDaysUpdated: Int,
+    val wellnessFieldsUpdated: Int,
     val message: String
 )
 
 data class CadenceResult(
     val average: Int,
     val samples: Int
+)
+
+data class WellnessSyncResult(
+    val daysScanned: Int,
+    val daysUpdated: Int,
+    val fieldsUpdated: Int
 )
 
 data class MyDashWorkout(

@@ -153,8 +153,8 @@ class MainActivity : ComponentActivity() {
             val user = auth.currentUser ?: error("Sign in first")
             val result = sync.syncLast30Days(user.uid)
             status.text = "Sync complete"
-            lastDetailMessage = "Imported ${result.imported}, updated ${result.updated}, skipped ${result.skipped}, scanned ${result.scanned} sessions.\n${result.message}"
-            Log.i("MyDashSync", "Sync complete: scanned=${result.scanned}, imported=${result.imported}, updated=${result.updated}, skipped=${result.skipped}")
+            lastDetailMessage = "Activities: imported ${result.imported}, updated ${result.updated}, skipped ${result.skipped}, scanned ${result.scanned}.\nWellness: updated ${result.wellnessDaysUpdated} days / ${result.wellnessFieldsUpdated} fields.\n${result.message}"
+            Log.i("MyDashSync", "Sync complete: scanned=${result.scanned}, imported=${result.imported}, updated=${result.updated}, skipped=${result.skipped}, wellnessDays=${result.wellnessDaysUpdated}, wellnessFields=${result.wellnessFieldsUpdated}")
             detail.text = lastDetailMessage
         } catch (error: Exception) {
             status.text = "Sync failed"
