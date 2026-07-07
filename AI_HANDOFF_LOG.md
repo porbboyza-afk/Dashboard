@@ -640,6 +640,49 @@ Verification:
 - `python smoke_test_dashboard.py`
 - Both passed with no page errors, console errors, or request failures.
 
+## 2026-07-06 Health Connect Cadence Check
+
+Goal:
+
+- Verify whether Garmin Connect writes cadence into Health Connect and import it into MyDash workouts.
+
+Findings from local SDK inspection:
+
+- `androidx.health.connect:connect-client:1.1.0-alpha12` includes:
+  - `StepsCadenceRecord` for run/walk step cadence.
+  - `CyclingPedalingCadenceRecord` for bike cadence.
+- `StepsCadenceRecord` requires `android.permission.health.READ_STEPS`.
+- `CyclingPedalingCadenceRecord` maps to the existing `READ_EXERCISE` permission.
+
+Code changes:
+
+- Added `READ_STEPS` to the Android manifest.
+- Added `StepsCadenceRecord` and `CyclingPedalingCadenceRecord` read permissions.
+- Android sync now reads average cadence:
+  - run/walk: average `StepsCadenceRecord.Sample.rate`
+  - bike: average `CyclingPedalingCadenceRecord.Sample.revolutionsPerMinute`
+- Android sync now updates existing Health Connect workouts if they were previously saved with `cad=0` and a new cadence value is found.
+- Sync status now stores:
+  - `updated`
+  - `cadence_sessions`
+  - `cadence_samples`
+- App sync result text now shows imported/updated/skipped/scanned counts and cadence diagnostic message.
+
+Verification:
+
+- `.\gradlew.bat assembleDebug` passed.
+- ADB device check returned no connected devices, so Garmin -> Health Connect cadence availability is not confirmed yet.
+
+Next device-test steps:
+
+1. Connect Android phone with USB debugging enabled.
+2. Install the new debug APK.
+3. Open MyDash Sync.
+4. Grant the new Health Connect `Steps` permission if prompted.
+5. Tap `Sync last 30 days`.
+6. Check `sync_sources/health_connect/cadence_sessions` and `cadence_samples`.
+7. Check Health Connect workouts in Firebase for `cad > 0`.
+
 User action needed after GitHub Pages updates:
 
 - Hard refresh MyDash.

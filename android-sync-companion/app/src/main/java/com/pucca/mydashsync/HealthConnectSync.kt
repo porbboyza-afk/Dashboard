@@ -3,9 +3,11 @@ package com.pucca.mydashsync
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.CyclingPedalingCadenceRecord
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.StepsCadenceRecord
 import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -42,7 +44,10 @@ class HealthConnectSync(private val context: Context) {
         ).records
 
         var imported = 0
+        var updated = 0
         var skipped = 0
+        var cadenceSessions = 0
+        var cadenceSamples = 0
         val workoutRef = database.reference.child("users").child(uid).child("workouts")
 
         for (session in sessions) {
@@ -51,10 +56,18 @@ class HealthConnectSync(private val context: Context) {
                 skipped++
                 continue
             }
+            if (workout.cad > 0) cadenceSessions++
+            cadenceSamples += workout.cadenceSampleCount
             val id = deterministicId(workout)
             val existing = workoutRef.child(id).get().await()
             if (existing.exists()) {
-                skipped++
+                val existingCad = existing.child("cad").getValue(Int::class.java) ?: 0
+                if (existingCad <= 0 && workout.cad > 0) {
+                    workoutRef.child(id).updateChildren(workout.toMap()).await()
+                    updated++
+                } else {
+                    skipped++
+                }
                 continue
             }
             workoutRef.child(id).setValue(workout.toMap()).await()
@@ -66,7 +79,10 @@ class HealthConnectSync(private val context: Context) {
             "source" to "health_connect",
             "scanned" to sessions.size,
             "imported" to imported,
-            "skipped" to skipped
+            "updated" to updated,
+            "skipped" to skipped,
+            "cadence_sessions" to cadenceSessions,
+            "cadence_samples" to cadenceSamples
         )
         database.reference.child("users").child(uid)
             .child("sync_sources").child("health_connect")
@@ -75,11 +91,12 @@ class HealthConnectSync(private val context: Context) {
         return SyncResult(
             scanned = sessions.size,
             imported = imported,
+            updated = updated,
             skipped = skipped,
             message = if (sessions.isEmpty()) {
                 "No Health Connect exercise sessions found in the last 30 days. Confirm Garmin Connect is writing to Health Connect."
             } else {
-                "Open MyDash Web and refresh to see imported activities."
+                "Cadence found in $cadenceSessions sessions ($cadenceSamples samples). Open MyDash Web and refresh."
             }
         )
     }
@@ -89,10 +106,11 @@ class HealthConnectSync(private val context: Context) {
         val distanceKm = readDistanceKm(session.startTime, session.endTime)
         val avgHeartRate = readAverageHeartRate(session.startTime, session.endTime)
         val calories = readCalories(session.startTime, session.endTime)
+        val type = mapExerciseType(session.exerciseType)
+        val cadence = readAverageCadence(session.startTime, session.endTime, type)
         val date = LocalDateTime.ofInstant(session.startTime, zoneId).toLocalDate()
             .format(DateTimeFormatter.ISO_LOCAL_DATE)
         val avgPace = if (distanceKm > 0) minutes / distanceKm else 0.0
-        val type = mapExerciseType(session.exerciseType)
         val nowMs = System.currentTimeMillis()
 
         return MyDashWorkout(
@@ -101,7 +119,7 @@ class HealthConnectSync(private val context: Context) {
             dist = round(distanceKm, 2),
             time = round(minutes, 1),
             hr = avgHeartRate,
-            cad = 0,
+            cad = cadence.average,
             avgPace = round(avgPace, 3),
             name = session.title ?: "Health Connect ${type.replaceFirstChar { it.uppercase() }}",
             note = session.notes ?: "",
@@ -110,6 +128,7 @@ class HealthConnectSync(private val context: Context) {
             healthConnectId = session.metadata.id,
             syncSource = "garmin_via_health_connect",
             calories = calories,
+            cadenceSampleCount = cadence.samples,
             importedAt = nowMs,
             createdAt = nowMs,
             updatedAt = nowMs
@@ -145,6 +164,34 @@ class HealthConnectSync(private val context: Context) {
             )
         ).records
         return round(records.sumOf { it.energy.inKilocalories }, 1)
+    }
+
+    private suspend fun readAverageCadence(start: Instant, end: Instant, type: String): CadenceResult {
+        return if (type == "bike") {
+            val records = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = CyclingPedalingCadenceRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end)
+                )
+            ).records
+            val samples = records.flatMap { it.samples }.map { it.revolutionsPerMinute }
+            CadenceResult(
+                average = if (samples.isEmpty()) 0 else samples.average().roundToInt(),
+                samples = samples.size
+            )
+        } else {
+            val records = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = StepsCadenceRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end)
+                )
+            ).records
+            val samples = records.flatMap { it.samples }.map { it.rate }
+            CadenceResult(
+                average = if (samples.isEmpty()) 0 else samples.average().roundToInt(),
+                samples = samples.size
+            )
+        }
     }
 
     private fun mapExerciseType(type: Int): String {
@@ -185,6 +232,8 @@ class HealthConnectSync(private val context: Context) {
             HealthPermission.getReadPermission(ExerciseSessionRecord::class),
             HealthPermission.getReadPermission(DistanceRecord::class),
             HealthPermission.getReadPermission(HeartRateRecord::class),
+            HealthPermission.getReadPermission(StepsCadenceRecord::class),
+            HealthPermission.getReadPermission(CyclingPedalingCadenceRecord::class),
             HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class)
         )
     }
@@ -193,8 +242,14 @@ class HealthConnectSync(private val context: Context) {
 data class SyncResult(
     val scanned: Int,
     val imported: Int,
+    val updated: Int,
     val skipped: Int,
     val message: String
+)
+
+data class CadenceResult(
+    val average: Int,
+    val samples: Int
 )
 
 data class MyDashWorkout(
@@ -212,6 +267,7 @@ data class MyDashWorkout(
     val healthConnectId: String,
     val syncSource: String,
     val calories: Double,
+    val cadenceSampleCount: Int,
     val importedAt: Long,
     val createdAt: Long,
     val updatedAt: Long
@@ -232,6 +288,7 @@ data class MyDashWorkout(
             "healthConnectId" to healthConnectId,
             "syncSource" to syncSource,
             "calories" to calories,
+            "cadenceSampleCount" to cadenceSampleCount,
             "importedAt" to importedAt,
             "createdAt" to createdAt,
             "updatedAt" to updatedAt
