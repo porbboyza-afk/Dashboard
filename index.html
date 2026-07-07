@@ -61,6 +61,8 @@ window._fb = {
     catch(e) { if(window.showToast) showToast('Login ไม่สำเร็จ: ' + e.message, 'error'); }
   },
   logout: async () => { await signOut(auth); },
+  isSignedIn: () => !!currentUser,
+  currentUid: () => currentUser?.uid || null,
   setData: async (path, data) => { if (!currentUser) return; await set(ref(db, `users/${currentUser.uid}/${path}`), data); },
   getData: async (path) => { if (!currentUser) return null; const snap = await get(ref(db, `users/${currentUser.uid}/${path}`)); return snap.exists() ? snap.val() : null; },
   pushData: async (path, data) => { if (!currentUser) return null; const r = await push(ref(db, `users/${currentUser.uid}/${path}`), data); return r.key; },
@@ -3415,6 +3417,68 @@ function normalizeCoachType(type){
   if(value.includes('rest'))return 'Rest';
   return 'Easy';
 }
+function coachSessionDetails(type,dist,goalProfile,week=0){
+  const targetPace=goalProfile?.targetPace||4.8;
+  const easyPace=formatPace(targetPace+1.0);
+  const steadyPace=formatPace(targetPace+0.45);
+  const tempoPace=formatPace(targetPace+0.08);
+  const intervalPace=formatPace(Math.max(3.8,targetPace-0.18));
+  const km=Math.max(0,parseFloat(dist)||0);
+  if(type==='Interval'){
+    const reps=week<3?'6 x 400m':week<7?'5 x 800m':'4 x 1km';
+    return {
+      warmup:`Easy jog 1.5-2 km + dynamic drills + 4 x 20 sec strides`,
+      mainSet:`${reps} @ ${intervalPace}/km effort, jog/walk 200-400m recovery between reps`,
+      cooldown:`Easy jog 1-1.5 km, finish relaxed`,
+      execution:`Run fast but controlled. Stop the rep if form breaks or HR spikes unusually.`,
+      successCriteria:`All reps within about 5-8 sec/km of target, last rep controlled, no pain above 3/10`,
+      intensity:'Hard',
+      targetDescription:`Fast reps around ${intervalPace}/km, total about ${km.toFixed(1)} km`
+    };
+  }
+  if(type==='Tempo'){
+    return {
+      warmup:`Easy jog 1.5-2 km + 3-4 strides`,
+      mainSet:`Tempo block ${Math.max(2,(km-3).toFixed(1))} km around ${tempoPace}-${steadyPace}/km, comfortably hard`,
+      cooldown:`Easy jog 1 km`,
+      execution:`Keep breathing controlled. This is not a race; finish with one gear left.`,
+      successCriteria:`Pace stable, HR controlled, RPE about 7/10, no form collapse`,
+      intensity:'Moderate-hard',
+      targetDescription:`Threshold/tempo work around ${tempoPace}-${steadyPace}/km`
+    };
+  }
+  if(type==='Long'){
+    return {
+      warmup:`First 10 min very easy`,
+      mainSet:`Long easy run ${km.toFixed(1)} km around ${easyPace}/km or HR Z2`,
+      cooldown:`Walk 5 min + light mobility`,
+      execution:`Keep it conversational. Do not chase target pace if HR is high.`,
+      successCriteria:`Finish fresh enough to train again in 24-48h, pain <= 3/10`,
+      intensity:'Easy-long',
+      targetDescription:`Aerobic long run, mostly Z2`
+    };
+  }
+  if(type==='Recovery'||type==='Rest'){
+    return {
+      warmup:type==='Rest'?'None':'5-10 min walk/easy jog',
+      mainSet:type==='Rest'?'Rest, mobility, sleep priority':'Very easy recovery jog or walk, keep HR low',
+      cooldown:'Mobility 8-12 min',
+      execution:'Recovery is the goal. Stop if soreness gets worse.',
+      successCriteria:'You should feel better after than before',
+      intensity:'Recovery',
+      targetDescription:type==='Rest'?'No running load':'Recovery only'
+    };
+  }
+  return {
+    warmup:`Easy first 5-10 min`,
+    mainSet:`Easy run ${km.toFixed(1)} km around ${easyPace}/km or HR Z2`,
+    cooldown:`Walk 5 min + optional stretching`,
+    execution:`Nose-breathing/conversation effort. Keep this truly easy.`,
+    successCriteria:`HR stable, RPE 3-4/10, no pain above 3/10`,
+    intensity:'Easy',
+    targetDescription:`Aerobic easy run around ${easyPace}/km`
+  };
+}
 function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile}){
   if(!plan||typeof plan!=='object')throw new Error('Plan JSON is not an object');
   const sessions=Array.isArray(plan.sessions)?plan.sessions:[];
@@ -3423,6 +3487,9 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
     const date=String(session.date||'').match(/^\d{4}-\d{2}-\d{2}$/)?session.date:datePlusDays(startDate,index);
     const type=normalizeCoachType(session.type);
     const targetDist=Math.max(0,+(parseFloat(session.targetDist||0)||0).toFixed(1));
+    const details=session.details&&typeof session.details==='object'
+      ? session.details
+      : coachSessionDetails(type,targetDist,goalProfile,Math.floor(index/4));
     return {
       date,type,
       description:String(session.description||type).slice(0,160),
@@ -3430,7 +3497,16 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
       targetPace:String(session.targetPace||'').slice(0,20),
       targetHR:session.targetHR?parseInt(session.targetHR)||'':'',
       notes:String(session.notes||'').slice(0,240),
-      priority:['key','normal','optional'].includes(session.priority)?session.priority:(isHardSession(type)?'key':'normal')
+      priority:['key','normal','optional'].includes(session.priority)?session.priority:(isHardSession(type)?'key':'normal'),
+      details:{
+        warmup:String(details.warmup||'').slice(0,240),
+        mainSet:String(details.mainSet||'').slice(0,360),
+        cooldown:String(details.cooldown||'').slice(0,240),
+        execution:String(details.execution||'').slice(0,360),
+        successCriteria:String(details.successCriteria||'').slice(0,320),
+        intensity:String(details.intensity||'').slice(0,80),
+        targetDescription:String(details.targetDescription||'').slice(0,180)
+      }
     };
   }).sort((a,b)=>a.date.localeCompare(b.date));
   for(let i=1;i<normalized.length;i++){
@@ -3471,7 +3547,17 @@ function buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,conte
       else {type='Easy';dist=+(4.5+Math.min(week,4)*0.4).toFixed(1);}
       if(taper){dist=+(dist*.75).toFixed(1);if(type==='Interval')type='Tempo';}
       if(isRaceWeek&&slot===pattern.length-1){type='Rest';dist=0;pace='';}
-      sessions.push({date,type,description:type==='Rest'?'Rest before goal effort':`${type} run`,targetDist:dist,targetPace:pace,targetHR:type==='Easy'?145:'',notes:'Local fallback plan because AI did not return valid JSON',priority:isHardSession(type)?'key':'normal'});
+      const details=coachSessionDetails(type,dist,goalProfile,week);
+      sessions.push({
+        date,type,
+        description:details.targetDescription,
+        targetDist:dist,
+        targetPace:pace,
+        targetHR:type==='Easy'?145:'',
+        notes:`Fallback structured plan. Follow detail view before running.`,
+        priority:isHardSession(type)?'key':'normal',
+        details
+      });
     });
   }
   return validateCoachPlan({goal,startDate,endDate,totalWeeks,sessions},{goal,startDate,endDate,totalWeeks,goalProfile});
@@ -3479,6 +3565,7 @@ function buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,conte
 async function generateTrainingPlan(){
   const goal=document.getElementById('coach-goal')?.value?.trim();
   if(!goal){showToast('กรุณาใส่เป้าหมาย','error');return;}
+  if(!window._fb?.isSignedIn?.()){showToast('กรุณา Sign in ก่อนสร้างและบันทึกแผนลง Cloud','error');showPage('settings');return;}
   if(!AppState.get('deepseekKey')&&!AppState.get('aiProxyUrl')){showToast('กรุณาตั้งค่า AI Proxy หรือ DeepSeek API Key ก่อน','error');showPage('settings');return;}
   const level=document.getElementById('coach-level')?.value;
   const days=document.getElementById('coach-days')?.value;
@@ -3496,7 +3583,7 @@ async function generateTrainingPlan(){
   if(out){out.style.color='var(--text2)';out.innerHTML='⏳ Creating plan...';}
   const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='⏳ Generating...';btn.disabled=true;}
   try{
-    const prompt=`Create an adaptive running plan.\n\n${formatCoachContext(context)}\n\nLevel:${level}\nTraining days:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nDaily safety today:${safety.status} - ${safety.action}\n\nHard rules:\n- Code-calculated health/load data is authoritative; do not invent metrics.\n- No hard sessions on consecutive days.\n- If readiness is yellow, reduce intensity or volume.\n- If readiness is red, use recovery/rest and do not compensate by doubling the next day.\n- If pain >= 6, sick status, or ACWR > 1.5, block interval/tempo.\n- Respect unavailable dates/weekdays.\n- Strava is legacy/archive; Health Connect/manual workouts are primary.\n- Missing cadence/GPS/splits must be marked unavailable, never estimated as fact.\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"...","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"...","priority":"key|normal|optional"}]}\nCreate exactly ${parseInt(days)*totalWeeks} non-rest sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Include taper near goal date.`;
+    const prompt=`Create an adaptive running plan.\n\n${formatCoachContext(context)}\n\nLevel:${level}\nTraining days:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nDaily safety today:${safety.status} - ${safety.action}\n\nHard rules:\n- Code-calculated health/load data is authoritative; do not invent metrics.\n- No hard sessions on consecutive days.\n- If readiness is yellow, reduce intensity or volume.\n- If readiness is red, use recovery/rest and do not compensate by doubling the next day.\n- If pain >= 6, sick status, or ACWR > 1.5, block interval/tempo.\n- Respect unavailable dates/weekdays.\n- Strava is legacy/archive; Health Connect/manual workouts are primary.\n- Missing cadence/GPS/splits must be marked unavailable, never estimated as fact.\n- Every session must be actionable from the phone without asking again.\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"short useful summary","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"why this workout matters","priority":"key|normal|optional","details":{"warmup":"exact warmup","mainSet":"exact main set with reps/pace/recovery if relevant","cooldown":"exact cooldown","execution":"how to run it and what to watch","successCriteria":"how to know it was done correctly","intensity":"Easy|Moderate-hard|Hard|Recovery","targetDescription":"one-line target"}}]}\nCreate exactly ${parseInt(days)*totalWeeks} non-rest sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Include taper near goal date.`;
     let plan=null,usedFallback=false,fallbackReason='';
     try{
       const data=await callNewsChat([
@@ -3511,7 +3598,10 @@ async function generateTrainingPlan(){
       fallbackReason=aiError.message||String(aiError);
       plan=buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,context,level});
     }
-    await window._fb.setData('coach_plan',{...plan,goalProfile:context.goalProfile,safetyPolicyVersion:1,createdAt:Date.now(),completedDates:{},adjustments:[],aiFallback:usedFallback,aiFallbackReason:fallbackReason});
+    const planPayload={...plan,goalProfile:context.goalProfile,safetyPolicyVersion:1,createdAt:Date.now(),completedDates:{},adjustments:[],aiFallback:usedFallback,aiFallbackReason:fallbackReason};
+    await window._fb.setData('coach_plan',planPayload);
+    const savedPlan=await window._fb.getData('coach_plan');
+    if(!savedPlan?.createdAt||savedPlan.createdAt!==planPayload.createdAt)throw new Error('Cloud save failed. Please sign in again and retry.');
     if(out){out.style.color='var(--text)';out.innerHTML=`<div style="color:${usedFallback?'var(--orange)':'var(--green)'};font-weight:700;margin-bottom:10px">${usedFallback?'⚠️ Local fallback plan saved':'✅ AI plan saved'}</div><div style="font-size:12px;color:var(--text2)">Goal: <strong style="color:var(--text)">${escapeHTML(plan.goal)}</strong><br>${plan.sessions?.length||0} sessions · ${plan.totalWeeks} weeks${usedFallback?`<br>AI issue: ${escapeHTML(fallbackReason)}`:''}</div>`;}
     showToast(usedFallback?'Saved local fallback plan':'✅ Plan created and saved!',usedFallback?'warn':'success');
   }catch(e){if(out)out.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;}
@@ -3553,7 +3643,8 @@ function renderCoachTracking(){
   const daysEl=document.getElementById('coach-plan-days');if(!daysEl)return;
   const typeEmoji={Easy:'🟢',Tempo:'🟡',Interval:'🔴',Long:'🔵',Rest:'⚪'};
   const typeColor={Easy:'var(--green)',Tempo:'var(--orange)',Interval:'var(--red)',Long:'var(--accent)',Rest:'var(--text3)'};
-  daysEl.innerHTML=plan.sessions.map(s=>{
+  window._coachRenderedSessions=plan.sessions;
+  daysEl.innerHTML=plan.sessions.map((s,index)=>{
     const isToday=s.date===today,isFuture=s.date>today,isRest=s.type==='Rest';
     const actualWks=getAllActivities().filter(w=>w.date===s.date);
     const isDone=!!completedDates[s.date]||actualWks.length>0;
@@ -3573,14 +3664,52 @@ function renderCoachTracking(){
       <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">${typeEmoji[s.type]||'🏃'}</span>
       <div style="flex:1"><div style="font-size:14px;font-weight:700;color:${typeColor[s.type]||'var(--text)'};margin-bottom:2px">${s.type}${s.targetDist>0?' · '+s.targetDist+' km':''}</div>
       <div style="font-size:12px;color:var(--text2)">${s.description||''}${s.targetPace?' · '+s.targetPace:''}${s.targetHR?' · HR<'+s.targetHR:''}</div>
+      ${s.details?.mainSet?`<div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5">${escapeHTML(s.details.mainSet)}</div>`:''}
       ${s.notes?`<div style="font-size:10px;color:var(--text3);margin-top:3px">💡 ${s.notes}</div>`:''}${actualLine}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <button onclick="showCoachSessionDetail(${index})" class="btn btn-primary btn-xs">Detail</button>
         ${(!isDone&&!isFuture&&!isRest)?`<button onclick="markDone('${s.date}')" class="btn btn-green btn-xs">✓ Done</button>`:''}
         ${(!isDone&&!isRest)?`<button onclick="coachMoveSession('${s.date}')" class="btn btn-ghost btn-xs">Move</button>`:''}
         ${(!isDone&&isHardSession(s.type))?`<button onclick="coachDowngradeSession('${s.date}')" class="btn btn-ghost btn-xs">Downgrade</button>`:''}
         ${(!isDone&&!isRest)?`<button onclick="coachSkipSession('${s.date}')" class="btn btn-ghost btn-xs">Skip</button>`:''}
       </div></div></div>`;
   }).join('');
+}
+
+function showCoachSessionDetail(index){
+  const s=window._coachRenderedSessions?.[index];if(!s)return;
+  const d=s.details||coachSessionDetails(s.type,s.targetDist,getCoachGoalProfile(window._coachPlan,{preferPlan:true}));
+  const overlay=document.createElement('div');
+  overlay.id='coach-session-detail-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:950;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+  const row=(label,value)=>value?`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">${label}</div><div style="font-size:13px;color:var(--text);line-height:1.65">${escapeHTML(value)}</div></div>`:'';
+  overlay.innerHTML=`<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-xl);padding:20px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
+      <div>
+        <div class="card-label">Workout Detail</div>
+        <div style="font-size:22px;font-weight:900;color:${coachDecisionColor(isHardSession(s.type)?'yellow':'green')}">${escapeHTML(s.type)}${s.targetDist>0?' · '+s.targetDist+' km':''}</div>
+        <div class="text-sm c2 mt-4">${escapeHTML(s.date)}${s.targetPace?' · Pace '+escapeHTML(s.targetPace):''}${s.targetHR?' · HR<'+escapeHTML(s.targetHR):''}</div>
+      </div>
+      <button onclick="document.getElementById('coach-session-detail-overlay').remove()" style="background:var(--bg2);border:none;border-radius:8px;color:var(--text2);font-size:16px;cursor:pointer;padding:4px 10px;line-height:1">✕</button>
+    </div>
+    <div style="background:var(--bg);border-radius:14px;padding:12px;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px">${escapeHTML(s.description||d.targetDescription||'Session')}</div>
+      <div class="text-xs c3">${escapeHTML(s.notes||'Follow the structure below and adjust if readiness is low.')}</div>
+    </div>
+    ${row('Warmup',d.warmup)}
+    ${row('Main Set',d.mainSet)}
+    ${row('Cooldown',d.cooldown)}
+    ${row('Execution',d.execution)}
+    ${row('Success Criteria',d.successCriteria)}
+    ${row('Intensity',d.intensity)}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">Move</button>
+      ${isHardSession(s.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">Downgrade</button>`:''}
+      ${s.type!=='Rest'?`<button class="btn btn-ghost btn-sm" onclick="coachSkipSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">Skip</button>`:''}
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',event=>{if(event.target===overlay)overlay.remove();});
 }
 
 function renderCoachDailyDecision(plan){
@@ -3608,7 +3737,15 @@ function renderCoachDailyDecision(plan){
 }
 
 async function matchWorkoutsToPlan(silent=false){if(!window._coachPlan?.sessions)return;if(document.getElementById('page-coach').classList.contains('active')&&document.getElementById('coach-track-tab').style.display!=='none')renderCoachTracking();if(!silent)showToast('🔄 Activities matched');}
-async function markDone(date){const plan=window._coachPlan;if(!plan)return;const c=plan.completedDates||{};c[date]=Date.now();await window._fb.setData('coach_plan/completedDates',c);showToast('✅ Marked as done');}
+async function assertCoachCloudSaved(expected={}){
+  const saved=await window._fb.getData('coach_plan');
+  if(!saved?.createdAt||saved.createdAt!==expected.createdAt)throw new Error('Cloud save failed. Please sign in again and retry.');
+  if(expected.updatedAt&&saved.updatedAt!==expected.updatedAt)throw new Error('Cloud save failed. Latest plan update was not confirmed.');
+  if(expected.adjustmentCount!==undefined&&(saved.adjustments||[]).length<expected.adjustmentCount)throw new Error('Cloud save failed. Plan adjustment was not confirmed.');
+  if(expected.completedDate&&!(saved.completedDates||{})[expected.completedDate])throw new Error('Cloud save failed. Completed workout was not confirmed.');
+  return saved;
+}
+async function markDone(date){const plan=window._coachPlan;if(!plan)return;const c=plan.completedDates||{};c[date]=Date.now();await window._fb.setData('coach_plan/completedDates',c);await assertCoachCloudSaved({createdAt:plan.createdAt,completedDate:date});showToast('✅ Marked as done');}
 async function clearCoachPlan(){if(!confirm('Delete training plan?'))return;await window._fb.removeData('coach_plan');AppState.set('coachPlan',null);showToast('Plan deleted');}
 function coachSessionsOn(plan,date){return (plan.sessions||[]).filter(s=>s.date===date);}
 function coachHasHardNear(plan,date){
@@ -3627,8 +3764,9 @@ function coachFindMoveDate(plan,session){
   return null;
 }
 async function saveCoachPlanWithAdjustment(plan,adjustment){
-  const next={...plan,adjustments:[...(plan.adjustments||[]),{...adjustment,createdAt:Date.now()}]};
+  const next={...plan,updatedAt:Date.now(),adjustments:[...(plan.adjustments||[]),{...adjustment,createdAt:Date.now()}]};
   await window._fb.setData('coach_plan',next);
+  await assertCoachCloudSaved({createdAt:next.createdAt,updatedAt:next.updatedAt,adjustmentCount:next.adjustments.length});
   AppState.set('coachPlan',next);
   renderCoachTracking();
 }
@@ -3650,6 +3788,8 @@ async function coachDowngradeSession(date){
   session.targetDist=Math.max(3,+(parseFloat(session.targetDist||5)*0.65).toFixed(1));
   session.targetPace='';
   session.targetHR=session.targetHR?Math.min(+session.targetHR,145):145;
+  session.details=coachSessionDetails(session.type,session.targetDist,getCoachGoalProfile(plan,{preferPlan:true}));
+  session.description=session.details.targetDescription;
   session.notes=[session.notes,'Downgraded by safety/adaptive coach'].filter(Boolean).join(' · ');
   await saveCoachPlanWithAdjustment(plan,{type:'downgrade',date,from:before,to:{type:session.type,targetDist:session.targetDist,targetHR:session.targetHR},reason:'readiness_or_manual_downgrade'});
   showToast('Session downgraded');
@@ -3663,6 +3803,7 @@ async function coachSkipSession(date){
   session.targetDist=0;
   session.targetPace='';
   session.targetHR='';
+  session.details=coachSessionDetails(session.type,0,getCoachGoalProfile(plan,{preferPlan:true}));
   session.notes=[session.notes,'Skipped without doubling a later session'].filter(Boolean).join(' · ');
   await saveCoachPlanWithAdjustment(plan,{type:'skip',date,from:before,reason:'unavailable_or_recovery'});
   showToast('Session skipped safely');

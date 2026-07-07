@@ -55,6 +55,10 @@ ensureContains(indexPath, [
   'out.innerHTML = mdToHtml(reply);',
   'function validateCoachPlan(plan',
   'function buildFallbackTrainingPlan',
+  'function coachSessionDetails',
+  'function showCoachSessionDetail',
+  'function assertCoachCloudSaved',
+  'Cloud save failed. Please sign in again and retry.',
   "usedFallback?'⚠️ Local fallback plan saved':'✅ AI plan saved'",
 ]);
 

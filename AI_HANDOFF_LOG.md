@@ -2,6 +2,69 @@
 
 Last updated: 2026-07-07 Asia/Bangkok
 
+## 2026-07-07 Coach Plan Quality And Cloud Save Fix
+
+Context:
+
+- User reported that generated training plans were too low quality to use:
+  - no actionable workout detail,
+  - clicking into a plan day did not show what to run,
+  - the plan did not reliably save to cloud.
+- Apps Script exists in this project, but its current backup scope is only:
+  - `workout`
+  - `wellness`
+  - `ping`
+- Therefore coach plans remain Firebase-first at:
+  - `users/{uid}/coach_plan`
+- Apps Script was not changed in this pass because adding coach plans there would require a new schema and Apps Script deployment version.
+
+Root causes found:
+
+- `buildFallbackTrainingPlan()` created shallow fallback sessions such as generic easy/tempo/interval rows.
+- `renderCoachTracking()` listed sessions but had no detail modal or drill-by-drill view.
+- Firebase helper `setData()` silently returned when no user was signed in, so the UI could imply success even when no cloud write happened.
+- Plan adjustment actions did not verify the saved Firebase state after writing.
+- Downgrade/skip actions could leave old hard-session details attached to the changed session.
+
+Code changes:
+
+- Added Firebase auth state helpers:
+  - `window._fb.isSignedIn()`
+  - `window._fb.currentUid()`
+- `generateTrainingPlan()` now blocks plan creation until the user is signed in.
+- `generateTrainingPlan()` now writes `coach_plan`, reads it back, and fails visibly if the saved `createdAt` is not confirmed.
+- AI prompt now requires each session to include structured `details`:
+  - warmup
+  - mainSet
+  - cooldown
+  - execution
+  - successCriteria
+  - intensity
+  - targetDescription
+- Added deterministic `coachSessionDetails()` so both AI plans and local fallback plans have actionable detail.
+- `validateCoachPlan()` now normalizes/preserves `details` for every session.
+- `buildFallbackTrainingPlan()` now creates structured plans with concrete run instructions instead of generic rows.
+- `renderCoachTracking()` now shows main-set preview and a `Detail` button for each session.
+- Added `showCoachSessionDetail()` modal with full workout instructions and action buttons.
+- Added `assertCoachCloudSaved()` for coach plan write verification.
+- `markDone()`, move, downgrade, and skip now verify Firebase state after writing.
+- Downgrade now regenerates Easy workout details.
+- Skip now regenerates Rest workout details.
+- Updated `verify_dashboard.js` to guard these new coach functions and cloud-save error text.
+
+Verification to run:
+
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+
+User-facing expectation after deploy:
+
+- The user must be signed in before generating a plan.
+- A generated plan should either show `AI plan saved` or `Local fallback plan saved`; both must be confirmed in Firebase before success.
+- Track Plan should show a `Detail` button for each session.
+- Detail should explain exactly what to run, including warmup, main set, cooldown, execution, and success criteria.
+- Move/Downgrade/Skip/Done should fail visibly if Firebase save is not confirmed.
+
 ## 2026-07-07 AI Coach Plan Generation Hotfix
 
 Context:
