@@ -56,8 +56,12 @@ ensureContains(indexPath, [
   'function validateCoachPlan(plan',
   'function buildFallbackTrainingPlan',
   'function coachSessionDetails',
+  'function coachSessionDisplayDetails',
+  'function coachAdaptiveGuidance',
   'function showCoachSessionDetail',
   'function assertCoachCloudSaved',
+  '.coach-plan-row',
+  '.coach-adaptive-card',
   'Cloud save failed. Please sign in again and retry.',
   "usedFallback?'⚠️ Local fallback plan saved':'✅ AI plan saved'",
 ]);

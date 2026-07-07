@@ -773,6 +773,32 @@ tbody tr:hover td { background: var(--bg); }
 .badge-today { background: var(--accent-light); color: var(--accent); }
 .badge-upcoming { background: var(--bg2); color: var(--text3); }
 
+.coach-plan-row { display:flex; align-items:flex-start; gap:12px; }
+.coach-session-icon { font-size:20px; line-height:1.1; flex:0 0 auto; margin-top:2px; }
+.coach-session-main { flex:1; min-width:0; }
+.coach-session-title { font-size:15px; font-weight:800; line-height:1.25; margin-bottom:4px; }
+.coach-session-desc { font-size:13px; color:var(--text2); line-height:1.55; overflow-wrap:anywhere; }
+.coach-session-preview { font-size:12px; color:var(--text2); margin-top:7px; line-height:1.65; padding:9px 10px; background:var(--bg); border:1px solid var(--border); border-radius:10px; }
+.coach-session-note { font-size:11px; color:var(--text3); margin-top:6px; line-height:1.5; }
+.coach-session-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; flex:0 0 172px; }
+.coach-session-actions .btn { min-height:30px; }
+.coach-adaptive-card { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+.coach-adaptive-main { flex:1; min-width:240px; }
+.coach-adaptive-action { font-size:18px; font-weight:900; line-height:1.3; margin-bottom:6px; }
+.coach-adaptive-explain { font-size:13px; color:var(--text2); line-height:1.7; margin-top:8px; }
+.coach-adaptive-rules { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.coach-adaptive-rule { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:10px; font-size:11px; line-height:1.55; color:var(--text2); }
+.coach-adaptive-rule strong { display:block; color:var(--text); font-size:12px; margin-bottom:2px; }
+.coach-adaptive-buttons { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.coach-detail-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--r-xl); padding:20px; max-width:680px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow-lg); }
+.coach-detail-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
+.coach-detail-title { font-size:22px; font-weight:900; line-height:1.25; }
+.coach-detail-close { background:var(--bg2); border:none; border-radius:8px; color:var(--text2); font-size:16px; cursor:pointer; padding:4px 10px; line-height:1; }
+.coach-detail-summary { background:var(--bg); border-radius:14px; padding:12px; margin-bottom:12px; }
+.coach-detail-row { padding:11px 0; border-bottom:1px solid var(--border); }
+.coach-detail-row-label { font-size:11px; font-weight:800; color:var(--text3); text-transform:uppercase; letter-spacing:.8px; margin-bottom:5px; }
+.coach-detail-row-value { font-size:14px; color:var(--text); line-height:1.75; }
+
 /* ══════════════════════════
    DROP ZONE
 ══════════════════════════ */
@@ -1271,6 +1297,30 @@ img, video, iframe, canvas { max-width: 100%; }
   #wellness-list .workout-meta { white-space:normal; line-height:1.55; }
   #stats-primary-metrics { grid-template-columns:1fr !important; }
   #profile-zone-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  #page-coach .seg-tabs { display:flex; overflow-x:auto; padding-bottom:2px; margin-bottom:16px; }
+  #page-coach .seg-tab { flex:1 0 auto; text-align:center; padding:10px 12px; font-size:10px; letter-spacing:.8px; }
+  #coach-plan-view .card { padding:16px !important; }
+  #coach-plan-view > .card:first-child > div:first-child { flex-direction:column !important; align-items:flex-start !important; gap:14px !important; }
+  #coach-plan-view > .card:first-child > div:first-child > div:last-child { width:100%; justify-content:space-between; }
+  #coach-plan-view > .card:first-child > div:first-child > div:last-child > div { flex:1; }
+  #coach-track-tab > .flex { flex-direction:column; align-items:stretch; gap:8px; }
+  #coach-track-tab > .flex .btn { width:100%; justify-content:center; }
+  .coach-plan-row { flex-direction:column; gap:10px; }
+  .coach-session-icon { display:none; }
+  .coach-session-title { font-size:16px; }
+  .coach-session-desc { font-size:13px; line-height:1.7; }
+  .coach-session-preview { font-size:12px; line-height:1.7; }
+  .coach-session-actions { width:100%; flex:1 1 auto; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); justify-content:stretch; }
+  .coach-session-actions .btn { width:100%; justify-content:center; padding-left:6px; padding-right:6px; }
+  .coach-adaptive-card { flex-direction:column; }
+  .coach-adaptive-main { min-width:0; width:100%; }
+  .coach-adaptive-buttons { width:100%; display:grid; grid-template-columns:1fr; }
+  .coach-adaptive-buttons .btn { width:100%; justify-content:center; }
+  .coach-adaptive-rules { grid-template-columns:1fr; }
+  .coach-detail-card { padding:16px; max-height:86vh; border-radius:18px; }
+  .coach-detail-header { gap:10px; }
+  .coach-detail-title { font-size:20px; }
+  .coach-detail-row-value { font-size:13px; line-height:1.75; }
 }
 
 @media (min-width: 769px) {
@@ -1298,6 +1348,8 @@ img, video, iframe, canvas { max-width: 100%; }
   .wellness-calendar { grid-template-columns:repeat(7,minmax(14px,1fr)); }
   .strava-filter-bar .form-group { min-width:100%; }
   #profile-zone-grid { grid-template-columns:1fr !important; }
+  .plan-day { padding:13px; }
+  .coach-session-actions { grid-template-columns:1fr; }
 }
 </style>
   <meta name="mobile-web-app-capable" content="yes">
@@ -2036,22 +2088,22 @@ img, video, iframe, canvas { max-width: 100%; }
                 <div style="font-size:11px;color:var(--text2);font-family:var(--font-mono)" id="coach-plan-meta-disp">—</div>
               </div>
               <div style="display:flex;gap:20px;align-items:center">
-                <div style="text-align:center"><div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--green)" id="coach-done-count">0</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Done</div></div>
-                <div style="text-align:center"><div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--red)" id="coach-miss-count">0</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Missed</div></div>
-                <div style="text-align:center"><div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--text2)" id="coach-remain-count">0</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Left</div></div>
-                <button class="btn btn-danger btn-sm" onclick="clearCoachPlan()">🗑️ Clear</button>
+                <div style="text-align:center"><div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--green)" id="coach-done-count">0</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">ทำแล้ว</div></div>
+                <div style="text-align:center"><div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--red)" id="coach-miss-count">0</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">เลยวัน</div></div>
+                <div style="text-align:center"><div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--text2)" id="coach-remain-count">0</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">คงเหลือ</div></div>
+                <button class="btn btn-danger btn-sm" onclick="clearCoachPlan()">ลบแผน</button>
               </div>
             </div>
             <div style="margin-top:16px">
-              <div class="flex justify-between mb-8 text-sm c2"><span>Progress</span><span id="coach-progress-pct" style="color:var(--accent);font-family:var(--font-mono)">0%</span></div>
+              <div class="flex justify-between mb-8 text-sm c2"><span>ความคืบหน้า</span><span id="coach-progress-pct" style="color:var(--accent);font-family:var(--font-mono)">0%</span></div>
               <div class="progress-wrap"><div id="coach-progress-bar" class="progress-fill" style="width:0%"></div></div>
             </div>
           </div>
           <div class="flex gap-8 mb-16 flex-wrap">
-            <button class="btn btn-green btn-sm" onclick="matchWorkoutsToPlan()">🔄 Match Activities to Plan</button>
-            <button class="btn btn-primary btn-sm" id="btn-coach-review" onclick="reviewPlanAI()">🤖 AI Progress Review</button>
-            <button class="btn btn-ghost btn-sm" onclick="coachRescheduleWeek()">Today unavailable</button>
-            <button class="btn btn-ghost btn-sm" onclick="coachDowngradeToday()">Downgrade today</button>
+            <button class="btn btn-green btn-sm" onclick="matchWorkoutsToPlan()">จับคู่กิจกรรมกับแผน</button>
+            <button class="btn btn-primary btn-sm" id="btn-coach-review" onclick="reviewPlanAI()">ให้ AI รีวิวความคืบหน้า</button>
+            <button class="btn btn-ghost btn-sm" onclick="coachRescheduleWeek()">วันนี้ไม่ว่าง</button>
+            <button class="btn btn-ghost btn-sm" onclick="coachDowngradeToday()">ลดโหลดวันนี้</button>
           </div>
           <div id="coach-daily-decision" class="card mb-16" style="display:none"></div>
           <div id="coach-review-output" class="ai-box mb-16"></div>
@@ -3417,6 +3469,12 @@ function normalizeCoachType(type){
   if(value.includes('rest'))return 'Rest';
   return 'Easy';
 }
+function hasThaiText(value){
+  return /[\u0E00-\u0E7F]/.test(String(value||''));
+}
+function coachSessionTypeThai(type){
+  return {Easy:'วิ่งเบา',Tempo:'เทมโป',Interval:'อินเทอร์วัล',Long:'วิ่งยาว',Recovery:'ฟื้นตัว',Rest:'พัก'}[type]||'วิ่งเบา';
+}
 function coachSessionDetails(type,dist,goalProfile,week=0){
   const targetPace=goalProfile?.targetPace||4.8;
   const easyPace=formatPace(targetPace+1.0);
@@ -3427,57 +3485,67 @@ function coachSessionDetails(type,dist,goalProfile,week=0){
   if(type==='Interval'){
     const reps=week<3?'6 x 400m':week<7?'5 x 800m':'4 x 1km';
     return {
-      warmup:`Easy jog 1.5-2 km + dynamic drills + 4 x 20 sec strides`,
-      mainSet:`${reps} @ ${intervalPace}/km effort, jog/walk 200-400m recovery between reps`,
-      cooldown:`Easy jog 1-1.5 km, finish relaxed`,
-      execution:`Run fast but controlled. Stop the rep if form breaks or HR spikes unusually.`,
-      successCriteria:`All reps within about 5-8 sec/km of target, last rep controlled, no pain above 3/10`,
-      intensity:'Hard',
-      targetDescription:`Fast reps around ${intervalPace}/km, total about ${km.toFixed(1)} km`
+      warmup:`วิ่งเบา 1.5-2 กม. + drill เคลื่อนไหวขา/สะโพก + strides 4 x 20 วินาที`,
+      mainSet:`${reps} ที่ความเร็วประมาณ ${intervalPace}/กม. พัก jog/walk 200-400 ม. ระหว่างเซ็ต`,
+      cooldown:`วิ่งเบา 1-1.5 กม. จบแบบผ่อน ไม่เร่งท้าย`,
+      execution:`วิ่งเร็วแต่ต้องคุมฟอร์มได้ ถ้าฟอร์มเสีย เจ็บ หรือ HR พุ่งผิดปกติให้หยุดเซ็ตนั้น`,
+      successCriteria:`ทุกเซ็ตใกล้ pace เป้าหมายในช่วง 5-8 วินาที/กม. เซ็ตสุดท้ายยังคุมได้ และปวดไม่เกิน 3/10`,
+      intensity:'หนัก',
+      targetDescription:`ซ้อมความเร็วรอบ ${intervalPace}/กม. รวมประมาณ ${km.toFixed(1)} กม.`
     };
   }
   if(type==='Tempo'){
     return {
-      warmup:`Easy jog 1.5-2 km + 3-4 strides`,
-      mainSet:`Tempo block ${Math.max(2,(km-3).toFixed(1))} km around ${tempoPace}-${steadyPace}/km, comfortably hard`,
-      cooldown:`Easy jog 1 km`,
-      execution:`Keep breathing controlled. This is not a race; finish with one gear left.`,
-      successCriteria:`Pace stable, HR controlled, RPE about 7/10, no form collapse`,
-      intensity:'Moderate-hard',
-      targetDescription:`Threshold/tempo work around ${tempoPace}-${steadyPace}/km`
+      warmup:`วิ่งเบา 1.5-2 กม. + strides 3-4 รอบ`,
+      mainSet:`เทมโป ${Math.max(2,(km-3).toFixed(1))} กม. ที่ประมาณ ${tempoPace}-${steadyPace}/กม. หนักแบบคุมได้`,
+      cooldown:`วิ่งเบา 1 กม.`,
+      execution:`คุมลมหายใจให้สม่ำเสมอ ไม่ใช่การแข่ง จบแล้วยังควรเหลือแรงอีกหนึ่งเกียร์`,
+      successCriteria:`pace ไม่แกว่งมาก HR คุมได้ RPE ประมาณ 7/10 และฟอร์มไม่พัง`,
+      intensity:'กลาง-หนัก',
+      targetDescription:`ซ้อม threshold/tempo ประมาณ ${tempoPace}-${steadyPace}/กม.`
     };
   }
   if(type==='Long'){
     return {
-      warmup:`First 10 min very easy`,
-      mainSet:`Long easy run ${km.toFixed(1)} km around ${easyPace}/km or HR Z2`,
-      cooldown:`Walk 5 min + light mobility`,
-      execution:`Keep it conversational. Do not chase target pace if HR is high.`,
-      successCriteria:`Finish fresh enough to train again in 24-48h, pain <= 3/10`,
-      intensity:'Easy-long',
-      targetDescription:`Aerobic long run, mostly Z2`
+      warmup:`10 นาทีแรกให้ช้ามากเพื่อเปิดระบบ`,
+      mainSet:`วิ่งยาว ${km.toFixed(1)} กม. ประมาณ ${easyPace}/กม. หรือ HR โซน 2`,
+      cooldown:`เดิน 5 นาที + mobility เบา ๆ`,
+      execution:`ต้องยังพูดเป็นประโยคได้ อย่าไล่ pace ถ้า HR สูงหรืออากาศร้อน`,
+      successCriteria:`จบแล้วยังสดพอซ้อมต่อใน 24-48 ชม. และปวดไม่เกิน 3/10`,
+      intensity:'ง่าย-ยาว',
+      targetDescription:`วิ่งยาวสร้างฐานแอโรบิก เน้นโซน 2`
     };
   }
   if(type==='Recovery'||type==='Rest'){
     return {
-      warmup:type==='Rest'?'None':'5-10 min walk/easy jog',
-      mainSet:type==='Rest'?'Rest, mobility, sleep priority':'Very easy recovery jog or walk, keep HR low',
-      cooldown:'Mobility 8-12 min',
-      execution:'Recovery is the goal. Stop if soreness gets worse.',
-      successCriteria:'You should feel better after than before',
-      intensity:'Recovery',
-      targetDescription:type==='Rest'?'No running load':'Recovery only'
+      warmup:type==='Rest'?'ไม่ต้อง warmup':'เดินหรือ jog เบามาก 5-10 นาที',
+      mainSet:type==='Rest'?'พักจริง เน้นนอน/ยืด/ฟื้นตัว ไม่เพิ่มโหลด':'jog หรือเดินฟื้นตัวเบามาก คุม HR ต่ำ',
+      cooldown:'mobility 8-12 นาที',
+      execution:'เป้าหมายคือฟื้นตัว ถ้าล้าเพิ่มหรือปวดมากขึ้นให้หยุด',
+      successCriteria:'หลังจบควรรู้สึกดีขึ้น ไม่ใช่เหนื่อยขึ้น',
+      intensity:'ฟื้นตัว',
+      targetDescription:type==='Rest'?'พัก ไม่เพิ่มโหลดวิ่ง':'ฟื้นตัวเท่านั้น'
     };
   }
   return {
-    warmup:`Easy first 5-10 min`,
-    mainSet:`Easy run ${km.toFixed(1)} km around ${easyPace}/km or HR Z2`,
-    cooldown:`Walk 5 min + optional stretching`,
-    execution:`Nose-breathing/conversation effort. Keep this truly easy.`,
-    successCriteria:`HR stable, RPE 3-4/10, no pain above 3/10`,
-    intensity:'Easy',
-    targetDescription:`Aerobic easy run around ${easyPace}/km`
+    warmup:`5-10 นาทีแรกวิ่งเบามาก`,
+    mainSet:`วิ่งเบา ${km.toFixed(1)} กม. ประมาณ ${easyPace}/กม. หรือ HR โซน 2`,
+    cooldown:`เดิน 5 นาที + ยืดเบาได้ถ้าต้องการ`,
+    execution:`ต้องคุยได้ หายใจคุมได้ วันนี้ห้ามกลายเป็น tempo`,
+    successCriteria:`HR ค่อนข้างนิ่ง RPE 3-4/10 และปวดไม่เกิน 3/10`,
+    intensity:'ง่าย',
+    targetDescription:`วิ่งเบาแอโรบิกประมาณ ${easyPace}/กม.`
   };
+}
+function coachSessionDisplayDetails(session,index=0){
+  const fallback=coachSessionDetails(session.type,session.targetDist,getCoachGoalProfile(window._coachPlan,{preferPlan:true}),Math.floor(index/4));
+  const raw=session.details&&typeof session.details==='object'?session.details:{};
+  const useRaw=hasThaiText(Object.values(raw).join(' '));
+  return useRaw?{...fallback,...raw}:fallback;
+}
+function coachSessionDisplayDescription(session,index=0){
+  const d=coachSessionDisplayDetails(session,index);
+  return hasThaiText(session.description)?session.description:(d.targetDescription||coachSessionTypeThai(session.type));
 }
 function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile}){
   if(!plan||typeof plan!=='object')throw new Error('Plan JSON is not an object');
@@ -3513,7 +3581,7 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
     const prev=normalized[i-1],cur=normalized[i];
     if(isHardSession(prev.type)&&isHardSession(cur.type)){
       const days=(new Date(cur.date+'T12:00:00')-new Date(prev.date+'T12:00:00'))/86400000;
-      if(days<=1){cur.type='Easy';cur.notes=[cur.notes,'Auto-downgraded to avoid back-to-back hard sessions'].filter(Boolean).join(' · ');}
+      if(days<=1){cur.type='Easy';cur.notes=[cur.notes,'ลดเป็นวิ่งเบาอัตโนมัติเพื่อเลี่ยงซ้อมหนักติดกัน'].filter(Boolean).join(' · ');cur.details=coachSessionDetails(cur.type,cur.targetDist,goalProfile,Math.floor(i/4));cur.description=cur.details.targetDescription;}
     }
   }
   return {
@@ -3554,7 +3622,7 @@ function buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,conte
         targetDist:dist,
         targetPace:pace,
         targetHR:type==='Easy'?145:'',
-        notes:`Fallback structured plan. Follow detail view before running.`,
+        notes:`แผน fallback แบบมีโครงสร้าง กดรายละเอียดก่อนวิ่ง และลดโหลดถ้าร่างกายไม่พร้อม`,
         priority:isHardSession(type)?'key':'normal',
         details
       });
@@ -3583,11 +3651,11 @@ async function generateTrainingPlan(){
   if(out){out.style.color='var(--text2)';out.innerHTML='⏳ Creating plan...';}
   const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='⏳ Generating...';btn.disabled=true;}
   try{
-    const prompt=`Create an adaptive running plan.\n\n${formatCoachContext(context)}\n\nLevel:${level}\nTraining days:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nDaily safety today:${safety.status} - ${safety.action}\n\nHard rules:\n- Code-calculated health/load data is authoritative; do not invent metrics.\n- No hard sessions on consecutive days.\n- If readiness is yellow, reduce intensity or volume.\n- If readiness is red, use recovery/rest and do not compensate by doubling the next day.\n- If pain >= 6, sick status, or ACWR > 1.5, block interval/tempo.\n- Respect unavailable dates/weekdays.\n- Strava is legacy/archive; Health Connect/manual workouts are primary.\n- Missing cadence/GPS/splits must be marked unavailable, never estimated as fact.\n- Every session must be actionable from the phone without asking again.\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"short useful summary","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"why this workout matters","priority":"key|normal|optional","details":{"warmup":"exact warmup","mainSet":"exact main set with reps/pace/recovery if relevant","cooldown":"exact cooldown","execution":"how to run it and what to watch","successCriteria":"how to know it was done correctly","intensity":"Easy|Moderate-hard|Hard|Recovery","targetDescription":"one-line target"}}]}\nCreate exactly ${parseInt(days)*totalWeeks} non-rest sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Include taper near goal date.`;
+    const prompt=`Create an adaptive running plan.\n\n${formatCoachContext(context)}\n\nLevel:${level}\nTraining days:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nDaily safety today:${safety.status} - ${safety.action}\n\nHard rules:\n- Code-calculated health/load data is authoritative; do not invent metrics.\n- No hard sessions on consecutive days.\n- If readiness is yellow, reduce intensity or volume.\n- If readiness is red, use recovery/rest and do not compensate by doubling the next day.\n- If pain >= 6, sick status, or ACWR > 1.5, block interval/tempo.\n- Respect unavailable dates/weekdays.\n- Strava is legacy/archive; Health Connect/manual workouts are primary.\n- Missing cadence/GPS/splits must be marked unavailable, never estimated as fact.\n- Every session must be actionable from the phone without asking again.\n- Thai user interface: all user-facing text in description, notes, and details must be Thai. Keep only type keys in English.\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"สรุปสั้นภาษาไทย","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"เหตุผลภาษาไทยว่าซ้อมวันนี้เพื่ออะไร","priority":"key|normal|optional","details":{"warmup":"warmup ภาษาไทยแบบทำตามได้","mainSet":"main set ภาษาไทย มีจำนวนเซ็ต/pace/เวลาพักถ้าเกี่ยวข้อง","cooldown":"cooldown ภาษาไทย","execution":"วิธีวิ่งและสิ่งที่ต้องระวังภาษาไทย","successCriteria":"เกณฑ์ว่าวิ่งถูกต้องภาษาไทย","intensity":"ง่าย|กลาง-หนัก|หนัก|ฟื้นตัว","targetDescription":"เป้าหมายสั้นภาษาไทย"}}]}\nCreate exactly ${parseInt(days)*totalWeeks} non-rest sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Include taper near goal date.`;
     let plan=null,usedFallback=false,fallbackReason='';
     try{
       const data=await callNewsChat([
-        {role:'system',content:'You are a conservative running coach for a 10K sub-48 goal. Return JSON only. Prioritize injury prevention and deterministic safety rules.'},
+        {role:'system',content:'You are a conservative running coach for a 10K sub-48 goal. Return JSON only. Prioritize injury prevention and deterministic safety rules. User-facing plan text must be Thai.'},
         {role:'user',content:prompt}
       ],{useSearch:false,temperature:.25,maxTokens:4096});
       const rawText=data?.choices?.[0]?.message?.content||'';
@@ -3652,86 +3720,113 @@ function renderCoachTracking(){
     let cls='plan-day';
     if(isToday)cls+=' today-row';else if(isDone)cls+=' done';else if(isMissed)cls+=' missed';
     let badge='';
-    if(isRest)badge='<span class="plan-badge badge-upcoming">🛌 Rest</span>';
-    else if(isDone)badge='<span class="plan-badge badge-done">✅ Done</span>';
-    else if(isMissed)badge='<span class="plan-badge badge-missed">❌ Missed</span>';
-    else if(isToday)badge='<span class="plan-badge badge-today">📍 Today</span>';
-    else badge='<span class="plan-badge badge-upcoming">⏳ Upcoming</span>';
-    const dateStr=new Date(s.date+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    if(isRest)badge='<span class="plan-badge badge-upcoming">🛌 พัก</span>';
+    else if(isDone)badge='<span class="plan-badge badge-done">✅ ทำแล้ว</span>';
+    else if(isMissed)badge='<span class="plan-badge badge-missed">❌ เลยวัน</span>';
+    else if(isToday)badge='<span class="plan-badge badge-today">📍 วันนี้</span>';
+    else badge='<span class="plan-badge badge-upcoming">⏳ รอซ้อม</span>';
+    const dateStr=new Date(s.date+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
+    const displayDetails=coachSessionDisplayDetails(s,index);
+    const displayDescription=coachSessionDisplayDescription(s,index);
+    const displayType=coachSessionTypeThai(s.type);
     let actualLine='';
     if(actualWks.length){const aw=actualWks[0];actualLine=`<div style="font-size:11px;color:var(--green);margin-top:5px;font-weight:600;font-family:var(--font-mono)">📊 ${aw.dist}km${aw.avgPace?' · '+formatPace(aw.avgPace)+'/km':''}${aw.hr?' · ♥'+aw.hr:''}</div>`;if(s.targetDist>0&&aw.dist>0){const diff=((parseFloat(aw.dist)-s.targetDist)/s.targetDist*100).toFixed(0);const c=Math.abs(diff)<=10?'var(--green)':(diff>0?'var(--accent)':'var(--orange)');actualLine+=`<div style="font-size:10px;color:${c};margin-top:2px;font-family:var(--font-mono)">${diff>0?'↑':'↓'} ${Math.abs(diff)}% from target</div>`;}}
     return `<div class="${cls}"><div class="plan-day-header"><div class="plan-day-date">${dateStr}</div>${badge}</div>
-      <div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">${typeEmoji[s.type]||'🏃'}</span>
-      <div style="flex:1"><div style="font-size:14px;font-weight:700;color:${typeColor[s.type]||'var(--text)'};margin-bottom:2px">${s.type}${s.targetDist>0?' · '+s.targetDist+' km':''}</div>
-      <div style="font-size:12px;color:var(--text2)">${s.description||''}${s.targetPace?' · '+s.targetPace:''}${s.targetHR?' · HR<'+s.targetHR:''}</div>
-      ${s.details?.mainSet?`<div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5">${escapeHTML(s.details.mainSet)}</div>`:''}
-      ${s.notes?`<div style="font-size:10px;color:var(--text3);margin-top:3px">💡 ${s.notes}</div>`:''}${actualLine}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-        <button onclick="showCoachSessionDetail(${index})" class="btn btn-primary btn-xs">Detail</button>
-        ${(!isDone&&!isFuture&&!isRest)?`<button onclick="markDone('${s.date}')" class="btn btn-green btn-xs">✓ Done</button>`:''}
-        ${(!isDone&&!isRest)?`<button onclick="coachMoveSession('${s.date}')" class="btn btn-ghost btn-xs">Move</button>`:''}
-        ${(!isDone&&isHardSession(s.type))?`<button onclick="coachDowngradeSession('${s.date}')" class="btn btn-ghost btn-xs">Downgrade</button>`:''}
-        ${(!isDone&&!isRest)?`<button onclick="coachSkipSession('${s.date}')" class="btn btn-ghost btn-xs">Skip</button>`:''}
+      <div class="coach-plan-row"><span class="coach-session-icon">${typeEmoji[s.type]||'🏃'}</span>
+      <div class="coach-session-main"><div class="coach-session-title" style="color:${typeColor[s.type]||'var(--text)'}">${displayType}${s.targetDist>0?' · '+s.targetDist+' กม.':''}</div>
+      <div class="coach-session-desc">${escapeHTML(displayDescription)}${s.targetPace?' · pace '+escapeHTML(s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
+      ${displayDetails.mainSet?`<div class="coach-session-preview"><strong>ชุดหลัก:</strong> ${escapeHTML(displayDetails.mainSet)}</div>`:''}
+      ${s.notes?`<div class="coach-session-note">เหตุผล/หมายเหตุ: ${escapeHTML(hasThaiText(s.notes)?s.notes:'ทำตามรายละเอียดก่อนวิ่ง และปรับลดถ้าร่างกายไม่พร้อม')}</div>`:''}${actualLine}</div>
+      <div class="coach-session-actions">
+        <button onclick="showCoachSessionDetail(${index})" class="btn btn-primary btn-xs">รายละเอียด</button>
+        ${(!isDone&&!isFuture&&!isRest)?`<button onclick="markDone('${s.date}')" class="btn btn-green btn-xs">✓ ทำแล้ว</button>`:''}
+        ${(!isDone&&!isRest)?`<button onclick="coachMoveSession('${s.date}')" class="btn btn-ghost btn-xs">เลื่อน</button>`:''}
+        ${(!isDone&&isHardSession(s.type))?`<button onclick="coachDowngradeSession('${s.date}')" class="btn btn-ghost btn-xs">ลดโหลด</button>`:''}
+        ${(!isDone&&!isRest)?`<button onclick="coachSkipSession('${s.date}')" class="btn btn-ghost btn-xs">ข้าม</button>`:''}
       </div></div></div>`;
   }).join('');
 }
 
 function showCoachSessionDetail(index){
   const s=window._coachRenderedSessions?.[index];if(!s)return;
-  const d=s.details||coachSessionDetails(s.type,s.targetDist,getCoachGoalProfile(window._coachPlan,{preferPlan:true}));
+  const d=coachSessionDisplayDetails(s,index);
+  const title=coachSessionDisplayDescription(s,index);
+  const typeThai=coachSessionTypeThai(s.type);
   const overlay=document.createElement('div');
   overlay.id='coach-session-detail-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:950;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
-  const row=(label,value)=>value?`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">${label}</div><div style="font-size:13px;color:var(--text);line-height:1.65">${escapeHTML(value)}</div></div>`:'';
-  overlay.innerHTML=`<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-xl);padding:20px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
+  const row=(label,value)=>value?`<div class="coach-detail-row"><div class="coach-detail-row-label">${label}</div><div class="coach-detail-row-value">${escapeHTML(value)}</div></div>`:'';
+  overlay.innerHTML=`<div class="coach-detail-card">
+    <div class="coach-detail-header">
       <div>
-        <div class="card-label">Workout Detail</div>
-        <div style="font-size:22px;font-weight:900;color:${coachDecisionColor(isHardSession(s.type)?'yellow':'green')}">${escapeHTML(s.type)}${s.targetDist>0?' · '+s.targetDist+' km':''}</div>
-        <div class="text-sm c2 mt-4">${escapeHTML(s.date)}${s.targetPace?' · Pace '+escapeHTML(s.targetPace):''}${s.targetHR?' · HR<'+escapeHTML(s.targetHR):''}</div>
+        <div class="card-label">รายละเอียดการซ้อม</div>
+        <div class="coach-detail-title" style="color:${coachDecisionColor(isHardSession(s.type)?'yellow':'green')}">${escapeHTML(typeThai)}${s.targetDist>0?' · '+s.targetDist+' กม.':''}</div>
+        <div class="text-sm c2 mt-4">${escapeHTML(s.date)}${s.targetPace?' · pace '+escapeHTML(s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
       </div>
-      <button onclick="document.getElementById('coach-session-detail-overlay').remove()" style="background:var(--bg2);border:none;border-radius:8px;color:var(--text2);font-size:16px;cursor:pointer;padding:4px 10px;line-height:1">✕</button>
+      <button class="coach-detail-close" onclick="document.getElementById('coach-session-detail-overlay').remove()">✕</button>
     </div>
-    <div style="background:var(--bg);border-radius:14px;padding:12px;margin-bottom:12px">
-      <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px">${escapeHTML(s.description||d.targetDescription||'Session')}</div>
-      <div class="text-xs c3">${escapeHTML(s.notes||'Follow the structure below and adjust if readiness is low.')}</div>
+    <div class="coach-detail-summary">
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;line-height:1.5">${escapeHTML(title)}</div>
+      <div class="text-xs c3">${escapeHTML(hasThaiText(s.notes)?s.notes:'นี่คือแผนหลักของวันนั้น ถ้า readiness วันนี้เหลือง/แดง ให้ลดหรือเลื่อนจากปุ่มในหน้า Track Plan')}</div>
     </div>
-    ${row('Warmup',d.warmup)}
-    ${row('Main Set',d.mainSet)}
-    ${row('Cooldown',d.cooldown)}
-    ${row('Execution',d.execution)}
-    ${row('Success Criteria',d.successCriteria)}
-    ${row('Intensity',d.intensity)}
+    ${row('วอร์มอัพ',d.warmup)}
+    ${row('ชุดหลัก',d.mainSet)}
+    ${row('คูลดาวน์',d.cooldown)}
+    ${row('วิธีวิ่ง',d.execution)}
+    ${row('เกณฑ์ว่าวิ่งถูกต้อง',d.successCriteria)}
+    ${row('ความหนัก',d.intensity)}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
-      <button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">Move</button>
-      ${isHardSession(s.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">Downgrade</button>`:''}
-      ${s.type!=='Rest'?`<button class="btn btn-ghost btn-sm" onclick="coachSkipSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">Skip</button>`:''}
+      <button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">เลื่อนวัน</button>
+      ${isHardSession(s.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">ลดเป็นวิ่งเบา</button>`:''}
+      ${s.type!=='Rest'?`<button class="btn btn-ghost btn-sm" onclick="coachSkipSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">ข้ามวันนี้</button>`:''}
     </div>
   </div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener('click',event=>{if(event.target===overlay)overlay.remove();});
 }
 
+function coachDecisionThai(status){
+  return status==='green'
+    ? {label:'พร้อมซ้อมตามแผน',action:'ทำ session หลักได้'}
+    : status==='yellow'
+      ? {label:'ควรลดโหลดวันนี้',action:'ลดระยะหรือความหนักก่อนซ้อม'}
+      : {label:'ไม่ควรฝืน',action:'พักหรือฟื้นตัวแทน'};
+}
+function coachAdaptiveGuidance(decision,session){
+  if(!session)return 'วันนี้ไม่มี session หลัก ระบบยังใช้ sleep, HRV, RHR, SpO2, soreness, health status และ training load เพื่อดูว่าควรพักต่อหรือกลับเข้าตาราง';
+  const typeThai=coachSessionTypeThai(session.type);
+  if(decision.status==='green')return `แผนหลักวันนี้คือ ${typeThai}${session.targetDist?' '+session.targetDist+' กม.':''} และสัญญาณร่างกายยังไม่ชนกฎลดโหลด จึงทำตามแผนหลักได้`;
+  if(decision.status==='yellow')return `แผนหลักยังเป็น ${typeThai} แต่ readiness/โหลดเริ่มเสี่ยง ระบบแนะนำให้ลดเป็นวิ่งเบา ลดระยะประมาณ 30-40% หรือกดลดเป็นวิ่งเบาเพื่อบันทึกแผนที่ปรับแล้ว`;
+  return `แผนหลักเดิมถูกกันไว้เป็นจุดอ้างอิง แต่สภาพร่างกายวันนี้เสี่ยงสูง ระบบแนะนำให้พัก/ฟื้นตัว และใช้ข้ามวันนี้หรือวันนี้ไม่ว่าง เพื่อไม่ให้มีการชดเชยโหลดวันถัดไป`;
+}
 function renderCoachDailyDecision(plan){
   const el=document.getElementById('coach-daily-decision');if(!el)return;
   const today=toLocalDateStr();
   const todaySession=(plan.sessions||[]).find(s=>s.date===today&&!['Rest','Recovery'].includes(s.type));
   const decision=coachSafetyDecision(todaySession);
   const color=coachDecisionColor(decision.status);
+  const thai=coachDecisionThai(decision.status);
+  const reasons=decision.reasons?.length?decision.reasons.map(escapeHTML).join(' · '):'วันนี้ยังไม่มีสัญญาณเสี่ยงหลักจากข้อมูลที่มี';
   el.style.display='block';
   el.style.borderLeft=`4px solid ${color}`;
   el.innerHTML=`
-    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
-      <div>
+    <div class="coach-adaptive-card">
+      <div class="coach-adaptive-main">
         <div class="card-label">Adaptive Coach Today</div>
-        <div style="font-size:18px;font-weight:800;color:${color};margin-bottom:4px">${decision.status.toUpperCase()} - ${escapeHTML(decision.action)}</div>
-        <div class="text-sm c2">${todaySession?`${escapeHTML(todaySession.type)} ${todaySession.targetDist||''}km ${todaySession.targetPace||''}`:'No key workout today'}</div>
-        <div class="text-xs c3 mt-8">${decision.reasons.map(escapeHTML).join(' · ')||'No major risk flags'}</div>
+        <div class="coach-adaptive-action" style="color:${color}">${escapeHTML(thai.label)} · ${escapeHTML(thai.action)}</div>
+        <div class="text-sm c2">${todaySession?`แผนหลักวันนี้: ${escapeHTML(coachSessionTypeThai(todaySession.type))} ${todaySession.targetDist||''} กม. ${todaySession.targetPace?`· pace ${escapeHTML(todaySession.targetPace)}`:''}`:'วันนี้ไม่มี session หนักในแผน'}</div>
+        <div class="coach-adaptive-explain">${escapeHTML(coachAdaptiveGuidance(decision,todaySession))}</div>
+        <div class="text-xs c3 mt-8">เหตุผลจากข้อมูลวันนี้: ${reasons}</div>
+        <div class="coach-adaptive-rules">
+          <div class="coach-adaptive-rule"><strong>แผนหลัก</strong>AI สร้างตารางตั้งต้นไว้ก่อน เพื่อให้มีโครงสร้างระยะยาว</div>
+          <div class="coach-adaptive-rule"><strong>ปรับรายวัน</strong>ระบบอ่าน readiness, sleep, HRV, RHR, SpO2, pain/soreness และ load ก่อนวันซ้อม</div>
+          <div class="coach-adaptive-rule"><strong>บันทึกจริง</strong>เมื่อคุณกดเลื่อน/ลด/ข้าม ระบบเขียนแผนที่ปรับแล้วลง Firebase ไม่ชดเชยโหลดมั่ว</div>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${todaySession?`<button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${today}')">Today unavailable</button>`:''}
-        ${todaySession&&isHardSession(todaySession.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${today}')">Downgrade</button>`:''}
-        <button class="btn btn-primary btn-sm" onclick="reviewPlanAI()">Ask AI</button>
+      <div class="coach-adaptive-buttons">
+        ${todaySession?`<button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${today}')">วันนี้ไม่ว่าง: เลื่อน</button>`:''}
+        ${todaySession&&isHardSession(todaySession.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${today}')">ลดเป็นวิ่งเบา</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="reviewPlanAI()">ให้ AI รีวิวจากข้อมูลล่าสุด</button>
       </div>
     </div>`;
 }
@@ -3745,8 +3840,8 @@ async function assertCoachCloudSaved(expected={}){
   if(expected.completedDate&&!(saved.completedDates||{})[expected.completedDate])throw new Error('Cloud save failed. Completed workout was not confirmed.');
   return saved;
 }
-async function markDone(date){const plan=window._coachPlan;if(!plan)return;const c=plan.completedDates||{};c[date]=Date.now();await window._fb.setData('coach_plan/completedDates',c);await assertCoachCloudSaved({createdAt:plan.createdAt,completedDate:date});showToast('✅ Marked as done');}
-async function clearCoachPlan(){if(!confirm('Delete training plan?'))return;await window._fb.removeData('coach_plan');AppState.set('coachPlan',null);showToast('Plan deleted');}
+async function markDone(date){const plan=window._coachPlan;if(!plan)return;const c=plan.completedDates||{};c[date]=Date.now();await window._fb.setData('coach_plan/completedDates',c);await assertCoachCloudSaved({createdAt:plan.createdAt,completedDate:date});showToast('✅ บันทึกว่าทำแล้ว');}
+async function clearCoachPlan(){if(!confirm('ลบแผนซ้อมนี้?'))return;await window._fb.removeData('coach_plan');AppState.set('coachPlan',null);showToast('ลบแผนแล้ว');}
 function coachSessionsOn(plan,date){return (plan.sessions||[]).filter(s=>s.date===date);}
 function coachHasHardNear(plan,date){
   return [-1,0,1].some(offset=>coachSessionsOn(plan,datePlusDays(date,offset)).some(s=>isHardSession(s.type)));
@@ -3772,17 +3867,17 @@ async function saveCoachPlanWithAdjustment(plan,adjustment){
 }
 async function coachMoveSession(date){
   const plan=window._coachPlan;if(!plan?.sessions)return;
-  const session=plan.sessions.find(s=>s.date===date&&s.type!=='Rest');if(!session)return showToast('No movable session','error');
-  const target=coachFindMoveDate(plan,session);if(!target)return showToast('No safe slot found in next 10 days','error');
+  const session=plan.sessions.find(s=>s.date===date&&s.type!=='Rest');if(!session)return showToast('ไม่มี session ให้เลื่อน','error');
+  const target=coachFindMoveDate(plan,session);if(!target)return showToast('ยังหาช่องว่างที่ปลอดภัยใน 10 วันถัดไปไม่ได้','error');
   const oldDate=session.date;
   session.date=target;
-  session.notes=[session.notes,`Moved from ${oldDate}; no catch-up load added`].filter(Boolean).join(' · ');
+  session.notes=[session.notes,`เลื่อนจาก ${oldDate}; ไม่เพิ่มโหลดชดเชย`].filter(Boolean).join(' · ');
   await saveCoachPlanWithAdjustment(plan,{type:'move',from:oldDate,to:target,sessionType:session.type,reason:'unavailable_or_manual_move'});
-  showToast(`Moved to ${target}`);
+  showToast(`เลื่อนไปวันที่ ${target}`);
 }
 async function coachDowngradeSession(date){
   const plan=window._coachPlan;if(!plan?.sessions)return;
-  const session=plan.sessions.find(s=>s.date===date&&s.type!=='Rest');if(!session)return showToast('No session to downgrade','error');
+  const session=plan.sessions.find(s=>s.date===date&&s.type!=='Rest');if(!session)return showToast('ไม่มี session ให้ลดโหลด','error');
   const before={type:session.type,targetDist:session.targetDist,targetPace:session.targetPace};
   session.type='Easy';
   session.targetDist=Math.max(3,+(parseFloat(session.targetDist||5)*0.65).toFixed(1));
@@ -3790,23 +3885,23 @@ async function coachDowngradeSession(date){
   session.targetHR=session.targetHR?Math.min(+session.targetHR,145):145;
   session.details=coachSessionDetails(session.type,session.targetDist,getCoachGoalProfile(plan,{preferPlan:true}));
   session.description=session.details.targetDescription;
-  session.notes=[session.notes,'Downgraded by safety/adaptive coach'].filter(Boolean).join(' · ');
+  session.notes=[session.notes,'ลดโหลดโดย adaptive coach'].filter(Boolean).join(' · ');
   await saveCoachPlanWithAdjustment(plan,{type:'downgrade',date,from:before,to:{type:session.type,targetDist:session.targetDist,targetHR:session.targetHR},reason:'readiness_or_manual_downgrade'});
-  showToast('Session downgraded');
+  showToast('ลดโหลดเป็นวิ่งเบาแล้ว');
 }
 async function coachSkipSession(date){
   const plan=window._coachPlan;if(!plan?.sessions)return;
-  const session=plan.sessions.find(s=>s.date===date&&s.type!=='Rest');if(!session)return showToast('No session to skip','error');
+  const session=plan.sessions.find(s=>s.date===date&&s.type!=='Rest');if(!session)return showToast('ไม่มี session ให้ข้าม','error');
   const before={type:session.type,targetDist:session.targetDist,targetPace:session.targetPace};
   session.type='Rest';
-  session.description='Skipped - no catch-up load';
+  session.description='ข้ามวันนี้ - ไม่เพิ่มโหลดชดเชย';
   session.targetDist=0;
   session.targetPace='';
   session.targetHR='';
   session.details=coachSessionDetails(session.type,0,getCoachGoalProfile(plan,{preferPlan:true}));
-  session.notes=[session.notes,'Skipped without doubling a later session'].filter(Boolean).join(' · ');
+  session.notes=[session.notes,'ข้ามโดยไม่เพิ่มโหลดซ้ำในวันถัดไป'].filter(Boolean).join(' · ');
   await saveCoachPlanWithAdjustment(plan,{type:'skip',date,from:before,reason:'unavailable_or_recovery'});
-  showToast('Session skipped safely');
+  showToast('ข้าม session อย่างปลอดภัยแล้ว');
 }
 async function coachRescheduleWeek(){await coachMoveSession(toLocalDateStr());}
 async function coachDowngradeToday(){await coachDowngradeSession(toLocalDateStr());}

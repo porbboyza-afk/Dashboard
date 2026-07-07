@@ -2,6 +2,78 @@
 
 Last updated: 2026-07-07 Asia/Bangkok
 
+## 2026-07-07 Coach Mobile UX Thai Detail And Adaptive Explanation
+
+Context:
+
+- User reviewed the generated exercise plan on a phone in portrait orientation and reported:
+  - text was not arranged/readable,
+  - plan cards/table looked messy,
+  - workout explanations should be Thai,
+  - it was unclear how the training changes with daily body condition if the plan looks fixed.
+
+Interpretation:
+
+- The coach plan should be treated as a baseline plan, not as an immutable schedule.
+- Daily adaptation is handled by:
+  - readiness/load/wellness decision card,
+  - user-confirmed actions: move, downgrade, skip,
+  - Firebase writes to `users/{uid}/coach_plan` after each confirmed change.
+- Do not silently mutate the whole plan every day because that can create confusing or unsafe schedule drift.
+
+Code changes:
+
+- Added coach-specific mobile CSS classes:
+  - `.coach-plan-row`
+  - `.coach-session-main`
+  - `.coach-session-preview`
+  - `.coach-session-actions`
+  - `.coach-adaptive-card`
+  - `.coach-detail-card`
+- Added mobile breakpoints for AI Coach:
+  - session cards stack vertically on portrait phones,
+  - action buttons become a grid / single column on very narrow screens,
+  - detail modal uses tighter mobile sizing.
+- Converted deterministic/fallback workout details to Thai:
+  - warmup,
+  - mainSet,
+  - cooldown,
+  - execution,
+  - successCriteria,
+  - intensity,
+  - targetDescription.
+- Added display helpers:
+  - `hasThaiText()`
+  - `coachSessionTypeThai()`
+  - `coachSessionDisplayDetails()`
+  - `coachSessionDisplayDescription()`
+- Existing saved plans with English details are displayed using Thai deterministic details without overwriting Firebase.
+- Updated AI prompt so new plan descriptions, notes, and details must be Thai.
+- Updated Track Plan card rendering:
+  - Thai session type labels,
+  - Thai badges,
+  - Thai action buttons,
+  - clearer main-set preview.
+- Updated workout detail modal:
+  - Thai headings,
+  - Thai close/action wording,
+  - mobile-readable layout classes.
+- Added adaptive explanation helpers:
+  - `coachDecisionThai()`
+  - `coachAdaptiveGuidance()`
+- The daily adaptive card now explains:
+  - the baseline plan,
+  - whether today is green/yellow/red,
+  - what changes are recommended,
+  - that changes are only persisted after move/downgrade/skip writes to Firebase.
+- Updated action toasts and adjustment notes to Thai.
+- Updated `verify_dashboard.js` checks for the new coach UX/adaptive helpers.
+
+Verification to run:
+
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+
 ## 2026-07-07 Coach Plan Quality And Cloud Save Fix
 
 Context:
