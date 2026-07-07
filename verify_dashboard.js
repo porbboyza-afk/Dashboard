@@ -53,7 +53,9 @@ ensureContains(indexPath, [
   '<script src="js/ui-core.js"></script>',
   'function mdToHtml(text)',
   'out.innerHTML = mdToHtml(reply);',
-  "catch(e){if(out){out.style.color='var(--text)';out.innerHTML=mdToHtml(rawText);}showToast('Plan created (no JSON save)','warn');return;}",
+  'function validateCoachPlan(plan',
+  'function buildFallbackTrainingPlan',
+  "usedFallback?'⚠️ Local fallback plan saved':'✅ AI plan saved'",
 ]);
 
 console.log(`Syntax OK: ${inlineCount} inline scripts, ${extraScripts.length} external scripts, manifest, service worker, Apps Script`);

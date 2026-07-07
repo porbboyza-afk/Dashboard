@@ -1,6 +1,56 @@
 # AI Handoff Log
 
-Last updated: 2026-07-04 00:00 Asia/Bangkok
+Last updated: 2026-07-07 Asia/Bangkok
+
+## 2026-07-07 AI Coach Plan Generation Hotfix
+
+Context:
+
+- User tried generating a running plan and saw:
+  - `DeepSeek ไม่ส่งแผนกลับมา`
+- Audit also found stale Strava copy, stale PWA cache versions, stale Android README notes, and a coach goal-profile precedence bug.
+
+Changes made:
+
+- `generateTrainingPlan()` no longer uses the news/search path for coach plan generation.
+  - It calls the AI proxy with `use_search: false`.
+  - Temperature is reduced for JSON plan output.
+- Added robust plan handling:
+  - `extractJsonObject()` extracts JSON from fenced or mixed AI responses.
+  - `validateCoachPlan()` normalizes session types, dates, distances, and downgrades back-to-back hard sessions.
+  - `buildFallbackTrainingPlan()` creates a deterministic local plan if AI/proxy returns no content or invalid JSON.
+- Fallback plans are saved instead of failing the user flow.
+  - Saved plan includes `aiFallback: true`.
+  - Saved plan includes `aiFallbackReason`.
+- Fixed `getCoachGoalProfile(plan)`:
+  - plan review/reschedule now prefers `plan.goalProfile` over default form values.
+- Reschedule now respects unavailable dates/weekdays from `goalProfile.unavailable`.
+- Updated stale copy:
+  - weekly dashboard note no longer says Firebase + Strava.
+  - AI Coach helper copy no longer says Sync Strava every day.
+- Bumped PWA cache/version strings:
+  - `sw.js`
+  - `manifest.json`
+  - `index.html` manifest/icon query strings.
+- Updated Android README to reflect current cadence, wellness, SpO2, and auto-sync support.
+- Updated `verify_dashboard.js` checks to cover the new fallback/validation flow.
+
+Verification to run:
+
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+- `node --check workers/ai-proxy/src/index.js`
+- `android-sync-companion/gradlew.bat assembleDebug`
+
+Verification completed:
+
+- All commands above passed.
+- Extra targeted browser smoke passed:
+  - mocked AI response with empty content.
+  - `generateTrainingPlan()` saved a local fallback plan.
+  - fallback produced 16 sessions for a 4-week / 4-days-per-week test.
+  - unavailable weekday `Fri` was respected.
+  - no page errors.
 
 ## Current Project
 
