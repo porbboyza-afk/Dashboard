@@ -2,11 +2,17 @@ import contextlib
 import http.server
 import json
 import socketserver
+import sys
 import threading
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 ROOT = Path(__file__).resolve().parent
 PORT = 8124
@@ -264,6 +270,8 @@ def main():
                   showShareStatsModal();
                   renderShareCanvas();
                   closeShareStats();
+                  showPage('today');
+                  await renderDashRaceBanner();
                 }
                 """
             )
@@ -278,6 +286,14 @@ def main():
                   statsCanvasExists: !!document.querySelector('#hrzone-chart, #pace-trend-chart, canvas'),
                   coachPlanDays: document.querySelectorAll('.plan-day').length,
                   raceCards: document.querySelectorAll('#race-list-container .card').length,
+                  raceBannerFullRow: (() => {
+                    const banner = document.querySelector('#dash-race-banner');
+                    const parent = banner?.parentElement;
+                    if (!banner || !parent || getComputedStyle(banner).display === 'none') return false;
+                    const bannerRect = banner.getBoundingClientRect();
+                    const parentRect = parent.getBoundingClientRect();
+                    return bannerRect.width >= parentRect.width * 0.9;
+                  })(),
                   newsPanelExists: !!document.querySelector('.news-side') && !!document.querySelector('#news-sources'),
                   sourcesPageExists: !!document.querySelector('#strava-page-content, #strava-status-box'),
                   syncStatusRendered: !!document.querySelector('#gas-status'),
@@ -288,6 +304,44 @@ def main():
             checks["dom"] = dom_checks
             for key, value in dom_checks.items():
                 assert_true(checks, f"dom_{key}", bool(value), f"DOM check failed: {key}")
+
+            no_plan_training_text = page.evaluate(
+                """
+                () => {
+                  const plan = {
+                    goal:'10km นายช้อย',
+                    startDate:'2026-07-07',
+                    endDate:'2026-11-15',
+                    totalWeeks:18,
+                    createdAt:123,
+                    goalProfile:{distance:'10K', targetTime:'47:59', targetPace:4.798, unavailableRaw:'', unavailable:[]},
+                    sessions:[]
+                  };
+                  const oldWorkouts = [
+                    {date:'2026-06-20', type:'run', dist:10, time:63, avgPace:6.3, source:'health_connect'},
+                    {date:'2026-06-25', type:'run', dist:8, time:50, avgPace:6.25, source:'health_connect'}
+                  ];
+                  window._workouts = oldWorkouts;
+                  window._coachPlan = plan;
+                  if (window.AppState) {
+                    AppState.set('workouts', oldWorkouts);
+                    AppState.set('coachPlan', plan);
+                  }
+                  showPage('coach');
+                  switchCoachTab('race');
+                  window._races = mergeRaceEntries([], plan);
+                  renderRaceList();
+                  return document.querySelector('#race-list-container')?.innerText || '';
+                }
+                """
+            )
+            checks["race_no_plan_training_text"] = no_plan_training_text
+            assert_true(
+                checks,
+                "race_not_ready_before_plan_training",
+                "พร้อมมาก" not in no_plan_training_text and "ยังไม่เริ่มซ้อมตามแผน" in no_plan_training_text,
+                "Race tab should not mark the user as highly ready before plan training starts",
+            )
 
             browser.close()
     finally:

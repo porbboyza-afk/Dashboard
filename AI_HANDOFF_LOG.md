@@ -224,6 +224,58 @@ Remaining risk before push:
 - Local automated checks are strong enough for the refactor, but not a mathematical 100% guarantee.
 - Still worth doing one manual phone hard-refresh check after GitHub Pages updates because PWA/service-worker/browser cache behavior can differ from local headless Chrome.
 
+## 2026-07-07 Race Readiness Wording And Mobile Card Fix
+
+Context:
+
+- User sent mobile screenshots after the refactor push.
+- Screenshot 1 showed dashboard race countdown content visually overlapping in the small right-column mobile grid.
+- Screenshot 2 showed AI Coach -> Race tab saying the user was `พร้อมมาก` even though the user had not started training under the new plan yet.
+
+Root causes:
+
+- Dashboard:
+  - On mobile, `.stats-col` becomes a 3-column grid.
+  - `#dash-race-banner` was being placed into one narrow column even though its content is a horizontal race banner.
+- Race tab:
+  - `renderRaceList()` computed readiness only from recent 4-week average distance vs race distance.
+  - It did not distinguish:
+    - pre-plan historical running base,
+    - actual workouts completed after `coach_plan.startDate`.
+  - Therefore existing historical runs could produce `พร้อมมาก` before the current plan had really started.
+
+Code changes:
+
+- Mobile layout:
+  - `#dash-race-banner` now spans all columns in the mobile `.stats-col` grid.
+  - Added small mobile spacing/padding safeguards for the race banner.
+- Race tab logic:
+  - Added `raceTrainingReadiness(r, all, today)`.
+  - For plan-derived races, it checks `window._coachPlan.startDate`.
+  - If no workout exists after the plan start date, the card now says:
+    - `ยังไม่เริ่มซ้อมตามแผน`
+  - Historical 4-week mileage is now described as baseline/base data, not as race readiness.
+  - The section heading changed from `ความพร้อม` to:
+    - `สถานะแผน / ฐานซ้อม`
+- PWA cache:
+  - bumped cache from `mydash-v3-health-20260707-3` to `mydash-v3-health-20260707-4`.
+  - bumped manifest/icon query strings to `20260707-4`.
+  - bumped manifest id to `./?v=9`.
+- Test:
+  - `comprehensive_refactor_test.py` now verifies:
+    - the dashboard race banner spans full mobile row,
+    - a plan race with no post-plan workouts does not show `พร้อมมาก`,
+    - the Race tab shows `ยังไม่เริ่มซ้อมตามแผน`.
+
+Verification:
+
+- `node verify_dashboard.js`
+  - Passed.
+- `python smoke_test_dashboard.py`
+  - Passed.
+- `python comprehensive_refactor_test.py`
+  - Passed.
+
 ## 2026-07-07 Coach End Date Race Integration
 
 Context:

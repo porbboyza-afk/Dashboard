@@ -160,7 +160,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-health-20260707-3",
+  "mydash-v3-health-20260707-4",
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',

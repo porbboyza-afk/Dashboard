@@ -70,6 +70,37 @@ async function getAllRaceEntries(){
   return mergeRaceEntries(saved,window._coachPlan);
 }
 
+function raceTrainingReadiness(r,all,today){
+  const dist=parseFloat(r.dist)||10;
+  const recentActs=all.filter(w=>{
+    const d=new Date((w.date||'')+'T00:00:00');
+    return !isNaN(d)&&(today-d)<=28*86400000&&d<=today;
+  });
+  const avgWeeklyDist=recentActs.reduce((sum,w)=>sum+parseFloat(w.dist||0),0)/4;
+  const planStart=window._coachPlan?.startDate||'';
+  const isPlanRace=r.source==='coach_plan'&&!!planStart;
+  const planStartDate=planStart?new Date(planStart+'T00:00:00'):null;
+  const planStarted=!isPlanRace||!planStartDate||planStartDate<=today;
+  const planActs=isPlanRace&&planStartDate
+    ? all.filter(w=>{
+        const d=new Date((w.date||'')+'T00:00:00');
+        return !isNaN(d)&&d>=planStartDate&&d<=today;
+      })
+    : recentActs;
+  const hasPlanTraining=!isPlanRace||planActs.length>0;
+  const score=Math.min(100,Math.round((avgWeeklyDist/(dist*0.6))*100));
+  if(!planStarted){
+    return {score:0,avgWeeklyDist,color:'var(--text3)',label:'ยังไม่เริ่มแผน',note:`แผนเริ่ม ${planStart} · ใช้ข้อมูลย้อนหลังเป็นฐานตั้งต้นเท่านั้น`};
+  }
+  if(!hasPlanTraining){
+    return {score:Math.min(score,45),avgWeeklyDist,color:'var(--orange)',label:'ยังไม่เริ่มซ้อมตามแผน',note:`ฐานวิ่งย้อนหลัง ${avgWeeklyDist.toFixed(1)} km/สัปดาห์ · ยังไม่มี workout หลังวันเริ่มแผน`};
+  }
+  const color=score>=80?'var(--green)':score>=50?'var(--orange)':'var(--red)';
+  const label=score>=80?'ฐานวิ่งดี':'กำลังสร้างฐาน';
+  const note=`ซ้อมในแผนแล้ว ${planActs.length} ครั้ง · ฐาน 4 สัปดาห์ ${avgWeeklyDist.toFixed(1)} km/สัปดาห์`;
+  return {score,avgWeeklyDist,color,label,note};
+}
+
 async function loadRaces() {
   try {
     const data = await window._fb.getData('races');
@@ -118,12 +149,7 @@ function renderRaceList() {
     const isPast = daysLeft < 0;
     const dist = parseFloat(r.dist) || 10;
 
-    // Readiness: based on recent 4-week avg distance vs race dist
-    const recentActs = all.filter(w => {
-      const d = new Date(w.date+'T00:00:00');
-      return (today - d) <= 28*86400000 && d <= today;
-    });
-    const avgWeeklyDist = recentActs.reduce((s,w) => s+parseFloat(w.dist||0),0) / 4;
+    const training = raceTrainingReadiness(r, all, today);
     const prs = computePR(all);
 
     // Predict finish time from best pace
@@ -140,9 +166,9 @@ function renderRaceList() {
     };
 
     // Readiness score 0-100
-    const readiness = Math.min(100, Math.round((avgWeeklyDist / (dist * 0.6)) * 100));
+    const readiness = training.score;
     const readColor = readiness >= 80 ? 'var(--green)' : readiness >= 50 ? 'var(--orange)' : 'var(--red)';
-    const readLabel = readiness >= 80 ? 'พร้อมมาก ✅' : readiness >= 50 ? 'พร้อมปานกลาง ⚡' : 'ยังต้องฝึกเพิ่ม ⚠️';
+    const readLabel = training.label;
 
     const countdownColor = isPast ? 'var(--text3)' : daysLeft <= 14 ? 'var(--red)' : daysLeft <= 30 ? 'var(--orange)' : 'var(--accent)';
 
@@ -165,13 +191,13 @@ function renderRaceList() {
       <!-- Readiness -->
       <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">ความพร้อม</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">สถานะแผน / ฐานซ้อม</div>
           <div style="font-size:12px;font-weight:700;color:${readColor}">${readLabel}</div>
         </div>
         <div style="height:8px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-bottom:6px">
           <div style="height:100%;border-radius:99px;background:${readColor};width:${readiness}%;transition:width .5s"></div>
         </div>
-        <div style="font-size:10px;color:var(--text3)">วิ่งเฉลี่ย ${avgWeeklyDist.toFixed(1)} km/สัปดาห์ (4 สัปดาห์ล่าสุด)</div>
+        <div style="font-size:10px;color:var(--text3)">${training.note}</div>
       </div>
       <!-- Prediction -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
