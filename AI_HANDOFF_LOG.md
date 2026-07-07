@@ -733,6 +733,51 @@ User/device action needed:
    - `users/{uid}/sync_sources/health_connect/wellness_fields_updated`
    - `users/{uid}/wellness/{YYYY-MM-DD}` fields.
 
+## 2026-07-07 Android Auto Sync
+
+Goal:
+
+- Add automatic Health Connect sync so the user does not need to open the app every day.
+
+Code changes:
+
+- Added WorkManager dependency:
+  - `androidx.work:work-runtime-ktx:2.9.1`
+- Added `AutoSyncWorker`.
+- Auto sync runs as unique periodic work:
+  - work name: `mydash-health-connect-auto-sync`
+  - interval: 12 hours
+  - constraints: network connected, battery not low
+- The worker:
+  - uses persisted Firebase Auth current user.
+  - skips cleanly if no user is signed in.
+  - skips cleanly if Health Connect permissions are missing.
+  - calls `HealthConnectSync.syncLast30Days(uid)`.
+  - writes auto status to:
+    - `users/{uid}/sync_sources/health_connect_auto`
+- `MainActivity` schedules auto sync when:
+  - app opens and user + permissions are ready.
+  - Google sign-in completes.
+  - Health Connect permission request returns.
+  - manual sync completes.
+
+Verification:
+
+- `.\gradlew.bat assembleDebug` passed.
+- Installed APK on device `RRCX10685RZ`.
+- Opened app with ADB.
+- `dumpsys jobscheduler` showed WorkManager job scheduled for `com.pucca.mydashsync`, next run around `+11h59m`.
+- Firebase confirmed:
+  - `sync_sources/health_connect_auto/enabled: true`
+  - `interval_hours: 12`
+  - `last_result: success`
+  - latest auto run scanned 11 sessions and skipped existing rows.
+
+Notes:
+
+- WorkManager timing is approximate; Android may delay the run for battery/network policy.
+- Manual `Sync last 30 days` remains necessary as a fallback and for immediate refresh.
+
 User action needed after GitHub Pages updates:
 
 - Hard refresh MyDash.

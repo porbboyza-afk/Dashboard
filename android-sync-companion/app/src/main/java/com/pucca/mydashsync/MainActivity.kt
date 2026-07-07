@@ -48,7 +48,10 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher = registerForActivityResult(
         PermissionController.createRequestPermissionResultContract()
     ) {
-        lifecycleScope.launch { render() }
+        lifecycleScope.launch {
+            scheduleAutoSyncIfReady()
+            render()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,7 +66,10 @@ class MainActivity : ComponentActivity() {
                 .build()
         )
         setContentView(buildUi())
-        lifecycleScope.launch { render() }
+        lifecycleScope.launch {
+            scheduleAutoSyncIfReady()
+            render()
+        }
     }
 
     private fun buildUi(): View {
@@ -144,6 +150,7 @@ class MainActivity : ComponentActivity() {
         val account = GoogleSignIn.getSignedInAccountFromIntent(data).await()
         val idToken = account.idToken ?: throw IllegalStateException("Google ID token missing")
         auth.signInWithCredential(GoogleAuthProvider.getCredential(idToken, null)).await()
+        scheduleAutoSyncIfReady()
     }
 
     private suspend fun runSync() {
@@ -152,6 +159,7 @@ class MainActivity : ComponentActivity() {
         try {
             val user = auth.currentUser ?: error("Sign in first")
             val result = sync.syncLast30Days(user.uid)
+            scheduleAutoSyncIfReady()
             status.text = "Sync complete"
             lastDetailMessage = "Activities: imported ${result.imported}, updated ${result.updated}, skipped ${result.skipped}, scanned ${result.scanned}.\nWellness: updated ${result.wellnessDaysUpdated} days / ${result.wellnessFieldsUpdated} fields.\n${result.message}"
             Log.i("MyDashSync", "Sync complete: scanned=${result.scanned}, imported=${result.imported}, updated=${result.updated}, skipped=${result.skipped}, wellnessDays=${result.wellnessDaysUpdated}, wellnessFields=${result.wellnessFieldsUpdated}")
@@ -171,5 +179,11 @@ class MainActivity : ComponentActivity() {
             data = Uri.parse("package:${HealthConnectSync.PROVIDER_PACKAGE}")
         }
         startActivity(intent)
+    }
+
+    private suspend fun scheduleAutoSyncIfReady() {
+        if (auth.currentUser != null && sync.hasPermissions()) {
+            AutoSyncWorker.schedule(this)
+        }
     }
 }
