@@ -2,6 +2,48 @@
 
 Last updated: 2026-07-07 Asia/Bangkok
 
+## 2026-07-07 Coach End Date Race Integration
+
+Context:
+
+- User clarified that the training plan end date usually means race day.
+- User reported that after setting a plan and end date, the Race tab did not show the race.
+
+Root cause:
+
+- `generateTrainingPlan()` saves the plan end date under:
+  - `users/{uid}/coach_plan/endDate`
+- The Race tab and dashboard race banner only read:
+  - `users/{uid}/races`
+- Therefore a plan could have a race/end date but the Race tab remained empty unless the user manually added a race record.
+
+Code changes:
+
+- Added `coachPlanRaceEntry(plan)`:
+  - derives a virtual race from `coach_plan.endDate`,
+  - uses `coach_plan.goal`,
+  - uses `coach_plan.goalProfile.distance`,
+  - uses `coach_plan.goalProfile.targetTime`.
+- Added `mergeRaceEntries(savedRaces, plan)`:
+  - combines manually saved races with the current plan-derived race,
+  - avoids adding a duplicate when a saved race already has the same date and close distance.
+- Added `getAllRaceEntries()`:
+  - used by the dashboard race banner.
+- Updated `loadRaces()`:
+  - Race tab now shows saved races plus the current plan-derived race.
+- Updated Race tab rendering:
+  - plan-derived race shows a `จากแผนซ้อมปัจจุบัน` tag,
+  - plan-derived race does not show a delete button.
+- Updated `addRace()` and `deleteRace()`:
+  - writes only manually saved races back to `users/{uid}/races`,
+  - does not persist the virtual plan-derived race into the races path.
+- Updated `verify_dashboard.js` to guard the new race integration helpers.
+
+Verification to run:
+
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+
 ## 2026-07-07 Coach Mobile UX Thai Detail And Adaptive Explanation
 
 Context:

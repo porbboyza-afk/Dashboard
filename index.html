@@ -5300,8 +5300,7 @@ async function renderDashRaceBanner() {
   const banner = document.getElementById('dash-race-banner');
   if (!banner) return;
   try {
-    const data = await window._fb.getData('races');
-    const races = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+    const races = await getAllRaceEntries();
     const today = new Date(); today.setHours(0,0,0,0);
     const upcoming = races
       .filter(r => r.date && new Date(r.date+'T00:00:00') >= today)
@@ -5886,11 +5885,48 @@ function showCalDay(dateStr) {
 // ══════════════════════════════════════════════
 let _races = [];
 
+function coachPlanRaceEntry(plan=window._coachPlan){
+  if(!plan?.endDate)return null;
+  const goalProfile=plan.goalProfile||{};
+  const distKm=raceDistanceKm(goalProfile.distance||'10K');
+  const goalTime=goalProfile.targetTime||'';
+  const name=plan.goal||`${goalProfile.distance||'10K'} goal race`;
+  return {
+    id:'coach-plan-race',
+    name,
+    date:plan.endDate,
+    dist:+distKm.toFixed(1),
+    goal:goalTime,
+    source:'coach_plan',
+    sourceLabel:'จากแผนซ้อมปัจจุบัน',
+    createdAt:plan.createdAt||0
+  };
+}
+
+function mergeRaceEntries(savedRaces=[],plan=window._coachPlan){
+  const rows=Array.isArray(savedRaces)?savedRaces:Object.values(savedRaces||{});
+  const planRace=coachPlanRaceEntry(plan);
+  const merged=[...rows.filter(Boolean)];
+  if(planRace&&!merged.some(r=>r.date===planRace.date&&Math.abs((parseFloat(r.dist)||0)-planRace.dist)<0.2)){
+    merged.unshift(planRace);
+  }
+  return merged.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+}
+
+async function getAllRaceEntries(){
+  let saved=[];
+  try{
+    const data=await window._fb.getData('races');
+    saved=data?(Array.isArray(data)?data:Object.values(data)):[];
+  }catch(e){saved=[];}
+  return mergeRaceEntries(saved,window._coachPlan);
+}
+
 async function loadRaces() {
   try {
     const data = await window._fb.getData('races');
-    _races = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
-    _races.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+    const saved = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+    _races = mergeRaceEntries(saved, window._coachPlan);
   } catch(e) { _races = []; }
   renderRaceList();
 }
@@ -5902,9 +5938,11 @@ async function addRace() {
   const goal = document.getElementById('race-goal-in')?.value?.trim();
   if (!name || !date) { showToast('กรุณาใส่ชื่อและวันที่', 'error'); return; }
   const race = { id: Date.now(), name, date, dist: parseFloat(dist)||10, goal, createdAt: Date.now() };
-  _races.push(race);
-  _races.sort((a,b) => (a.date||'').localeCompare(b.date||''));
-  await window._fb.setData('races', _races);
+  const savedRaces=_races.filter(r=>r.source!=='coach_plan');
+  savedRaces.push(race);
+  savedRaces.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  await window._fb.setData('races', savedRaces);
+  _races=mergeRaceEntries(savedRaces,window._coachPlan);
   // Clear inputs
   ['race-name-in','race-date-in','race-goal-in'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   showToast('บันทึกการแข่งขันแล้ว ✅');
@@ -5912,8 +5950,9 @@ async function addRace() {
 }
 
 async function deleteRace(id) {
-  _races = _races.filter(r => r.id !== id);
-  await window._fb.setData('races', _races);
+  const savedRaces = _races.filter(r => r.source!=='coach_plan' && r.id !== id);
+  await window._fb.setData('races', savedRaces);
+  _races=mergeRaceEntries(savedRaces,window._coachPlan);
   renderRaceList();
 }
 
@@ -5964,13 +6003,14 @@ function renderRaceList() {
         <div>
           <div style="font-size:16px;font-weight:800">${r.name}</div>
           <div style="font-size:11px;color:var(--text2);margin-top:3px">${new Date(r.date+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'long',year:'numeric'})} · ${dist}K</div>
+          ${r.source==='coach_plan'?`<div class="tag tag-blue" style="margin-top:7px">จากแผนซ้อมปัจจุบัน</div>`:''}
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <div style="text-align:right">
             <div style="font-family:var(--font-mono);font-size:28px;font-weight:800;line-height:1;color:${countdownColor}">${isPast ? 'เสร็จแล้ว' : daysLeft}</div>
             ${!isPast ? `<div style="font-size:10px;color:var(--text3)">วันที่เหลือ</div>` : ''}
           </div>
-          <button onclick="deleteRace(${r.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px">✕</button>
+          ${r.source==='coach_plan'?'':`<button onclick="deleteRace(${r.id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px">✕</button>`}
         </div>
       </div>
       ${!isPast ? `
