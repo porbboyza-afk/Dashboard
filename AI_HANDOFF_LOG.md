@@ -2,6 +2,44 @@
 
 Last updated: 2026-07-08 Asia/Bangkok
 
+## 2026-07-08 Wellness Manual Edit For Partial Garmin Health Connect Data
+
+Context:
+
+- User showed Android Health Connect permissions for Garmin Connect.
+- Visible Garmin/Health Connect permissions included:
+  - body fat,
+  - weight,
+  - sleep,
+  - exercise/activity metrics,
+  - active heart rate,
+  - resting heart rate.
+- HRV was not visible in the provided screenshot, so MyDash must treat HRV as optional/manual for this device state.
+- User wants to manually fill missing wellness fields because Garmin does not provide everything MyDash needs for training decisions.
+
+Code changes:
+
+- Wellness form now includes:
+  - Body Fat `%`,
+  - HRV labelled as `manual optional`.
+- Recent Wellness rows now have an `Edit` button.
+- `loadWellnessToForm(date)` loads an existing wellness record into the form.
+- `saveWellness()` now merges manual form values with the existing `wellness/{date}` record:
+  - blank fields do not wipe synced Garmin/Health Connect values,
+  - manual fields such as fatigue, pain, stress, mood, note, pain location, body fat can be added later,
+  - saved rows get `manualOverride: true`, `manualUpdatedAt`, and `updatedAt`.
+- Recent Wellness list now shows SpO2 in the summary.
+- PWA cache bumped to:
+  - `mydash-v3-health-20260708-2`
+  - manifest id `./?v=12`
+
+Test coverage added:
+
+- `comprehensive_refactor_test.py` verifies:
+  - manual Wellness merge preserves synced sleep/HRV/source values,
+  - manual fatigue/bodyFat fields are saved,
+  - edit form preloads the existing record.
+
 ## 2026-07-08 Daily Adaptive Coach Engine
 
 Context:

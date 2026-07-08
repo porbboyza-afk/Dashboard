@@ -93,6 +93,8 @@ ensureContains(shareCardScriptPath, [
 
 ensureContains(wellnessScriptPath, [
   'function formatSleepHours',
+  'function loadWellnessToForm',
+  'function mergeWellnessEntry',
   'function calculateReadiness',
   'function calculateLoadMetrics',
   'function renderIntegratedHealth',
@@ -165,7 +167,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-health-20260708-1",
+  "mydash-v3-health-20260708-2",
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',

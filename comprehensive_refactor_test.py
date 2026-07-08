@@ -305,6 +305,32 @@ def main():
             for key, value in dom_checks.items():
                 assert_true(checks, f"dom_{key}", bool(value), f"DOM check failed: {key}")
 
+            wellness_edit_rules = page.evaluate(
+                """
+                () => {
+                  const existing = {date:'2026-07-08', sleepHours:6.5, hrv:52, restingHR:48, source:'health_connect', createdAt:1000};
+                  const formEntry = {date:'2026-07-08', sleepHours:null, hrv:null, restingHR:null, fatigue:4, soreness:1, bodyFat:18.2, healthStatus:'normal', note:'manual check'};
+                  const merged = mergeWellnessEntry(existing, formEntry);
+                  AppState.set('wellness', [{...merged, _key:'2026-07-08'}]);
+                  loadWellnessToForm('2026-07-08');
+                  return {
+                    sleepPreserved: merged.sleepHours === 6.5,
+                    hrvPreserved: merged.hrv === 52,
+                    sourcePreserved: merged.source === 'health_connect',
+                    manualFatigueSaved: merged.fatigue === 4,
+                    bodyFatSaved: merged.bodyFat === 18.2,
+                    manualFlag: merged.manualOverride === true,
+                    formBodyFat: document.getElementById('w-body-fat')?.value,
+                    formSleep: document.getElementById('w-sleep-hours')?.value
+                  };
+                }
+                """
+            )
+            checks["wellness_edit_rules"] = wellness_edit_rules
+            assert_true(checks, "wellness_preserve_sync_ok", wellness_edit_rules["sleepPreserved"] is True and wellness_edit_rules["hrvPreserved"] is True and wellness_edit_rules["sourcePreserved"] is True, "Manual wellness merge did not preserve synced fields")
+            assert_true(checks, "wellness_manual_fields_ok", wellness_edit_rules["manualFatigueSaved"] is True and wellness_edit_rules["bodyFatSaved"] is True and wellness_edit_rules["manualFlag"] is True, "Manual wellness fields were not saved")
+            assert_true(checks, "wellness_edit_form_ok", wellness_edit_rules["formBodyFat"] == "18.2" and wellness_edit_rules["formSleep"] == "6.5", "Wellness edit form did not preload existing values")
+
             coach_plan_rules = page.evaluate(
                 """
                 () => {

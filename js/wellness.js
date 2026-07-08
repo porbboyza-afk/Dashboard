@@ -138,33 +138,102 @@ function calculateRecoveryScore(entry) {
   );
 }
 
+function wellnessFieldValue(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  return el.value?.trim?.() ?? '';
+}
+function wellnessNumberValue(id) {
+  const raw = wellnessFieldValue(id);
+  if (raw === '') return null;
+  const value = parseFloat(raw);
+  return Number.isFinite(value) ? value : null;
+}
+function setWellnessInput(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = value ?? '';
+}
+function getWellnessFormEntry() {
+  return {
+    date: wellnessFieldValue('w-date') || toLocalDateStr(),
+    weight: wellnessNumberValue('w-weight'),
+    bodyFat: wellnessNumberValue('w-body-fat'),
+    restingHR: wellnessNumberValue('w-rhr'),
+    sleepHours: wellnessNumberValue('w-sleep-hours'),
+    sleepQuality: wellnessNumberValue('w-sleep-quality'),
+    fatigue: wellnessNumberValue('w-fatigue'),
+    stress: wellnessNumberValue('w-stress'),
+    soreness: wellnessNumberValue('w-soreness'),
+    mood: wellnessNumberValue('w-mood'),
+    hrv: wellnessNumberValue('w-hrv'),
+    spo2: wellnessNumberValue('w-spo2'),
+    bloodPressure: wellnessFieldValue('w-bp'),
+    healthStatus: wellnessFieldValue('w-health-status') || 'normal',
+    painLocation: wellnessFieldValue('w-pain-location'),
+    note: wellnessFieldValue('w-note')
+  };
+}
+function mergeWellnessEntry(existing, formEntry) {
+  const merged = {...(existing||{}), date: formEntry.date};
+  Object.entries(formEntry).forEach(([key,value]) => {
+    if (key === 'date') return;
+    const isBlank = value === null || value === '';
+    if (!isBlank || merged[key] === undefined || merged[key] === null || merged[key] === '') merged[key] = value;
+  });
+  merged.recoveryScore = calculateRecoveryScore(merged);
+  merged.createdAt = existing?.createdAt || Date.now();
+  merged.updatedAt = Date.now();
+  merged.manualUpdatedAt = Date.now();
+  merged.manualOverride = true;
+  return merged;
+}
+function loadWellnessToForm(keyOrDate) {
+  const records = AppState.get('wellness') || [];
+  const record = records.find(r => r._key === keyOrDate || r.date === keyOrDate);
+  if (!record) { showToast('ไม่พบข้อมูล Wellness วันนี้', 'error'); return; }
+  setWellnessInput('w-date', record.date || toLocalDateStr());
+  setWellnessInput('w-weight', record.weight);
+  setWellnessInput('w-body-fat', record.bodyFat);
+  setWellnessInput('w-rhr', record.restingHR);
+  setWellnessInput('w-sleep-hours', record.sleepHours);
+  setWellnessInput('w-sleep-quality', record.sleepQuality);
+  setWellnessInput('w-fatigue', record.fatigue);
+  setWellnessInput('w-stress', record.stress);
+  setWellnessInput('w-soreness', record.soreness);
+  setWellnessInput('w-mood', record.mood);
+  setWellnessInput('w-hrv', record.hrv);
+  setWellnessInput('w-spo2', record.spo2);
+  setWellnessInput('w-bp', record.bloodPressure);
+  setWellnessInput('w-health-status', record.healthStatus || 'normal');
+  setWellnessInput('w-pain-location', record.painLocation);
+  setWellnessInput('w-note', record.note);
+  const btn = document.getElementById('wellness-save-btn');
+  if (btn) btn.textContent = '💾 Update wellness';
+  switchWellnessTab('checkin', document.querySelector('#wellness-tabs .seg-tab'));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function resetWellnessForm() {
+  ['w-weight','w-body-fat','w-rhr','w-sleep-hours','w-sleep-quality','w-fatigue','w-stress','w-soreness','w-mood','w-hrv','w-spo2','w-bp','w-pain-location','w-note'].forEach(id => setWellnessInput(id, ''));
+  setWellnessInput('w-date', toLocalDateStr());
+  setWellnessInput('w-health-status', 'normal');
+  const btn = document.getElementById('wellness-save-btn');
+  if (btn) btn.textContent = '💾 Save wellness';
+}
+
 async function saveWellness() {
   if (!window._fb || !document.getElementById('user-name')?.textContent || document.getElementById('user-name').textContent === '—') {
     showToast('กรุณา Sign in ก่อนบันทึกข้อมูล', 'error'); return;
   }
-  const entry = {
-    date: document.getElementById('w-date').value || toLocalDateStr(),
-    weight: numberValue('w-weight'),
-    restingHR: numberValue('w-rhr'),
-    sleepHours: numberValue('w-sleep-hours'),
-    sleepQuality: numberValue('w-sleep-quality'),
-    fatigue: numberValue('w-fatigue'),
-    stress: numberValue('w-stress'),
-    soreness: numberValue('w-soreness'),
-    mood: numberValue('w-mood'),
-    hrv: numberValue('w-hrv'),
-    spo2: numberValue('w-spo2'),
-    bloodPressure: fieldValue('w-bp'),
-    healthStatus: fieldValue('w-health-status')||'normal',
-    painLocation: document.getElementById('w-pain-location').value.trim(),
-    note: document.getElementById('w-note').value.trim(),
-    createdAt: Date.now()
-  };
+  const formEntry = getWellnessFormEntry();
+  const existing = (AppState.get('wellness')||[]).find(r => r.date === formEntry.date);
+  const entry = mergeWellnessEntry(existing, formEntry);
   if ([entry.sleepQuality,entry.fatigue,entry.stress,entry.mood].some(v => v !== null && (v < 1 || v > 10)) ||
-      (entry.soreness !== null && (entry.soreness < 0 || entry.soreness > 10))) {
+      (entry.soreness !== null && (entry.soreness < 0 || entry.soreness > 10)) ||
+      (entry.bodyFat !== null && (entry.bodyFat < 1 || entry.bodyFat > 80)) ||
+      (entry.spo2 !== null && (entry.spo2 < 70 || entry.spo2 > 100))) {
     showToast('คะแนนต้องอยู่ในช่วงที่กำหนด', 'error'); return;
   }
-  entry.recoveryScore = calculateRecoveryScore(entry);
   showLoading('Saving wellness...');
   try {
     await window._fb.setData(`wellness/${entry.date}`, entry);
@@ -213,8 +282,9 @@ function renderWellness() {
       <div class="workout-icon-wrap" style="background:var(--green-light)">🫀</div>
       <div style="flex:1;min-width:0">
         <div class="workout-title">${r.date} · Recovery ${calculateRecoveryScore(r) ?? '—'}</div>
-        <div class="workout-meta">Sleep ${formatSleepHours(r.sleepHours)} · RHR ${r.restingHR ?? '—'} · HRV ${r.hrv ?? '—'} · Fatigue ${r.fatigue ?? '—'} · Pain ${r.soreness ?? '—'}</div>
+        <div class="workout-meta">Sleep ${formatSleepHours(r.sleepHours)} · RHR ${r.restingHR ?? '—'} · HRV ${r.hrv ?? '—'} · SpO₂ ${r.spo2 ?? '—'} · Fatigue ${r.fatigue ?? '—'} · Pain ${r.soreness ?? '—'}</div>
       </div>
+      <button onclick="loadWellnessToForm('${r._key||r.date}')" class="btn btn-ghost btn-sm">Edit</button>
       <button onclick="deleteWellness('${r._key}')" class="btn btn-ghost btn-sm">✕</button>
     </div>`).join('') : '<p class="text-sm c2">ยังไม่มีข้อมูล Wellness</p>';
   if (document.getElementById('wellness-analytics-view')?.style.display !== 'none') {

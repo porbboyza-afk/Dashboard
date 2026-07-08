@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260708-1">
+<link rel="manifest" href="manifest.json?v=20260708-2">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260708-1">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260708-1">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260708-1">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260708-2">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260708-2">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260708-2">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -2297,7 +2297,11 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="form-group"><label>Date</label><input type="date" id="w-date"></div>
           <div class="wellness-form-grid">
             <div class="form-group"><label>Weight (kg)</label><input type="number" id="w-weight" min="20" max="300" step="0.1" placeholder="—"></div>
+            <div class="form-group"><label>Body Fat (%, optional)</label><input type="number" id="w-body-fat" min="1" max="80" step="0.1" placeholder="—"></div>
+          </div>
+          <div class="wellness-form-grid">
             <div class="form-group"><label>Resting HR (bpm)</label><input type="number" id="w-rhr" min="30" max="220" placeholder="—"></div>
+            <div class="form-group"><label>HRV (ms, manual optional)</label><input type="number" id="w-hrv" min="1" max="300" placeholder="Garmin may not share"></div>
           </div>
           <div class="wellness-form-grid">
             <div class="form-group"><label>Sleep (hours)</label><input type="number" id="w-sleep-hours" min="0" max="24" step="0.1" placeholder="7.5"></div>
@@ -2312,18 +2316,20 @@ img, video, iframe, canvas { max-width: 100%; }
             <div class="form-group"><label>Mood (1–10)</label><input type="number" id="w-mood" min="1" max="10" placeholder="7"></div>
           </div>
           <div class="wellness-form-grid">
-            <div class="form-group"><label>HRV (ms, optional)</label><input type="number" id="w-hrv" min="1" max="300" placeholder="—"></div>
             <div class="form-group"><label>SpO₂ (%, optional)</label><input type="number" id="w-spo2" min="70" max="100" placeholder="—"></div>
+            <div class="form-group"><label>Blood pressure</label><input type="text" id="w-bp" maxlength="20" placeholder="120/80"></div>
           </div>
           <div class="wellness-form-grid">
-            <div class="form-group"><label>Blood pressure</label><input type="text" id="w-bp" maxlength="20" placeholder="120/80"></div>
             <div class="form-group"><label>Status</label>
               <select id="w-health-status"><option value="normal">ปกติ</option><option value="sick">ป่วย</option><option value="medication">ใช้ยา</option><option value="injured">บาดเจ็บ</option></select>
             </div>
           </div>
           <div class="form-group"><label>Pain location</label><input type="text" id="w-pain-location" maxlength="120" placeholder="เช่น เข่าซ้าย / น่องขวา"></div>
           <div class="form-group"><label>Note</label><textarea id="w-note" rows="3" maxlength="500" placeholder="ป่วย พักผ่อนน้อย หรือข้อมูลอื่นที่มีผลต่อการฝึก"></textarea></div>
-          <button class="btn btn-primary w100" onclick="saveWellness()">💾 Save wellness</button>
+          <div class="flex gap-8 flex-wrap">
+            <button class="btn btn-primary" id="wellness-save-btn" style="flex:1" onclick="saveWellness()">💾 Save wellness</button>
+            <button class="btn btn-ghost" type="button" onclick="resetWellnessForm()">ล้างฟอร์ม</button>
+          </div>
         </div>
 
         <div>
