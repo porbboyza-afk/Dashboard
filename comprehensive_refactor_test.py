@@ -480,7 +480,18 @@ def main():
                     context:{goalProfile},
                     level:'intermediate'
                   });
+                  const phasePlan = buildFallbackTrainingPlan({
+                    goal:'10K sub 48',
+                    startDate:'2026-07-08',
+                    endDate:'2026-09-16',
+                    totalWeeks:10,
+                    days:'4',
+                    context:{goalProfile},
+                    level:'intermediate'
+                  });
                   const longDays = plan.sessions.filter(s => s.type === 'Long').map(s => new Date(s.date + 'T12:00:00').getDay());
+                  const phaseNames = Array.from(new Set(phasePlan.sessions.map(s => s.phase)));
+                  const raceWeekRows = phasePlan.sessions.filter(s => s.phase === 'RaceWeek');
                   const movePlan = {
                     goalProfile:{distance:'10K', targetTime:'47:59', targetPace:4.798, unavailableRaw:'2026-07-09', unavailable:['2026-07-09'], longRunDay:'0', longRunDayName:'Sun'},
                     endDate:'2026-08-02',
@@ -507,6 +518,17 @@ def main():
                   }, {goal:'10K sub 48', startDate:'2026-07-08', endDate:'2026-08-02', totalWeeks:4, goalProfile});
                   const duplicateDateRows = duplicateDatePlan.sessions.filter(s => s.date === '2026-07-21');
                   const guardedPrompt = coachApplyPromptDateGuard('Rules\\n- No hard sessions on consecutive days.\\nEnd but never put a workout on Race/GoalDate.', '4');
+                  const raceEvePlan = validateCoachPlan({
+                    goal:'10K sub 48',
+                    startDate:'2026-07-08',
+                    endDate:'2026-08-02',
+                    totalWeeks:4,
+                    sessions:[
+                      {date:'2026-08-01', type:'Tempo', targetDist:5.5, priority:'key'},
+                      {date:'2026-07-30', type:'Easy', targetDist:5, priority:'normal'}
+                    ]
+                  }, {goal:'10K sub 48', startDate:'2026-07-08', endDate:'2026-08-02', totalWeeks:4, goalProfile});
+                  const raceEveSession = raceEvePlan.sessions.find(s => s.date === '2026-08-01');
                   return {
                     sleepFull: formatSleepHours(4.9),
                     sleepCompact: formatSleepHours(4.9, {compact:true}),
@@ -514,6 +536,14 @@ def main():
                     duplicateDateCount: duplicateDateRows.length,
                     duplicateDateKeptType: duplicateDateRows[0]?.type,
                     promptHasOnePerDateRule: guardedPrompt.includes('Never schedule two workouts on the same YYYY-MM-DD') && guardedPrompt.includes('one session maximum per date'),
+                    promptHasRaceEveRule: guardedPrompt.includes('immediately before Race/GoalDate'),
+                    fallbackRaceEveType: plan.sessions.find(s => s.date === '2026-08-01')?.type || '',
+                    raceEveType: raceEveSession?.type || '',
+                    raceEveDist: raceEveSession?.targetDist ?? null,
+                    phaseNames,
+                    hasPhaseSchedule: Array.isArray(phasePlan.phaseSchedule) && phasePlan.phaseSchedule.length === 10,
+                    raceWeekAllLight: raceWeekRows.every(s => !['Tempo','Interval','Long'].includes(s.type)),
+                    raceWeekEveType: raceWeekRows.find(s => s.date === '2026-09-15')?.type || '',
                     longRunDayOk: longDays.length > 0 && longDays.every(day => day === 0),
                     unavailableAction: moveDecision.action,
                     movedOffUnavailable: moved.plan.sessions[0].date !== '2026-07-09',
@@ -534,6 +564,10 @@ def main():
             assert_true(checks, "no_race_day_workout", coach_plan_rules["hasRaceDayWorkout"] is False, "Plan contains a workout on race day")
             assert_true(checks, "coach_no_duplicate_dates", coach_plan_rules["duplicateDateCount"] == 1 and coach_plan_rules["duplicateDateKeptType"] == "Tempo", "Coach plan did not collapse same-date duplicate sessions")
             assert_true(checks, "coach_prompt_date_guard", coach_plan_rules["promptHasOnePerDateRule"] is True, "Coach AI prompt is missing one-session-per-date guard")
+            assert_true(checks, "coach_prompt_race_eve_guard", coach_plan_rules["promptHasRaceEveRule"] is True, "Coach AI prompt is missing race-eve guard")
+            assert_true(checks, "coach_race_eve_guard", coach_plan_rules["fallbackRaceEveType"] == "Rest" and coach_plan_rules["raceEveType"] == "Rest" and coach_plan_rules["raceEveDist"] == 0, "Coach plan did not force race eve to rest")
+            assert_true(checks, "coach_phase_schedule_ok", coach_plan_rules["hasPhaseSchedule"] is True and all(name in coach_plan_rules["phaseNames"] for name in ["Base","Build","Peak","Taper","RaceWeek"]), "Coach phase schedule is incomplete")
+            assert_true(checks, "coach_race_week_light_ok", coach_plan_rules["raceWeekAllLight"] is True and coach_plan_rules["raceWeekEveType"] == "Rest", "Race week still contains hard sessions")
             assert_true(checks, "long_run_day_ok", coach_plan_rules["longRunDayOk"] is True, "Long run day preference was not respected")
             assert_true(checks, "daily_move_action_ok", coach_plan_rules["unavailableAction"] == "move", "Unavailable day did not trigger move")
             assert_true(checks, "daily_move_saved_ok", coach_plan_rules["movedOffUnavailable"] is True and coach_plan_rules["movedBeforeRace"] is True and coach_plan_rules["movedDailyDecisionSaved"] is True, "Daily move was not applied/saved safely")

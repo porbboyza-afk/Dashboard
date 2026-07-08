@@ -2,6 +2,66 @@
 
 Last updated: 2026-07-08 Asia/Bangkok
 
+## 2026-07-08 Coach Phase-Based Planner And Race-Week Guards
+
+Context:
+
+- User reported a realistic coaching bug: the planner could still place a `Tempo` session on the day before race.
+- User also correctly pointed out that the deeper problem was not only race eve, but the lack of explicit training phases. The previous planner was mostly a repeating weekly pattern plus a light taper heuristic.
+
+Code changes:
+
+- `js/coach.js`
+  - Added deterministic training phases:
+    - `Base`
+    - `Build`
+    - `Peak`
+    - `Taper`
+    - `RaceWeek`
+  - Added:
+    - `coachPhaseForWeek()`
+    - `coachPhaseForDate()`
+    - `coachPhaseSchedule()`
+    - `coachApplyPhaseRule()`
+    - `coachIsRaceEve()`
+  - `buildCoachContext()` now includes phase schedule context for the AI.
+  - `validateCoachPlan()` now:
+    - assigns a phase to each session,
+    - keeps one session per date,
+    - blocks back-to-back hard sessions,
+    - applies phase rules after normalization.
+  - New deterministic phase behavior:
+    - `Base`: interval is downgraded to controlled tempo.
+    - `Taper`: long runs are removed, interval is shortened into tempo.
+    - `RaceWeek`: no `Tempo`, `Interval`, or `Long`; day before race is forced to `Rest`; two days before race cannot be hard.
+  - `buildFallbackTrainingPlan()` now builds from phase-aware templates instead of a single repeating weekly pattern.
+  - Coach UI now shows the current phase in plan meta and each session row date line.
+  - `safetyPolicyVersion` bumped to `2`.
+  - Prompt guard now explicitly tells the AI:
+    - one session max per date,
+    - training days/week cap,
+    - no hard session on the day before race.
+- `comprehensive_refactor_test.py`
+  - Added assertions for:
+    - race eve forced to `Rest`,
+    - race week contains only light/rest sessions,
+    - full phase schedule includes `Base`, `Build`, `Peak`, `Taper`, `RaceWeek`.
+- `verify_dashboard.js`
+  - Added required coach phase helper snippets.
+
+Verification passed:
+
+- `node verify_dashboard.js`
+- `node --check js\coach.js`
+- `python comprehensive_refactor_test.py`
+- `python smoke_test_dashboard.py`
+- `git diff --check`
+
+Current planning model:
+
+- The planner is no longer just "peak or taper".
+- It now uses explicit phases and deterministic race-week controls before AI wording/fine detail is applied.
+
 ## 2026-07-08 Post-Run Review Implementation
 
 Context:

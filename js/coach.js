@@ -36,10 +36,45 @@ function raceDistanceKm(distance){
 function coachWeekdayName(day){
   return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][parseInt(day)]||'Sun';
 }
+function coachPhaseThai(phase){
+  return {Base:'Base',Build:'Build',Peak:'Peak',Taper:'Taper',RaceWeek:'Race Week'}[phase]||phase||'Build';
+}
 function datePlusDays(dateStr,days){
   const d=new Date((dateStr||toLocalDateStr())+'T12:00:00');
   d.setDate(d.getDate()+days);
   return toLocalDateStr(d);
+}
+function coachWeekIndex(startDate,dateStr){
+  const start=new Date((startDate||toLocalDateStr())+'T12:00:00');
+  const date=new Date((dateStr||startDate||toLocalDateStr())+'T12:00:00');
+  if(isNaN(start)||isNaN(date))return 0;
+  return Math.max(0,Math.floor((date-start)/(7*86400000)));
+}
+function coachPhaseForWeek(week,totalWeeks){
+  const total=Math.max(1,parseInt(totalWeeks)||1);
+  const current=Math.max(0,Math.min(total-1,parseInt(week)||0));
+  const taperWeeks=total>=7?2:1;
+  const peakWeeks=total>=9?2:1;
+  const raceWeekIndex=total-1;
+  const taperStart=Math.max(0,raceWeekIndex-taperWeeks);
+  const peakStart=Math.max(0,taperStart-peakWeeks);
+  const baseWeeks=Math.max(1,Math.min(4,Math.round(total*0.35)));
+  if(current===raceWeekIndex)return 'RaceWeek';
+  if(current>=taperStart)return 'Taper';
+  if(current>=peakStart)return 'Peak';
+  if(current<baseWeeks)return 'Base';
+  return 'Build';
+}
+function coachPhaseForDate(dateStr,startDate,totalWeeks){
+  return coachPhaseForWeek(coachWeekIndex(startDate,dateStr),totalWeeks);
+}
+function coachPhaseSchedule(startDate,totalWeeks){
+  const total=Math.max(1,parseInt(totalWeeks)||1);
+  return Array.from({length:total},(_,week)=>{
+    const phase=coachPhaseForWeek(week,total);
+    const weekStart=datePlusDays(startDate,week*7);
+    return {week:week+1,phase,startDate:weekStart};
+  });
 }
 function isHardSession(type){
   return ['Tempo','Interval','Long'].includes(String(type||''));
@@ -68,19 +103,23 @@ function buildCoachContext(plan=null){
   const wellness=AppState.get('wellness')||[];
   const readiness=calculateReadiness();
   const goalProfile=getCoachGoalProfile(plan,{preferPlan:!!plan});
+  const startDate=plan?.startDate||document.getElementById('coach-start-date')?.value||toLocalDateStr();
+  const endDate=plan?.endDate||document.getElementById('coach-end-date')?.value||'';
+  const totalWeeks=plan?.totalWeeks||parseInt(document.getElementById('coach-weeks')?.value)||8;
   const today=toLocalDateStr();
   const since=days=>activities.filter(w=>new Date((w.date||'')+'T12:00:00')>=dateDaysAgo(days-1));
   const volume=rows=>rows.reduce((sum,w)=>sum+(parseFloat(w.dist)||0),0);
   const latest=activities.slice(0,12).map(w=>`${w.date} ${w.type||'run'} ${w.dist||0}km ${Math.round(w.time||0)}min${w.avgPace?' pace '+formatPace(w.avgPace):''}${w.hr?' HR'+w.hr:''}${w.rpe?' RPE'+w.rpe:''} ${sourceMeta(w).label}`).join('\n');
   const wellnessRows=wellness.slice(0,14).map(r=>`${r.date}: sleep ${r.sleepHours??'-'}h, RHR ${r.restingHR??'-'}, HRV ${r.hrv??'-'}, SpO2 ${r.spo2??'-'}, fatigue ${r.fatigue??'-'}, pain ${r.soreness??'-'}, status ${r.healthStatus||'-'}`).join('\n');
   return {
-    today,goalProfile,readiness,
+    today,startDate,endDate,totalWeeks,goalProfile,readiness,
     load:readiness.load,
     volumes:{d7:+volume(since(7)).toFixed(1),d30:+volume(since(30)).toFixed(1),d90:+volume(since(90)).toFixed(1)},
     sourceSummary:coachSourceSummary(activities),
     latestActivities:latest||'none',
     wellnessRows:wellnessRows||'none',
-    planSummary:plan?.sessions?.slice(0,18).map(s=>`${s.date} ${s.type} ${s.targetDist||0}km ${s.targetPace||''} ${s.notes||''}`).join('\n')||'none'
+    phaseSchedule:coachPhaseSchedule(startDate,totalWeeks),
+    planSummary:plan?.sessions?.slice(0,18).map(s=>`${s.date} ${s.phase||coachPhaseForDate(s.date,startDate,totalWeeks)} ${s.type} ${s.targetDist||0}km ${s.targetPace||''} ${s.notes||''}`).join('\n')||'none'
   };
 }
 function formatCoachContext(ctx){
@@ -95,6 +134,7 @@ function formatCoachContext(ctx){
     `Readiness reasons: ${(ctx.readiness.reasons||[]).join(' | ')||'none'}`,
     `Load: acute ${Math.round(ctx.load.acute)}, chronic ${Math.round(ctx.load.chronicWeekly)}, ACWR ${ctx.load.acwr?.toFixed(2)??'n/a'}, monotony ${ctx.load.monotony?.toFixed(2)??'n/a'}, strain ${Math.round(ctx.load.strain)}`,
     `Volume: 7D ${ctx.volumes.d7}km, 30D ${ctx.volumes.d30}km, 90D ${ctx.volumes.d90}km`,
+    `Phase schedule:\n${(ctx.phaseSchedule||[]).map(row=>`Week ${row.week}: ${row.phase} (${row.startDate})`).join('\n')}`,
     `Sources: ${JSON.stringify(ctx.sourceSummary)}`,
     `Latest activities:\n${ctx.latestActivities}`,
     `Wellness 14D:\n${ctx.wellnessRows}`,
@@ -363,10 +403,61 @@ function dedupeCoachSessionsByDate(sessions){
 function coachApplyPromptDateGuard(prompt,days){
   const rule=[
     '- Each calendar date may appear at most once in sessions. Never schedule two workouts on the same YYYY-MM-DD.',
-    `- Keep weekly non-rest sessions at or below ${parseInt(days)||4}. Do not stack an easy run and quality workout on the same day.`
+    `- Keep weekly non-rest sessions at or below ${parseInt(days)||4}. Do not stack an easy run and quality workout on the same day.`,
+    '- The calendar day immediately before Race/GoalDate must not be Tempo, Interval, or Long. Use Rest or very light shakeout only.'
   ].join('\n');
   return String(prompt).replace('- No hard sessions on consecutive days.', `${rule}\n- No hard sessions on consecutive days.`)
     .replace('but never put a workout on Race/GoalDate.', 'with one session maximum per date, but never put a workout on Race/GoalDate.');
+}
+function coachIsRaceEve(date,raceDate){
+  if(!date||!raceDate)return false;
+  return datePlusDays(date,1)===raceDate;
+}
+function coachApplyPhaseRule(session,phase,{raceDate='',goalProfile={},index=0}={}){
+  if(!session)return session;
+  const raceMinus2=raceDate?datePlusDays(session.date,2)===raceDate:false;
+  const applyEasy=(note,distCap=null)=>{
+    session.type='Easy';
+    if(distCap!==null)session.targetDist=Math.min(session.targetDist||distCap,distCap);
+    session.targetPace='';
+    session.targetHR=145;
+    session.details=coachSessionDetails('Easy',session.targetDist,goalProfile,index);
+    session.description=session.details.targetDescription;
+    session.notes=[session.notes,note].filter(Boolean).join(' · ');
+  };
+  if(phase==='Base'&&session.type==='Interval'){
+    session.type='Tempo';
+    session.targetPace=session.targetPace||formatPace((goalProfile?.targetPace||4.8)+0.12);
+    session.details=coachSessionDetails('Tempo',session.targetDist,goalProfile,index);
+    session.description=session.details.targetDescription;
+    session.notes=[session.notes,'Base phase guard: replace interval with controlled tempo'].filter(Boolean).join(' · ');
+  }
+  if(phase==='Taper'){
+    if(session.type==='Long')applyEasy('Taper guard: remove long-run fatigue before race',6);
+    if(session.type==='Interval'){
+      session.type='Tempo';
+      session.targetDist=Math.max(3,+(parseFloat(session.targetDist||5)*0.75).toFixed(1));
+      session.targetPace=session.targetPace||formatPace((goalProfile?.targetPace||4.8)+0.08);
+      session.details=coachSessionDetails('Tempo',session.targetDist,goalProfile,index);
+      session.description=session.details.targetDescription;
+      session.notes=[session.notes,'Taper guard: shorten interval into controlled tempo'].filter(Boolean).join(' · ');
+    }
+  }
+  if(phase==='RaceWeek'){
+    if(coachIsRaceEve(session.date,raceDate)){
+      session.type='Rest';
+      session.targetDist=0;
+      session.targetPace='';
+      session.targetHR='';
+      session.details=coachSessionDetails('Rest',0,goalProfile,index);
+      session.description='พักก่อนวันแข่ง เพื่อให้ขาสดและไม่สะสมความล้าเพิ่ม';
+      session.notes=[session.notes,'Race-week guard: rest on the day before race'].filter(Boolean).join(' · ');
+      return session;
+    }
+    if(raceMinus2&&isHardSession(session.type))applyEasy('Race-week guard: no hard session within 48 hours of race',3.5);
+    else if(isHardSession(session.type))applyEasy('Race-week guard: keep race week light and fresh',4);
+  }
+  return session;
 }
 function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile}){
   if(!plan||typeof plan!=='object')throw new Error('Plan JSON is not an object');
@@ -376,12 +467,13 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
   const normalized=sessions.map((session,index)=>{
     const date=String(session.date||'').match(/^\d{4}-\d{2}-\d{2}$/)?session.date:datePlusDays(startDate,index);
     const type=normalizeCoachType(session.type);
+    const phase=coachPhaseForDate(date,startDate,totalWeeks);
     const targetDist=Math.max(0,+(parseFloat(session.targetDist||0)||0).toFixed(1));
     const details=session.details&&typeof session.details==='object'
       ? session.details
       : coachSessionDetails(type,targetDist,goalProfile,Math.floor(index/4));
     return {
-      date,type,
+      date,phase,type,
       description:String(session.description||type).slice(0,160),
       targetDist:type==='Rest'?0:targetDist,
       targetPace:String(session.targetPace||'').slice(0,20),
@@ -407,14 +499,54 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
       if(days<=1){cur.type='Easy';cur.notes=[cur.notes,'ลดเป็นวิ่งเบาอัตโนมัติเพื่อเลี่ยงซ้อมหนักติดกัน'].filter(Boolean).join(' · ');cur.details=coachSessionDetails(cur.type,cur.targetDist,goalProfile,Math.floor(i/4));cur.description=cur.details.targetDescription;}
     }
   }
+  uniqueSessions.forEach((session,index)=>{
+    session.phase=session.phase||coachPhaseForDate(session.date,startDate,totalWeeks);
+    coachApplyPhaseRule(session,session.phase,{raceDate,goalProfile,index:Math.floor(index/4)});
+  });
   return {
     goal:plan.goal||goal,
     startDate:plan.startDate||startDate,
     endDate:plan.endDate||endDate,
     totalWeeks:plan.totalWeeks||totalWeeks,
     sessions:uniqueSessions,
+    phaseSchedule:coachPhaseSchedule(plan.startDate||startDate,plan.totalWeeks||totalWeeks),
     goalProfile
   };
+}
+function coachPhaseLongDistance(phase,week,baseLong){
+  if(phase==='Base')return +(baseLong+Math.min(week,4)*0.8).toFixed(1);
+  if(phase==='Build')return +(baseLong+2+Math.min(week,5)*0.7).toFixed(1);
+  if(phase==='Peak')return +(baseLong+3+Math.min(week,2)*0.5).toFixed(1);
+  if(phase==='Taper')return +(Math.max(5,baseLong*0.8)).toFixed(1);
+  return +(Math.max(3,baseLong*0.5)).toFixed(1);
+}
+function coachPhaseSessionForSlot(phase,slot,week,goalProfile){
+  if(slot==='long'){
+    return {type:phase==='RaceWeek'?'Easy':'Long',dist:coachPhaseLongDistance(phase,week,8),pace:''};
+  }
+  if(phase==='Base'){
+    if(slot===0)return {type:'Easy',dist:+(4.5+Math.min(week,4)*0.5).toFixed(1),pace:''};
+    if(slot===1)return {type:week%2===0?'Tempo':'Easy',dist:+(5+Math.min(week,3)*0.4).toFixed(1),pace:week%2===0&&goalProfile.targetPace?formatPace(goalProfile.targetPace+0.15):''};
+    return {type:'Recovery',dist:+(4+Math.min(week,3)*0.3).toFixed(1),pace:''};
+  }
+  if(phase==='Build'){
+    if(slot===0)return {type:'Easy',dist:+(5+Math.min(week,5)*0.4).toFixed(1),pace:''};
+    if(slot===1)return {type:week%2?'Tempo':'Interval',dist:+(5.5+Math.min(week,5)*0.5).toFixed(1),pace:goalProfile.targetPace?formatPace(goalProfile.targetPace+(week%2?0.1:-0.08)):''};
+    return {type:'Easy',dist:+(4.5+Math.min(week,4)*0.4).toFixed(1),pace:''};
+  }
+  if(phase==='Peak'){
+    if(slot===0)return {type:'Easy',dist:+(5+Math.min(week,2)*0.3).toFixed(1),pace:''};
+    if(slot===1)return {type:week%2?'Interval':'Tempo',dist:+(6+Math.min(week,2)*0.4).toFixed(1),pace:goalProfile.targetPace?formatPace(goalProfile.targetPace+(week%2?-0.1:0.05)):''};
+    return {type:'Recovery',dist:4,pace:''};
+  }
+  if(phase==='Taper'){
+    if(slot===0)return {type:'Easy',dist:4.5,pace:''};
+    if(slot===1)return {type:'Tempo',dist:4.5,pace:goalProfile.targetPace?formatPace(goalProfile.targetPace+0.1):''};
+    return {type:'Recovery',dist:3.5,pace:''};
+  }
+  if(slot===0)return {type:'Easy',dist:4,pace:''};
+  if(slot===1)return {type:'Recovery',dist:3,pace:''};
+  return {type:'Rest',dist:0,pace:''};
 }
 function buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,context,level}){
   const goalProfile=context.goalProfile;
@@ -424,7 +556,7 @@ function buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,conte
   const sessions=[];
   const baseLong=level==='advanced'?10:level==='beginner'?6:8;
   for(let week=0;week<totalWeeks;week++){
-    const taper=week>=totalWeeks-2;
+    const phase=coachPhaseForWeek(week,totalWeeks);
     let nonLongSlot=0;
     pattern.forEach((weekdayIndex)=>{
       let date=coachDateForWeekday(startDate,week,weekdayIndex);
@@ -433,17 +565,13 @@ function buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,conte
       let guard=0;
       while(coachDateMatchesUnavailable(date,goalProfile)&&guard<6){date=datePlusDays(date,1);guard++;}
       if(endDate&&date>=endDate)return;
-      const isRaceWeek=endDate&&week===totalWeeks-1;
-      let type='Easy',dist=5,pace='';
-      if(weekdayIndex===longDay){type='Long';dist=+(baseLong+Math.min(week,6)*0.8).toFixed(1);}
-      else if(nonLongSlot===0){type='Easy';dist=+(4+Math.min(week,5)*0.4).toFixed(1);nonLongSlot++;}
-      else if(nonLongSlot===1){type=week%2?'Tempo':'Interval';dist=+(5+Math.min(week,5)*0.5).toFixed(1);pace=goalProfile.targetPace?formatPace(goalProfile.targetPace+(type==='Interval'?-0.1:0.12)):'';nonLongSlot++;}
-      else {type='Easy';dist=+(4.5+Math.min(week,4)*0.4).toFixed(1);nonLongSlot++;}
-      if(taper){dist=+(dist*.75).toFixed(1);if(type==='Interval')type='Tempo';}
-      if(isRaceWeek&&type==='Long'){type='Easy';dist=Math.min(dist,4);pace='';}
+      const slot=weekdayIndex===longDay?'long':nonLongSlot++;
+      const choice=coachPhaseSessionForSlot(phase,slot,week,goalProfile);
+      let type=choice.type,dist=choice.dist,pace=choice.pace;
+      if(slot==='long'&&choice.type==='Long')dist=coachPhaseLongDistance(phase,week,baseLong);
       const details=coachSessionDetails(type,dist,goalProfile,week);
       sessions.push({
-        date,type,
+        date,phase,type,
         description:details.targetDescription,
         targetDist:dist,
         targetPace:pace,
@@ -492,7 +620,7 @@ async function generateTrainingPlan(){
       fallbackReason=aiError.message||String(aiError);
       plan=buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,context,level});
     }
-    const planPayload={...plan,goalProfile:context.goalProfile,safetyPolicyVersion:1,createdAt:Date.now(),completedDates:{},adjustments:[],aiFallback:usedFallback,aiFallbackReason:fallbackReason};
+    const planPayload={...plan,goalProfile:context.goalProfile,safetyPolicyVersion:2,createdAt:Date.now(),completedDates:{},adjustments:[],aiFallback:usedFallback,aiFallbackReason:fallbackReason};
     await window._fb.setData('coach_plan',planPayload);
     const savedPlan=await window._fb.getData('coach_plan');
     if(!savedPlan?.createdAt||savedPlan.createdAt!==planPayload.createdAt)throw new Error('Cloud save failed. Please sign in again and retry.');
@@ -521,9 +649,10 @@ function renderCoachTracking(){
   if(!plan?.sessions?.length){if(noplan)noplan.style.display='block';if(planView)planView.style.display='none';return;}
   if(noplan)noplan.style.display='none';if(planView)planView.style.display='block';
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  set('coach-plan-goal-disp','🎯 '+(plan.goal||'—'));
-  set('coach-plan-meta-disp',`START ${plan.startDate||'—'} · ${plan.totalWeeks||4} WKS · ${plan.sessions.length} SESSIONS`);
   const today=toLocalDateStr();
+  const currentPhase=coachPhaseForDate(today,plan.startDate,plan.totalWeeks);
+  set('coach-plan-goal-disp','🎯 '+(plan.goal||'—'));
+  set('coach-plan-meta-disp',`START ${plan.startDate||'—'} · ${plan.totalWeeks||4} WKS · ${plan.sessions.length} SESSIONS · ${coachPhaseThai(currentPhase).toUpperCase()}`);
   const completedDates=plan.completedDates||{};
   const workoutDates=new Set(getAllActivities().map(w=>w.date));
   let doneCount=0,missCount=0,remainCount=0;
@@ -552,12 +681,13 @@ function renderCoachTracking(){
     else if(isToday)badge='<span class="plan-badge badge-today">📍 วันนี้</span>';
     else badge='<span class="plan-badge badge-upcoming">⏳ รอซ้อม</span>';
     const dateStr=new Date(s.date+'T00:00:00').toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});
+    const phaseLabel=coachPhaseThai(s.phase||coachPhaseForDate(s.date,plan.startDate,plan.totalWeeks));
     const displayDetails=coachSessionDisplayDetails(s,index);
     const displayDescription=coachSessionDisplayDescription(s,index);
     const displayType=coachSessionTypeThai(s.type);
     let actualLine='';
     if(actualWks.length){const aw=actualWks[0];actualLine=`<div style="font-size:11px;color:var(--green);margin-top:5px;font-weight:600;font-family:var(--font-mono)">📊 ${aw.dist}km${aw.avgPace?' · '+formatPace(aw.avgPace)+'/km':''}${aw.hr?' · ♥'+aw.hr:''}</div>`;if(s.targetDist>0&&aw.dist>0){const diff=((parseFloat(aw.dist)-s.targetDist)/s.targetDist*100).toFixed(0);const c=Math.abs(diff)<=10?'var(--green)':(diff>0?'var(--accent)':'var(--orange)');actualLine+=`<div style="font-size:10px;color:${c};margin-top:2px;font-family:var(--font-mono)">${diff>0?'↑':'↓'} ${Math.abs(diff)}% from target</div>`;}}
-    return `<div class="${cls}"><div class="plan-day-header"><div class="plan-day-date">${dateStr}</div>${badge}</div>
+    return `<div class="${cls}"><div class="plan-day-header"><div class="plan-day-date">${dateStr} · ${escapeHTML(phaseLabel)}</div>${badge}</div>
       <div class="coach-plan-row"><span class="coach-session-icon">${typeEmoji[s.type]||'🏃'}</span>
       <div class="coach-session-main"><div class="coach-session-title" style="color:${typeColor[s.type]||'var(--text)'}">${displayType}${s.targetDist>0?' · '+s.targetDist+' กม.':''}</div>
       <div class="coach-session-desc">${escapeHTML(displayDescription)}${s.targetPace?' · pace '+escapeHTML(s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
