@@ -331,6 +331,48 @@ def main():
             assert_true(checks, "wellness_manual_fields_ok", wellness_edit_rules["manualFatigueSaved"] is True and wellness_edit_rules["bodyFatSaved"] is True and wellness_edit_rules["manualFlag"] is True, "Manual wellness fields were not saved")
             assert_true(checks, "wellness_edit_form_ok", wellness_edit_rules["formBodyFat"] == "18.2" and wellness_edit_rules["formSleep"] == "6.5", "Wellness edit form did not preload existing values")
 
+            interval_edit_rules = page.evaluate(
+                """
+                () => {
+                  window._workouts = [{
+                    _key:'interval-test-1',
+                    date:'2026-07-08',
+                    type:'interval',
+                    dist:5.2,
+                    time:36.5,
+                    hr:172,
+                    interval:{
+                      reps:6,
+                      repDist:0.4,
+                      repPace:'4:15',
+                      repHR:172,
+                      restTime:1.5,
+                      restHR:135,
+                      warmup:{dist:1.2,time:8,pace:'6:40'},
+                      cooldown:{dist:1.6,time:11,pace:'6:50'},
+                      totalTime:36.5
+                    },
+                    splits:[{km:1,pace:'6:40',hr:130}]
+                  }];
+                  editWorkout('interval-test-1');
+                  return {
+                    type: document.getElementById('f-type')?.value,
+                    reps: document.getElementById('iv-reps')?.value,
+                    repDist: document.getElementById('iv-rep-dist')?.value,
+                    repPace: document.getElementById('iv-rep-pace')?.value,
+                    restTime: document.getElementById('iv-rest-time')?.value,
+                    warmupDist: document.getElementById('iv-wu-dist')?.value,
+                    cooldownDist: document.getElementById('iv-cd-dist')?.value,
+                    intervalPanelVisible: document.getElementById('fields-interval')?.style.display !== 'none',
+                    saveButton: document.getElementById('workout-save-btn')?.textContent || ''
+                  };
+                }
+                """
+            )
+            checks["interval_edit_rules"] = interval_edit_rules
+            assert_true(checks, "interval_edit_preload_ok", interval_edit_rules["type"] == "interval" and interval_edit_rules["reps"] == "6" and interval_edit_rules["repDist"] == "0.4" and interval_edit_rules["repPace"] == "4:15", "Interval edit did not preload main set")
+            assert_true(checks, "interval_edit_extras_ok", interval_edit_rules["restTime"] == "1.5" and interval_edit_rules["warmupDist"] == "1.2" and interval_edit_rules["cooldownDist"] == "1.6" and interval_edit_rules["intervalPanelVisible"] is True, "Interval edit did not preserve rest/warmup/cooldown")
+
             coach_plan_rules = page.evaluate(
                 """
                 () => {

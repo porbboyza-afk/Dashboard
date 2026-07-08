@@ -595,38 +595,6 @@ function coachAdaptiveGuidance(decision,session){
   if(decision.status==='yellow')return `แผนหลักยังเป็น ${typeThai} แต่ readiness/โหลดเริ่มเสี่ยง ระบบแนะนำให้ลดเป็นวิ่งเบา ลดระยะประมาณ 30-40% หรือกดลดเป็นวิ่งเบาเพื่อบันทึกแผนที่ปรับแล้ว`;
   return `แผนหลักเดิมถูกกันไว้เป็นจุดอ้างอิง แต่สภาพร่างกายวันนี้เสี่ยงสูง ระบบแนะนำให้พัก/ฟื้นตัว และใช้ข้ามวันนี้หรือวันนี้ไม่ว่าง เพื่อไม่ให้มีการชดเชยโหลดวันถัดไป`;
 }
-function renderCoachDailyDecision(plan){
-  const el=document.getElementById('coach-daily-decision');if(!el)return;
-  const today=toLocalDateStr();
-  const todaySession=(plan.sessions||[]).find(s=>s.date===today&&!['Rest','Recovery'].includes(s.type));
-  const decision=coachSafetyDecision(todaySession);
-  const color=coachDecisionColor(decision.status);
-  const thai=coachDecisionThai(decision.status);
-  const reasons=decision.reasons?.length?decision.reasons.map(escapeHTML).join(' · '):'วันนี้ยังไม่มีสัญญาณเสี่ยงหลักจากข้อมูลที่มี';
-  el.style.display='block';
-  el.style.borderLeft=`4px solid ${color}`;
-  el.innerHTML=`
-    <div class="coach-adaptive-card">
-      <div class="coach-adaptive-main">
-        <div class="card-label">Adaptive Coach Today</div>
-        <div class="coach-adaptive-action" style="color:${color}">${escapeHTML(thai.label)} · ${escapeHTML(thai.action)}</div>
-        <div class="text-sm c2">${todaySession?`แผนหลักวันนี้: ${escapeHTML(coachSessionTypeThai(todaySession.type))} ${todaySession.targetDist||''} กม. ${todaySession.targetPace?`· pace ${escapeHTML(todaySession.targetPace)}`:''}`:'วันนี้ไม่มี session หนักในแผน'}</div>
-        <div class="coach-adaptive-explain">${escapeHTML(coachAdaptiveGuidance(decision,todaySession))}</div>
-        <div class="text-xs c3 mt-8">เหตุผลจากข้อมูลวันนี้: ${reasons}</div>
-        <div class="coach-adaptive-rules">
-          <div class="coach-adaptive-rule"><strong>แผนหลัก</strong>AI สร้างตารางตั้งต้นไว้ก่อน เพื่อให้มีโครงสร้างระยะยาว</div>
-          <div class="coach-adaptive-rule"><strong>ปรับรายวัน</strong>ระบบอ่าน readiness, sleep, HRV, RHR, SpO2, pain/soreness และ load ก่อนวันซ้อม</div>
-          <div class="coach-adaptive-rule"><strong>บันทึกจริง</strong>เมื่อคุณกดเลื่อน/ลด/ข้าม ระบบเขียนแผนที่ปรับแล้วลง Firebase ไม่ชดเชยโหลดมั่ว</div>
-        </div>
-      </div>
-      <div class="coach-adaptive-buttons">
-        ${todaySession?`<button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${today}')">วันนี้ไม่ว่าง: เลื่อน</button>`:''}
-        ${todaySession&&isHardSession(todaySession.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${today}')">ลดเป็นวิ่งเบา</button>`:''}
-        <button class="btn btn-primary btn-sm" onclick="reviewPlanAI()">ให้ AI รีวิวจากข้อมูลล่าสุด</button>
-      </div>
-    </div>`;
-}
-
 async function matchWorkoutsToPlan(silent=false){if(!window._coachPlan?.sessions)return;if(document.getElementById('page-coach').classList.contains('active')&&document.getElementById('coach-track-tab').style.display!=='none')renderCoachTracking();if(!silent)showToast('🔄 Activities matched');}
 function renderCoachDailyDecision(plan){
   const el=document.getElementById('coach-daily-decision');if(!el)return;

@@ -2,6 +2,39 @@
 
 Last updated: 2026-07-08 Asia/Bangkok
 
+## 2026-07-08 Coach Cleanup Before Post-Run Review
+
+Context:
+
+- User approved cleanup before building the new Post-Run Review feature.
+- User explicitly reminded that interval workouts must not be forgotten because manual interval editing already exists.
+
+Cleanup changes:
+
+- Removed the duplicate old `renderCoachDailyDecision()` definition from `js/coach.js`.
+- Kept the newer daily adaptive decision UI as the single active definition.
+- Added verifier guards in `verify_dashboard.js`:
+  - `renderCoachDailyDecision` must have exactly one definition,
+  - `reviewPlanAI` must have exactly one definition.
+- PWA cache bumped to:
+  - `mydash-v3-health-20260708-3`
+  - manifest id `./?v=13`
+
+Interval protection:
+
+- Existing interval edit support remains in `index.html`:
+  - `editWorkout(key)` loads `w.interval` back into the interval form fields,
+  - `saveWorkout()` preserves interval payload under `workout.interval`.
+- Added comprehensive browser test coverage:
+  - interval activity edit preloads reps, rep distance, rep pace,
+  - rest time, warmup, and cooldown values are preserved,
+  - interval panel is visible after editing an interval activity.
+
+Next planned feature:
+
+- Build Post-Run Review as a separate feature after this cleanup.
+- Review schema must include `intervalAnalysis: null | {...}` from the first commit so interval workouts do not require a later schema rewrite.
+
 ## 2026-07-08 Wellness Manual Edit For Partial Garmin Health Connect Data
 
 Context:

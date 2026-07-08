@@ -57,6 +57,15 @@ function ensureContains(filePath, snippets) {
   }
 }
 
+function ensureFunctionCount(filePath, functionName, expectedCount) {
+  const text = fs.readFileSync(filePath, 'utf8');
+  const escaped = functionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const matches = text.match(new RegExp(`function\\s+${escaped}\\s*\\(`, 'g')) || [];
+  if (matches.length !== expectedCount) {
+    throw new Error(`${path.basename(filePath)} expected ${expectedCount} ${functionName} definition(s), found ${matches.length}`);
+  }
+}
+
 const inlineCount = checkHtmlInlineScripts(indexPath);
 checkJsFile(swPath);
 for (const scriptPath of extraScripts) {
@@ -159,6 +168,8 @@ ensureContains(coachScriptPath, [
   'Cloud save failed. Please sign in again and retry.',
   'Local fallback plan saved',
 ]);
+ensureFunctionCount(coachScriptPath, 'renderCoachDailyDecision', 1);
+ensureFunctionCount(coachScriptPath, 'reviewPlanAI', 1);
 
 ensureContains(racesScriptPath, [
   'function coachPlanRaceEntry',
@@ -167,7 +178,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-health-20260708-2",
+  "mydash-v3-health-20260708-3",
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',
