@@ -115,6 +115,108 @@ function coachSafetyDecision(session=null){
   if(readiness.restHours!==null&&readiness.restHours<18&&hard){status=status==='green'?'yellow':status;action='Avoid back-to-back hard load';}
   return {status,action,reasons:reasons.slice(0,5),readiness};
 }
+function coachSessionForDate(plan,date){
+  return (plan?.sessions||[]).find(s=>s.date===date&&s.type!=='Rest')||null;
+}
+function coachDailyDecision(plan,date=toLocalDateStr()){
+  const session=coachSessionForDate(plan,date);
+  const safety=coachSafetyDecision(session);
+  const goalProfile=getCoachGoalProfile(plan,{preferPlan:true});
+  const completedDates=plan?.completedDates||{};
+  const actualDone=getAllActivities().some(w=>w.date===date);
+  const alreadyDone=!!completedDates[date]||actualDone;
+  const unavailable=coachDateMatchesUnavailable(date,goalProfile);
+  const reasons=[...(safety.reasons||[])];
+  if(unavailable)reasons.unshift('Today is marked unavailable');
+  if(alreadyDone)reasons.unshift('Workout already completed today');
+  let action='keep';
+  let applyLabel='No change needed';
+  if(!session){action='no_session';applyLabel='Record daily check only';}
+  else if(alreadyDone){action='done';applyLabel='Record completed-day check';}
+  else if(unavailable){action='move';applyLabel='Move today session to next safe day';}
+  else if(safety.status==='red'){action='rest';applyLabel='Convert today to recovery/rest';}
+  else if(safety.status==='yellow'&&isHardSession(session.type)){action='downgrade';applyLabel='Downgrade hard session to easy';}
+  else if(safety.status==='yellow'){action='reduce';applyLabel='Reduce today volume';}
+  const previous=plan?.dailyDecisions?.[date];
+  return {
+    date,session,action,status:safety.status,applyLabel,
+    reasons:reasons.slice(0,6),readinessScore:safety.readiness?.score??null,
+    safety,alreadyApplied:!!previous?.appliedAt,previous
+  };
+}
+function coachGoalImpact(plan,dailyDecision,adjustmentType){
+  const gp=getCoachGoalProfile(plan,{preferPlan:true});
+  const goalText=`${gp.distance||'Race'} ${gp.targetTime||''}`.trim();
+  const raceDate=plan?.endDate||'';
+  const action=dailyDecision.action;
+  let risk='low';
+  let note='ยังเดินตามเป้าหมายหลักได้';
+  let preservesStimulus=true;
+  if(action==='move'){
+    note='คง session เดิมไว้ แต่เลื่อนไปวันที่ปลอดภัยก่อนวันแข่ง';
+  }else if(action==='downgrade'){
+    risk='medium';
+    preservesStimulus=false;
+    note='ลด intensity วันนี้เพื่อกัน overreach; ถ้าเกิดซ้ำกับ key workout ต้องให้ AI review ปรับสัปดาห์ถัดไป';
+  }else if(action==='reduce'){
+    risk='low';
+    note='ลด volume วันนี้แต่ยังคง stimulus หลักของวันไว้';
+  }else if(action==='rest'){
+    risk='medium';
+    preservesStimulus=false;
+    note='พักเพื่อรักษาความต่อเนื่องระยะยาว; ห้ามชดเชยโหลดวันถัดไป และควรรีวิวแผนถ้าเกิดซ้ำ';
+  }
+  return {goal:goalText,raceDate,adjustmentType,goalRisk:risk,preservesStimulus,note};
+}
+function cloneCoachPlan(plan){
+  return JSON.parse(JSON.stringify(plan||{}));
+}
+function coachApplyDailyDecisionToPlan(plan,dailyDecision){
+  const next=cloneCoachPlan(plan);
+  const date=dailyDecision.date;
+  const session=coachSessionForDate(next,date);
+  const before=session?{date:session.date,type:session.type,targetDist:session.targetDist,targetPace:session.targetPace,targetHR:session.targetHR}:null;
+  let adjustment={type:'daily_check',date,action:dailyDecision.action,status:dailyDecision.status,readinessScore:dailyDecision.readinessScore,reasons:dailyDecision.reasons||[]};
+  if(session&&dailyDecision.action==='move'){
+    const target=coachFindMoveDate(next,session);
+    if(!target)throw new Error('No safe move slot found in the next 10 days');
+    session.date=target;
+    session.notes=[session.notes,`Adaptive move from ${date}; no catch-up load added`].filter(Boolean).join(' · ');
+    adjustment={...adjustment,type:'auto_move',from:date,to:target,sessionType:session.type,before};
+  }else if(session&&dailyDecision.action==='rest'){
+    session.type='Rest';
+    session.description='พัก/ฟื้นตัววันนี้ - ระบบปรับจาก readiness รายวัน';
+    session.targetDist=0;session.targetPace='';session.targetHR='';
+    session.details=coachSessionDetails('Rest',0,getCoachGoalProfile(next,{preferPlan:true}));
+    session.notes=[session.notes,'Adaptive coach changed today to rest; no catch-up doubling'].filter(Boolean).join(' · ');
+    adjustment={...adjustment,type:'auto_rest',before,to:{type:session.type,targetDist:0}};
+  }else if(session&&dailyDecision.action==='downgrade'){
+    session.type='Easy';
+    session.targetDist=Math.max(3,+(parseFloat(session.targetDist||5)*0.65).toFixed(1));
+    session.targetPace='';
+    session.targetHR=session.targetHR?Math.min(+session.targetHR,145):145;
+    session.details=coachSessionDetails('Easy',session.targetDist,getCoachGoalProfile(next,{preferPlan:true}));
+    session.description=session.details.targetDescription;
+    session.notes=[session.notes,'Adaptive coach downgraded hard session to easy'].filter(Boolean).join(' · ');
+    adjustment={...adjustment,type:'auto_downgrade',before,to:{type:session.type,targetDist:session.targetDist,targetHR:session.targetHR}};
+  }else if(session&&dailyDecision.action==='reduce'){
+    session.targetDist=Math.max(2,+(parseFloat(session.targetDist||4)*0.75).toFixed(1));
+    session.targetHR=session.targetHR?Math.min(+session.targetHR,145):145;
+    session.details=coachSessionDetails(session.type,session.targetDist,getCoachGoalProfile(next,{preferPlan:true}));
+    session.description=session.details.targetDescription;
+    session.notes=[session.notes,'Adaptive coach reduced volume today'].filter(Boolean).join(' · ');
+    adjustment={...adjustment,type:'auto_reduce',before,to:{type:session.type,targetDist:session.targetDist,targetHR:session.targetHR}};
+  }
+  const goalImpact=coachGoalImpact(next,dailyDecision,adjustment.type);
+  adjustment.goalImpact=goalImpact;
+  next.dailyDecisions={...(next.dailyDecisions||{}),[date]:{
+    date,action:dailyDecision.action,status:dailyDecision.status,
+    readinessScore:dailyDecision.readinessScore,reasons:dailyDecision.reasons||[],
+    appliedAt:Date.now(),changed:!['keep','done','no_session'].includes(dailyDecision.action),
+    goalImpact
+  }};
+  return {plan:next,adjustment};
+}
 function coachDecisionColor(status){
   return status==='green'?'var(--green)':status==='yellow'?'var(--orange)':'var(--red)';
 }
@@ -349,7 +451,7 @@ async function generateTrainingPlan(){
     let plan=null,usedFallback=false,fallbackReason='';
     try{
       const data=await callNewsChat([
-        {role:'system',content:'You are a conservative running coach for a 10K sub-48 goal. Return JSON only. Prioritize injury prevention and deterministic safety rules. User-facing plan text must be Thai.'},
+        {role:'system',content:`You are a conservative running coach for this specific goal: ${goal}. Return JSON only. Prioritize the selected race distance, target time, injury prevention, and deterministic safety rules. User-facing plan text must be Thai.`},
         {role:'user',content:prompt}
       ],{useSearch:false,temperature:.25,maxTokens:4096});
       const rawText=data?.choices?.[0]?.message?.content||'';
@@ -526,6 +628,42 @@ function renderCoachDailyDecision(plan){
 }
 
 async function matchWorkoutsToPlan(silent=false){if(!window._coachPlan?.sessions)return;if(document.getElementById('page-coach').classList.contains('active')&&document.getElementById('coach-track-tab').style.display!=='none')renderCoachTracking();if(!silent)showToast('🔄 Activities matched');}
+function renderCoachDailyDecision(plan){
+  const el=document.getElementById('coach-daily-decision');if(!el)return;
+  const today=toLocalDateStr();
+  const daily=coachDailyDecision(plan,today);
+  const todaySession=daily.session;
+  const color=coachDecisionColor(daily.status);
+  const thai=coachDecisionThai(daily.status);
+  const reasons=daily.reasons?.length?daily.reasons.map(escapeHTML).join(' · '):'ยังไม่มีสัญญาณเสี่ยงหลักจากข้อมูลวันนี้';
+  const actionText={keep:'ทำตามแผนเดิม',done:'บันทึกว่าเช็คแล้ว',no_session:'ไม่มี session วันนี้',move:'ย้าย session วันนี้',rest:'เปลี่ยนเป็นพัก/ฟื้นตัว',downgrade:'ลดจากงานหนักเป็น Easy',reduce:'ลดระยะ/ความหนัก'}[daily.action]||daily.action;
+  const applyDisabled=daily.alreadyApplied?'disabled':'';
+  el.style.display='block';
+  el.style.borderLeft=`4px solid ${color}`;
+  el.innerHTML=`
+    <div class="coach-adaptive-card">
+      <div class="coach-adaptive-main">
+        <div class="card-label">Adaptive Coach Today</div>
+        <div class="coach-adaptive-action" style="color:${color}">${escapeHTML(thai.label)} · ${escapeHTML(thai.action)}</div>
+        <div class="text-sm c2">${todaySession?`แผนหลักวันนี้: ${escapeHTML(coachSessionTypeThai(todaySession.type))} ${todaySession.targetDist||''} กม. ${todaySession.targetPace?`· pace ${escapeHTML(todaySession.targetPace)}`:''}`:'วันนี้ไม่มี session หนักในแผน'}</div>
+        <div class="coach-adaptive-explain"><strong>Daily decision:</strong> ${escapeHTML(actionText)}${daily.alreadyApplied?' · applied to cloud':''}</div>
+        <div class="coach-adaptive-explain">${escapeHTML(coachAdaptiveGuidance(daily.safety,todaySession))}</div>
+        <div class="text-xs c3 mt-8">เหตุผลจากข้อมูลวันนี้: ${reasons}</div>
+        <div class="coach-adaptive-rules">
+          <div class="coach-adaptive-rule"><strong>แผนหลัก</strong>AI สร้างตารางตั้งต้นไว้ก่อนเพื่อให้มีโครงสร้างระยะยาว</div>
+          <div class="coach-adaptive-rule"><strong>ปรับรายวัน</strong>ระบบอ่าน readiness, sleep, HRV, RHR, SpO2, pain/soreness, unavailable days และ training load ก่อนวันซ้อม</div>
+          <div class="coach-adaptive-rule"><strong>บันทึกจริง</strong>เมื่อกดปรับแผนวันนี้ ระบบเขียน dailyDecisions และ adjustments ลง Firebase โดยไม่ชดเชยโหลดมั่ว</div>
+        </div>
+      </div>
+      <div class="coach-adaptive-buttons">
+        <button class="btn btn-green btn-sm" onclick="coachApplyDailyDecision('${today}')" ${applyDisabled}>${daily.alreadyApplied?'บันทึกแล้ววันนี้':'ปรับแผนวันนี้ + บันทึก Cloud'}</button>
+        ${todaySession?`<button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${today}')">วันนี้ไม่ว่าง: เลื่อน</button>`:''}
+        ${todaySession&&isHardSession(todaySession.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${today}')">ลดเป็นวิ่งเบา</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="reviewPlanAI()">ให้ AI รีวิวจากข้อมูลล่าสุด</button>
+      </div>
+    </div>`;
+}
+
 async function assertCoachCloudSaved(expected={}){
   const saved=await window._fb.getData('coach_plan');
   if(!saved?.createdAt||saved.createdAt!==expected.createdAt)throw new Error('Cloud save failed. Please sign in again and retry.');
@@ -542,8 +680,10 @@ function coachHasHardNear(plan,date){
 }
 function coachFindMoveDate(plan,session){
   const goalProfile=getCoachGoalProfile(plan,{preferPlan:true});
+  const raceDate=plan?.endDate||'';
   for(let offset=1;offset<=10;offset++){
     const candidate=datePlusDays(session.date,offset);
+    if(raceDate&&candidate>=raceDate)continue;
     if(coachDateMatchesUnavailable(candidate,goalProfile))continue;
     const rows=coachSessionsOn(plan,candidate);
     if(rows.some(s=>s.type!=='Rest'))continue;
@@ -558,6 +698,19 @@ async function saveCoachPlanWithAdjustment(plan,adjustment){
   await assertCoachCloudSaved({createdAt:next.createdAt,updatedAt:next.updatedAt,adjustmentCount:next.adjustments.length});
   AppState.set('coachPlan',next);
   renderCoachTracking();
+}
+async function coachApplyDailyDecision(date=toLocalDateStr()){
+  const plan=window._coachPlan;if(!plan?.sessions)return showToast('No plan','error');
+  const daily=coachDailyDecision(plan,date);
+  if(daily.alreadyApplied)return showToast('วันนี้ปรับ/เช็คแผนไปแล้ว','warn');
+  try{
+    const result=coachApplyDailyDecisionToPlan(plan,daily);
+    await saveCoachPlanWithAdjustment(result.plan,result.adjustment);
+    showToast(daily.action==='keep'||daily.action==='done'||daily.action==='no_session'?'บันทึก daily coach check แล้ว':'ปรับแผนวันนี้และบันทึก Cloud แล้ว','success');
+  }catch(err){
+    console.error(err);
+    showToast(err.message||'ปรับแผนวันนี้ไม่สำเร็จ','error');
+  }
 }
 async function coachMoveSession(date){
   const plan=window._coachPlan;if(!plan?.sessions)return;
@@ -609,7 +762,7 @@ async function reviewPlanAI(){
   summary+=`\nSummary: done ${doneCount} / missed ${missCount}\nAdjustments: ${JSON.stringify((plan.adjustments||[]).slice(-12))}`;
   const context=buildCoachContext(plan);
   const safety=coachSafetyDecision((plan.sessions||[]).find(s=>s.date===today));
-  await askDeepSeek(`${formatCoachContext(context)}\n\n${summary}\n\nDaily safety decision: ${safety.status} - ${safety.action}\nReasons: ${safety.reasons.join(' | ')}\n\nReview progress and suggest safe adjustments. Do not recommend catch-up doubling. Separate facts from AI estimate.`, 'คุณคือโค้ชวิ่งสาย conservative สำหรับเป้า 10K sub 48 วิเคราะห์เป็นภาษาไทย ใช้ข้อมูลจริงเท่านั้น ถ้าเป็นการประเมินให้บอกว่า AI estimate', 'btn-coach-review', 'coach-review-output');
+  await askDeepSeek(`${formatCoachContext(context)}\n\n${summary}\n\nDaily safety decision: ${safety.status} - ${safety.action}\nReasons: ${safety.reasons.join(' | ')}\n\nReview progress and suggest safe adjustments. Do not recommend catch-up doubling. Separate facts from AI estimate.`, `คุณคือโค้ชวิ่งสาย conservative สำหรับเป้าหมายปัจจุบัน: ${plan.goal||context.goalProfile.distance} วิเคราะห์เป็นภาษาไทย ใช้ข้อมูลจริงเท่านั้น ถ้าเป็นการประเมินให้บอกว่า AI estimate`, 'btn-coach-review', 'coach-review-output');
   document.getElementById('coach-review-output').style.display='block';
 }
 

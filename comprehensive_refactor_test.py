@@ -319,11 +319,33 @@ def main():
                     level:'intermediate'
                   });
                   const longDays = plan.sessions.filter(s => s.type === 'Long').map(s => new Date(s.date + 'T12:00:00').getDay());
+                  const movePlan = {
+                    goalProfile:{distance:'10K', targetTime:'47:59', targetPace:4.798, unavailableRaw:'2026-07-09', unavailable:['2026-07-09'], longRunDay:'0', longRunDayName:'Sun'},
+                    endDate:'2026-08-02',
+                    sessions:[{date:'2026-07-09', type:'Easy', targetDist:5, targetPace:''}]
+                  };
+                  const moveDecision = coachDailyDecision(movePlan, '2026-07-09');
+                  const moved = coachApplyDailyDecisionToPlan(movePlan, moveDecision);
+                  const hardPlan = {
+                    goalProfile:{distance:'10K', targetTime:'47:59', targetPace:4.798, unavailableRaw:'', unavailable:[], longRunDay:'0', longRunDayName:'Sun'},
+                    endDate:'2026-08-02',
+                    sessions:[{date:'2026-07-10', type:'Interval', targetDist:8, targetPace:'4:30'}]
+                  };
+                  const downgraded = coachApplyDailyDecisionToPlan(hardPlan, {date:'2026-07-10', action:'downgrade', status:'yellow', readinessScore:58, reasons:['test']});
                   return {
                     sleepFull: formatSleepHours(4.9),
                     sleepCompact: formatSleepHours(4.9, {compact:true}),
                     hasRaceDayWorkout: plan.sessions.some(s => s.date === '2026-08-02'),
-                    longRunDayOk: longDays.length > 0 && longDays.every(day => day === 0)
+                    longRunDayOk: longDays.length > 0 && longDays.every(day => day === 0),
+                    unavailableAction: moveDecision.action,
+                    movedOffUnavailable: moved.plan.sessions[0].date !== '2026-07-09',
+                    movedBeforeRace: moved.plan.sessions[0].date < '2026-08-02',
+                    movedDailyDecisionSaved: !!moved.plan.dailyDecisions['2026-07-09']?.appliedAt,
+                    downgradeType: downgraded.plan.sessions[0].type,
+                    downgradeReduced: downgraded.plan.sessions[0].targetDist < 8,
+                    downgradeAdjustment: downgraded.adjustment.type,
+                    downgradeGoalRisk: downgraded.adjustment.goalImpact.goalRisk,
+                    goalImpactSaved: !!downgraded.plan.dailyDecisions['2026-07-10'].goalImpact?.goal
                   };
                 }
                 """
@@ -333,6 +355,10 @@ def main():
             assert_true(checks, "sleep_format_compact_ok", coach_plan_rules["sleepCompact"] == "4ชม 54น", "Sleep compact format is wrong")
             assert_true(checks, "no_race_day_workout", coach_plan_rules["hasRaceDayWorkout"] is False, "Plan contains a workout on race day")
             assert_true(checks, "long_run_day_ok", coach_plan_rules["longRunDayOk"] is True, "Long run day preference was not respected")
+            assert_true(checks, "daily_move_action_ok", coach_plan_rules["unavailableAction"] == "move", "Unavailable day did not trigger move")
+            assert_true(checks, "daily_move_saved_ok", coach_plan_rules["movedOffUnavailable"] is True and coach_plan_rules["movedBeforeRace"] is True and coach_plan_rules["movedDailyDecisionSaved"] is True, "Daily move was not applied/saved safely")
+            assert_true(checks, "daily_downgrade_ok", coach_plan_rules["downgradeType"] == "Easy" and coach_plan_rules["downgradeReduced"] is True and coach_plan_rules["downgradeAdjustment"] == "auto_downgrade", "Hard day was not downgraded")
+            assert_true(checks, "daily_goal_impact_ok", coach_plan_rules["downgradeGoalRisk"] == "medium" and coach_plan_rules["goalImpactSaved"] is True, "Goal impact was not saved")
 
             no_plan_training_text = page.evaluate(
                 """

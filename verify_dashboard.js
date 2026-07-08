@@ -145,6 +145,8 @@ ensureContains(backupExportScriptPath, [
 ensureContains(coachScriptPath, [
   'function coachTrainingWeekdays',
   'function coachDateForWeekday',
+  'function coachDailyDecision',
+  'function coachApplyDailyDecisionToPlan',
   'function validateCoachPlan(plan',
   'function buildFallbackTrainingPlan',
   'function coachSessionDetails',
@@ -163,7 +165,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-health-20260707-5",
+  "mydash-v3-health-20260708-1",
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',

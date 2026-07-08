@@ -1,6 +1,56 @@
 # AI Handoff Log
 
-Last updated: 2026-07-07 Asia/Bangkok
+Last updated: 2026-07-08 Asia/Bangkok
+
+## 2026-07-08 Daily Adaptive Coach Engine
+
+Context:
+
+- User clarified that the plan must actually support the target outcome, not only display a static schedule.
+- User also clarified that MyDash must not hard-code 10K/sub-48 forever because future plans may be 5K, half marathon, or another goal.
+
+Code changes:
+
+- Added deterministic daily adaptation logic in `js/coach.js`:
+  - `coachDailyDecision(plan, date)` returns `keep`, `move`, `rest`, `downgrade`, `reduce`, `done`, or `no_session`.
+  - It reads the current plan goal, today's session, completed workouts, unavailable days, readiness, sleep/HRV/RHR/SpO2/pain data via existing readiness logic, and training-load safety rules.
+  - It does not rely on AI text alone for safety decisions.
+- Added `coachApplyDailyDecisionToPlan(plan, decision)`:
+  - moves a session when today is unavailable,
+  - converts risky red days to Rest,
+  - downgrades hard yellow days to Easy,
+  - reduces easier yellow days without doubling later load,
+  - writes a `dailyDecisions/{date}` record into the saved `coach_plan`,
+  - appends an adjustment record under `coach_plan.adjustments`.
+- Added `coachGoalImpact()`:
+  - every daily adjustment records the active goal and race date,
+  - flags whether the workout stimulus was preserved,
+  - marks goal risk as low/medium,
+  - prevents silent drift away from the target.
+- `coachFindMoveDate()` now refuses to move a workout onto or after `plan.endDate`, because `endDate` is race day.
+- AI Coach Track tab now has a primary action:
+  - `ปรับแผนวันนี้ + บันทึก Cloud`
+  - this applies the deterministic decision and verifies the Firebase save.
+- Removed production prompt hard-coding for `10K sub 48`:
+  - generation prompt now uses the selected/current goal,
+  - review prompt now uses the current plan goal.
+- PWA cache bumped to:
+  - `mydash-v3-health-20260708-1`
+  - manifest id `./?v=11`
+
+Test coverage added:
+
+- `comprehensive_refactor_test.py` now verifies:
+  - unavailable day triggers a `move`,
+  - moved session leaves the unavailable day and stays before race day,
+  - daily decision is saved under `dailyDecisions`,
+  - yellow hard-day downgrade becomes Easy and reduces distance,
+  - goal impact is saved with the adjustment.
+
+Important behavior:
+
+- The engine preserves the current selected goal, not a fixed 10K target.
+- A daily reduction is allowed only as a safety adaptation; repeated medium-risk changes should trigger AI review/replan rather than silently weakening the whole plan.
 
 ## 2026-07-07 Local Backup And Coach/Race Refactor
 
