@@ -14,6 +14,9 @@ async function saveBackupSettings() {
 }
 
 async function getBackupSettings() {
+  if (!window._fb?.getData) {
+    return { url: DEFAULT_GAS_URL, token: '' };
+  }
   const cfg = await window._fb.getData('settings') || {};
   return { url: cfg.gasUrl || DEFAULT_GAS_URL, token: cfg.gasToken || '' };
 }
@@ -36,6 +39,7 @@ function queueSheetsBackup(payload){
 }
 async function flushSheetsQueue(){
   if(!navigator.onLine)return;
+  if(!window._fb?.getData)return;
   const {url,token}=await getBackupSettings();if(!url)return;
   const q=JSON.parse(localStorage.getItem('mydash-sync-queue')||'[]');if(!q.length)return;
   const remaining=[];

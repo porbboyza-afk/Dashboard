@@ -260,6 +260,51 @@ function coachApplyDailyDecisionToPlan(plan,dailyDecision){
 function coachDecisionColor(status){
   return status==='green'?'var(--green)':status==='yellow'?'var(--orange)':'var(--red)';
 }
+function coachReviewSessionLine(session,actual,completedDates,today){
+  if(session.type==='Rest')return '';
+  const isDone=!!completedDates[session.date]||!!actual;
+  const status=isDone?'done':session.date<today?'missed':'upcoming';
+  const actualText=actual?` actual:${actual.dist||0}km${actual.avgPace?` pace:${formatPace(actual.avgPace)}`:''}${actual.hr?` HR:${actual.hr}`:''}`:'';
+  return `[${session.date}] ${session.phase||''} ${session.type} target:${session.targetDist||0}km ${status}${actualText}`;
+}
+function coachBuildCompactReview(plan){
+  const today=toLocalDateStr();
+  const allWks=getAllActivities();
+  const completedDates=plan.completedDates||{};
+  const nonRest=(plan.sessions||[]).filter(session=>session.type!=='Rest');
+  const doneCount=nonRest.filter(session=>completedDates[session.date]||allWks.some(workout=>workout.date===session.date)).length;
+  const missCount=nonRest.filter(session=>!completedDates[session.date]&&!allWks.some(workout=>workout.date===session.date)&&session.date<today).length;
+  const recentSessions=(plan.sessions||[]).filter(session=>session.date<=datePlusDays(today,7)).slice(-10);
+  const summaryLines=recentSessions.map(session=>{
+    const actual=allWks.find(workout=>workout.date===session.date);
+    return coachReviewSessionLine(session,actual,completedDates,today);
+  }).filter(Boolean);
+  return {
+    doneCount,
+    missCount,
+    summary:[
+      `Plan: ${plan.goal}`,
+      `Progress: done ${doneCount} / missed ${missCount}`,
+      `Recent schedule:`,
+      summaryLines.join('\n')||'none',
+      `Recent adjustments: ${JSON.stringify((plan.adjustments||[]).slice(-6))}`
+    ].join('\n')
+  };
+}
+function coachLocalReviewFallback(plan,context,safety,compact){
+  const phase=coachPhaseForDate(toLocalDateStr(),plan.startDate,plan.totalWeeks);
+  const action=safety.status==='red'?'พัก/ฟื้นตัว':safety.status==='yellow'?'คุมโหลดและลดความหนัก':'เดินตามแผนได้';
+  return [
+    `## Coach Review`,
+    `Phase ตอนนี้: ${coachPhaseThai(phase)}`,
+    `Progress: ทำแล้ว ${compact.doneCount} session · เลยวัน ${compact.missCount} session`,
+    `Readiness วันนี้: ${context.readiness.score}/100 (${context.readiness.level})`,
+    `Load: acute ${Math.round(context.load.acute)} · chronic ${Math.round(context.load.chronicWeekly)} · ACWR ${context.load.acwr?.toFixed(2)??'n/a'}`,
+    `คำแนะนำตอนนี้: ${action}`,
+    `เหตุผลหลัก: ${(safety.reasons||[]).slice(0,4).join(' | ')||'ไม่มีสัญญาณเสี่ยงเด่น'}`,
+    `ถ้า AI timeout อีก ให้ใช้การตัดสินใจรายวันด้านบนก่อน และอย่าชดเชยโหลดด้วยการอัดซ้อมเพิ่ม`
+  ].join('\n\n');
+}
 function coachDateMatchesUnavailable(dateStr,goalProfile){
   const unavailable=goalProfile?.unavailable||[];
   if(!unavailable.length)return false;
@@ -883,15 +928,23 @@ async function coachDowngradeToday(){await coachDowngradeSession(toLocalDateStr(
 async function reviewPlanAI(){
   const plan=window._coachPlan;if(!plan?.sessions){showToast('No plan','error');return;}
   const today=toLocalDateStr();
-  const allWks=getAllActivities();
-  const completedDates=plan.completedDates||{};
-  let summary=`Plan: ${plan.goal}\n\n`,doneCount=0,missCount=0;
-  plan.sessions.forEach(s=>{if(s.type==='Rest')return;const aw=allWks.find(w=>w.date===s.date);const isDone=!!completedDates[s.date]||!!aw;if(isDone)doneCount++;if(!isDone&&s.date<today)missCount++;if(s.date<=today){summary+=`[${s.date}] ${s.type} target:${s.targetDist}km `;if(aw)summary+=`→ actual:${aw.dist}km ✅\n`;else summary+=`→ ❌\n`;}});
-  summary+=`\nSummary: done ${doneCount} / missed ${missCount}\nAdjustments: ${JSON.stringify((plan.adjustments||[]).slice(-12))}`;
   const context=buildCoachContext(plan);
+  const compact=coachBuildCompactReview(plan);
   const safety=coachSafetyDecision((plan.sessions||[]).find(s=>s.date===today));
-  await askDeepSeek(`${formatCoachContext(context)}\n\n${summary}\n\nDaily safety decision: ${safety.status} - ${safety.action}\nReasons: ${safety.reasons.join(' | ')}\n\nReview progress and suggest safe adjustments. Do not recommend catch-up doubling. Separate facts from AI estimate.`, `คุณคือโค้ชวิ่งสาย conservative สำหรับเป้าหมายปัจจุบัน: ${plan.goal||context.goalProfile.distance} วิเคราะห์เป็นภาษาไทย ใช้ข้อมูลจริงเท่านั้น ถ้าเป็นการประเมินให้บอกว่า AI estimate`, 'btn-coach-review', 'coach-review-output');
-  document.getElementById('coach-review-output').style.display='block';
+  const output=document.getElementById('coach-review-output');
+  const reply=await askDeepSeek(
+    `${formatCoachContext({
+      ...context,
+      latestActivities:(context.latestActivities||'').split('\n').slice(0,8).join('\n'),
+      wellnessRows:(context.wellnessRows||'').split('\n').slice(0,7).join('\n'),
+      planSummary:(context.planSummary||'').split('\n').slice(0,10).join('\n')
+    })}\n\n${compact.summary}\n\nDaily safety decision: ${safety.status} - ${safety.action}\nReasons: ${safety.reasons.join(' | ')}\n\nReview progress and suggest safe adjustments. Do not recommend catch-up doubling. Separate facts from AI estimate. Keep the answer concise.`,
+    `คุณคือโค้ชวิ่งสาย conservative สำหรับเป้าหมายปัจจุบัน: ${plan.goal||context.goalProfile.distance} วิเคราะห์เป็นภาษาไทย ใช้ข้อมูลจริงเท่านั้น ถ้าเป็นการประเมินให้บอกว่า AI estimate`,
+    'btn-coach-review',
+    'coach-review-output'
+  );
+  if(!reply&&output)output.innerHTML=mdToHtml(coachLocalReviewFallback(plan,context,safety,compact));
+  if(output)output.style.display='block';
 }
 
 // ── NEWS ──
