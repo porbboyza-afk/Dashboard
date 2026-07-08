@@ -38,6 +38,19 @@ Test coverage added:
   - Garmin/Health Connect is selected as primary,
   - Strava is attached under `_possibleDuplicates`.
 
+Final outcome:
+
+- Commit pushed to GitHub:
+  - `d12d869 Prepare Strava duplicate guard`
+- Verification passed:
+  - `node verify_dashboard.js`
+  - `node --check js\sources-strava.js`
+  - `git diff --check`
+  - `python smoke_test_dashboard.py`
+  - `python comprehensive_refactor_test.py`
+- Repo was clean immediately after push.
+- If the user pays Strava for one month and imports old data later, do not bulk-delete duplicates automatically. First review `Possible duplicate` candidates, then decide whether to keep Strava as archive-only or mark duplicate rows as ignored.
+
 ## 2026-07-08 Coach Cleanup Before Post-Run Review
 
 Context:
