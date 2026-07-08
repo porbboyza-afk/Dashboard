@@ -276,6 +276,72 @@ Verification:
 - `python comprehensive_refactor_test.py`
   - Passed.
 
+## 2026-07-08 Coach Plan Race Day, Long Run Day, And Sleep Formatting
+
+Context:
+
+- User reported three plan-quality issues:
+  - Sleep display such as `4.9h` is hard to read.
+  - The last day of a training plan is normally race day, but the generated plan could still contain a workout on that date.
+  - User should be able to choose the weekly long run day.
+- User asked to use Garmin Coach / Garmin race-planning behavior as a reference.
+
+Reference interpretation:
+
+- Garmin-style race planning separates the race/event from training workouts.
+- Garmin-style planning uses recent training load / predicted time as context, but it should not label that as proof the current plan has been started.
+- Garmin-style setup lets the user choose preferred training days; MyDash now adds a first explicit control for the long run day.
+
+Code changes:
+
+- Sleep formatting:
+  - Added `formatSleepHours(value, {compact})` in `js/wellness.js`.
+  - `4.9` now displays as:
+    - `4 ชม. 54 นาที` in full contexts,
+    - `4ชม 54น` in compact dashboard KPI contexts.
+  - Updated dashboard sleep widgets, Wellness list, and Wellness average sleep display.
+- AI Coach form:
+  - Added `Long Run Day` selector:
+    - Sunday default,
+    - Saturday,
+    - Friday,
+    - Monday.
+- Coach goal profile:
+  - `getCoachGoalProfile()` now stores:
+    - `longRunDay`,
+    - `longRunDayName`.
+  - Coach context and AI prompt include the preferred long run day.
+- Fallback plan generation:
+  - Added `coachTrainingWeekdays()` and `coachDateForWeekday()`.
+  - Fallback sessions now use real weekdays rather than offsets from the start date.
+  - Long runs are placed on the selected long run day when possible.
+  - No fallback workout is created on or after `endDate`.
+- AI/validation safety:
+  - Prompt now says Race/GoalDate is the race event, not a training workout.
+  - `validateCoachPlan()` filters out any session that lands exactly on `endDate`, even if the AI returns one.
+  - This means the Race tab can still show the virtual race from `coach_plan.endDate`, but Track Plan will not show a workout on race day.
+- PWA cache:
+  - bumped cache from `mydash-v3-health-20260707-4` to `mydash-v3-health-20260707-5`.
+  - bumped manifest/icon query strings to `20260707-5`.
+  - bumped manifest id to `./?v=10`.
+
+Test coverage added:
+
+- `comprehensive_refactor_test.py` now verifies:
+  - `formatSleepHours(4.9)` -> `4 ชม. 54 นาที`,
+  - compact sleep format -> `4ชม 54น`,
+  - fallback plan has no workout on race day,
+  - fallback long runs respect selected Sunday long-run preference.
+
+Verification:
+
+- `node verify_dashboard.js`
+  - Passed.
+- `python smoke_test_dashboard.py`
+  - Passed.
+- `python comprehensive_refactor_test.py`
+  - Passed.
+
 ## 2026-07-07 Coach End Date Race Integration
 
 Context:

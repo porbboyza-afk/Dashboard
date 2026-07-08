@@ -33,6 +33,9 @@ function raceDistanceKm(distance){
   if(distance==='Half')return 21.0975;
   return 10;
 }
+function coachWeekdayName(day){
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][parseInt(day)]||'Sun';
+}
 function datePlusDays(dateStr,days){
   const d=new Date((dateStr||toLocalDateStr())+'T12:00:00');
   d.setDate(d.getDate()+days);
@@ -50,9 +53,11 @@ function getCoachGoalProfile(plan=null,{preferPlan=false}={}){
   const targetPace=targetMinutes?targetMinutes/km:null;
   const unavailableRaw=(fromPlan?plan.goalProfile.unavailableRaw:document.getElementById('coach-unavailable')?.value?.trim())||plan?.goalProfile?.unavailableRaw||'';
   const unavailable=unavailableRaw.split(/[,\s]+/).map(x=>x.trim()).filter(Boolean);
+  const longRunDayRaw=(fromPlan?plan.goalProfile.longRunDay:document.getElementById('coach-long-run-day')?.value)||plan?.goalProfile?.longRunDay||'0';
+  const longRunDay=String(Number.isFinite(parseInt(longRunDayRaw))?parseInt(longRunDayRaw):0);
   return {
     distance,targetTime,targetMinutes,targetPace,benchmark:(fromPlan?plan.goalProfile.benchmark:document.getElementById('coach-benchmark')?.value?.trim())||plan?.goalProfile?.benchmark||'',
-    unavailableRaw,unavailable
+    unavailableRaw,unavailable,longRunDay,longRunDayName:coachWeekdayName(longRunDay)
   };
 }
 function coachSourceSummary(activities){
@@ -85,6 +90,7 @@ function formatCoachContext(ctx){
     `Goal: ${gp.distance} ${gp.targetTime} (${gp.targetPace?formatPace(gp.targetPace)+'/km':'pace n/a'})`,
     `Benchmark: ${gp.benchmark||'not provided'}`,
     `Unavailable: ${gp.unavailableRaw||'none'}`,
+    `Preferred long run day: ${gp.longRunDayName||coachWeekdayName(gp.longRunDay||0)}`,
     `Readiness: ${ctx.readiness.score}/100 ${ctx.readiness.level}`,
     `Readiness reasons: ${(ctx.readiness.reasons||[]).join(' | ')||'none'}`,
     `Load: acute ${Math.round(ctx.load.acute)}, chronic ${Math.round(ctx.load.chronicWeekly)}, ACWR ${ctx.load.acwr?.toFixed(2)??'n/a'}, monotony ${ctx.load.monotony?.toFixed(2)??'n/a'}, strain ${Math.round(ctx.load.strain)}`,
@@ -124,6 +130,18 @@ function coachDateMatchesUnavailable(dateStr,goalProfile){
     if(item===dateStr)return true;
     return weekday.startsWith(item.slice(0,3))||weekdayLong===item;
   });
+}
+function coachTrainingWeekdays(daysPerWeek,longRunDayRaw){
+  const longRunDay=parseInt(longRunDayRaw);
+  const longDay=Number.isFinite(longRunDay)?Math.max(0,Math.min(6,longRunDay)):0;
+  const preferred=[2,4,6,1,3,5,0].filter(day=>day!==longDay);
+  return [...preferred.slice(0,Math.max(1,(parseInt(daysPerWeek)||4)-1)),longDay].sort((a,b)=>a-b);
+}
+function coachDateForWeekday(startDate,week,weekday){
+  const weekStart=new Date(datePlusDays(startDate,week*7)+'T12:00:00');
+  const delta=(weekday-weekStart.getDay()+7)%7;
+  weekStart.setDate(weekStart.getDate()+delta);
+  return toLocalDateStr(weekStart);
 }
 function extractJsonObject(text){
   const cleaned=String(text||'').replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
@@ -223,6 +241,7 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
   if(!plan||typeof plan!=='object')throw new Error('Plan JSON is not an object');
   const sessions=Array.isArray(plan.sessions)?plan.sessions:[];
   if(!sessions.length)throw new Error('Plan JSON has no sessions');
+  const raceDate=endDate||plan.endDate||'';
   const normalized=sessions.map((session,index)=>{
     const date=String(session.date||'').match(/^\d{4}-\d{2}-\d{2}$/)?session.date:datePlusDays(startDate,index);
     const type=normalizeCoachType(session.type);
@@ -248,7 +267,7 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
         targetDescription:String(details.targetDescription||'').slice(0,180)
       }
     };
-  }).sort((a,b)=>a.date.localeCompare(b.date));
+  }).filter(session=>!(raceDate&&session.date===raceDate)).sort((a,b)=>a.date.localeCompare(b.date));
   for(let i=1;i<normalized.length;i++){
     const prev=normalized[i-1],cur=normalized[i];
     if(isHardSession(prev.type)&&isHardSession(cur.type)){
@@ -268,25 +287,28 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
 function buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,context,level}){
   const goalProfile=context.goalProfile;
   const daysPerWeek=parseInt(days)||4;
-  const weekdayPatterns={3:[1,3,6],4:[1,3,5,6],5:[1,2,3,5,6]};
-  const pattern=weekdayPatterns[daysPerWeek]||weekdayPatterns[4];
+  const pattern=coachTrainingWeekdays(daysPerWeek,goalProfile.longRunDay);
+  const longDay=parseInt(goalProfile.longRunDay||0);
   const sessions=[];
   const baseLong=level==='advanced'?10:level==='beginner'?6:8;
   for(let week=0;week<totalWeeks;week++){
-    const weekStart=datePlusDays(startDate,week*7);
     const taper=week>=totalWeeks-2;
-    pattern.forEach((weekdayIndex,slot)=>{
-      let date=datePlusDays(weekStart,weekdayIndex);
+    let nonLongSlot=0;
+    pattern.forEach((weekdayIndex)=>{
+      let date=coachDateForWeekday(startDate,week,weekdayIndex);
+      if(date<startDate)return;
+      if(endDate&&date>=endDate)return;
       let guard=0;
       while(coachDateMatchesUnavailable(date,goalProfile)&&guard<6){date=datePlusDays(date,1);guard++;}
+      if(endDate&&date>=endDate)return;
       const isRaceWeek=endDate&&week===totalWeeks-1;
       let type='Easy',dist=5,pace='';
-      if(slot===0){type='Easy';dist=+(4+Math.min(week,5)*0.4).toFixed(1);}
-      else if(slot===1){type=week%2?'Tempo':'Interval';dist=+(5+Math.min(week,5)*0.5).toFixed(1);pace=goalProfile.targetPace?formatPace(goalProfile.targetPace+(type==='Interval'?-0.1:0.12)):'';}
-      else if(slot===pattern.length-1){type='Long';dist=+(baseLong+Math.min(week,6)*0.8).toFixed(1);}
-      else {type='Easy';dist=+(4.5+Math.min(week,4)*0.4).toFixed(1);}
+      if(weekdayIndex===longDay){type='Long';dist=+(baseLong+Math.min(week,6)*0.8).toFixed(1);}
+      else if(nonLongSlot===0){type='Easy';dist=+(4+Math.min(week,5)*0.4).toFixed(1);nonLongSlot++;}
+      else if(nonLongSlot===1){type=week%2?'Tempo':'Interval';dist=+(5+Math.min(week,5)*0.5).toFixed(1);pace=goalProfile.targetPace?formatPace(goalProfile.targetPace+(type==='Interval'?-0.1:0.12)):'';nonLongSlot++;}
+      else {type='Easy';dist=+(4.5+Math.min(week,4)*0.4).toFixed(1);nonLongSlot++;}
       if(taper){dist=+(dist*.75).toFixed(1);if(type==='Interval')type='Tempo';}
-      if(isRaceWeek&&slot===pattern.length-1){type='Rest';dist=0;pace='';}
+      if(isRaceWeek&&type==='Long'){type='Easy';dist=Math.min(dist,4);pace='';}
       const details=coachSessionDetails(type,dist,goalProfile,week);
       sessions.push({
         date,type,
@@ -323,7 +345,7 @@ async function generateTrainingPlan(){
   if(out){out.style.color='var(--text2)';out.innerHTML='⏳ Creating plan...';}
   const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='⏳ Generating...';btn.disabled=true;}
   try{
-    const prompt=`Create an adaptive running plan.\n\n${formatCoachContext(context)}\n\nLevel:${level}\nTraining days:${days}/week\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nDaily safety today:${safety.status} - ${safety.action}\n\nHard rules:\n- Code-calculated health/load data is authoritative; do not invent metrics.\n- No hard sessions on consecutive days.\n- If readiness is yellow, reduce intensity or volume.\n- If readiness is red, use recovery/rest and do not compensate by doubling the next day.\n- If pain >= 6, sick status, or ACWR > 1.5, block interval/tempo.\n- Respect unavailable dates/weekdays.\n- Strava is legacy/archive; Health Connect/manual workouts are primary.\n- Missing cadence/GPS/splits must be marked unavailable, never estimated as fact.\n- Every session must be actionable from the phone without asking again.\n- Thai user interface: all user-facing text in description, notes, and details must be Thai. Keep only type keys in English.\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"สรุปสั้นภาษาไทย","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"เหตุผลภาษาไทยว่าซ้อมวันนี้เพื่ออะไร","priority":"key|normal|optional","details":{"warmup":"warmup ภาษาไทยแบบทำตามได้","mainSet":"main set ภาษาไทย มีจำนวนเซ็ต/pace/เวลาพักถ้าเกี่ยวข้อง","cooldown":"cooldown ภาษาไทย","execution":"วิธีวิ่งและสิ่งที่ต้องระวังภาษาไทย","successCriteria":"เกณฑ์ว่าวิ่งถูกต้องภาษาไทย","intensity":"ง่าย|กลาง-หนัก|หนัก|ฟื้นตัว","targetDescription":"เป้าหมายสั้นภาษาไทย"}}]}\nCreate exactly ${parseInt(days)*totalWeeks} non-rest sessions across ${totalWeeks} weeks from ${startDate}${endDate?' to '+endDate:''}. Include taper near goal date.`;
+    const prompt=`Create an adaptive running plan.\n\n${formatCoachContext(context)}\n\nLevel:${level}\nTraining days:${days}/week\nPreferred long run day:${context.goalProfile.longRunDayName||coachWeekdayName(context.goalProfile.longRunDay||0)}\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nDaily safety today:${safety.status} - ${safety.action}\n\nHard rules:\n- Code-calculated health/load data is authoritative; do not invent metrics.\n- No hard sessions on consecutive days.\n- If readiness is yellow, reduce intensity or volume.\n- If readiness is red, use recovery/rest and do not compensate by doubling the next day.\n- If pain >= 6, sick status, or ACWR > 1.5, block interval/tempo.\n- Respect unavailable dates/weekdays and place the weekly long run on the preferred long run day when possible.\n- Race/GoalDate is the race event, not a training workout. Do not schedule any session on Race/GoalDate; taper before it.\n- Strava is legacy/archive; Health Connect/manual workouts are primary.\n- Missing cadence/GPS/splits must be marked unavailable, never estimated as fact.\n- Every session must be actionable from the phone without asking again.\n- Thai user interface: all user-facing text in description, notes, and details must be Thai. Keep only type keys in English.\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"สรุปสั้นภาษาไทย","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"เหตุผลภาษาไทยว่าซ้อมวันนี้เพื่ออะไร","priority":"key|normal|optional","details":{"warmup":"warmup ภาษาไทยแบบทำตามได้","mainSet":"main set ภาษาไทย มีจำนวนเซ็ต/pace/เวลาพักถ้าเกี่ยวข้อง","cooldown":"cooldown ภาษาไทย","execution":"วิธีวิ่งและสิ่งที่ต้องระวังภาษาไทย","successCriteria":"เกณฑ์ว่าวิ่งถูกต้องภาษาไทย","intensity":"ง่าย|กลาง-หนัก|หนัก|ฟื้นตัว","targetDescription":"เป้าหมายสั้นภาษาไทย"}}]}\nCreate training sessions across ${totalWeeks} weeks from ${startDate}${endDate?' until before '+endDate:''}. Aim for about ${parseInt(days)*totalWeeks} non-rest sessions, but never put a workout on Race/GoalDate. Include taper near goal date.`;
     let plan=null,usedFallback=false,fallbackReason='';
     try{
       const data=await callNewsChat([

@@ -305,6 +305,35 @@ def main():
             for key, value in dom_checks.items():
                 assert_true(checks, f"dom_{key}", bool(value), f"DOM check failed: {key}")
 
+            coach_plan_rules = page.evaluate(
+                """
+                () => {
+                  const goalProfile = {distance:'10K', targetTime:'47:59', targetPace:4.798, unavailableRaw:'', unavailable:[], longRunDay:'0', longRunDayName:'Sun'};
+                  const plan = buildFallbackTrainingPlan({
+                    goal:'10K sub 48',
+                    startDate:'2026-07-08',
+                    endDate:'2026-08-02',
+                    totalWeeks:4,
+                    days:'4',
+                    context:{goalProfile},
+                    level:'intermediate'
+                  });
+                  const longDays = plan.sessions.filter(s => s.type === 'Long').map(s => new Date(s.date + 'T12:00:00').getDay());
+                  return {
+                    sleepFull: formatSleepHours(4.9),
+                    sleepCompact: formatSleepHours(4.9, {compact:true}),
+                    hasRaceDayWorkout: plan.sessions.some(s => s.date === '2026-08-02'),
+                    longRunDayOk: longDays.length > 0 && longDays.every(day => day === 0)
+                  };
+                }
+                """
+            )
+            checks["coach_plan_rules"] = coach_plan_rules
+            assert_true(checks, "sleep_format_full_ok", coach_plan_rules["sleepFull"] == "4 ชม. 54 นาที", "Sleep full format is wrong")
+            assert_true(checks, "sleep_format_compact_ok", coach_plan_rules["sleepCompact"] == "4ชม 54น", "Sleep compact format is wrong")
+            assert_true(checks, "no_race_day_workout", coach_plan_rules["hasRaceDayWorkout"] is False, "Plan contains a workout on race day")
+            assert_true(checks, "long_run_day_ok", coach_plan_rules["longRunDayOk"] is True, "Long run day preference was not respected")
+
             no_plan_training_text = page.evaluate(
                 """
                 () => {

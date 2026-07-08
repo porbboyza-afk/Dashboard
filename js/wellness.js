@@ -6,6 +6,16 @@ function numberValue(id) {
 
 function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
 
+function formatSleepHours(value,{compact=false}={}){
+  const hours=parseFloat(value);
+  if(!Number.isFinite(hours))return '—';
+  const totalMinutes=Math.max(0,Math.round(hours*60));
+  const h=Math.floor(totalMinutes/60);
+  const m=totalMinutes%60;
+  if(compact)return m?`${h}ชม ${m}น`:`${h}ชม`;
+  return m?`${h} ชม. ${m} นาที`:`${h} ชม.`;
+}
+
 function dateDaysAgo(days){
   const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-days);return d;
 }
@@ -203,7 +213,7 @@ function renderWellness() {
       <div class="workout-icon-wrap" style="background:var(--green-light)">🫀</div>
       <div style="flex:1;min-width:0">
         <div class="workout-title">${r.date} · Recovery ${calculateRecoveryScore(r) ?? '—'}</div>
-        <div class="workout-meta">Sleep ${r.sleepHours ?? '—'}h · RHR ${r.restingHR ?? '—'} · HRV ${r.hrv ?? '—'} · Fatigue ${r.fatigue ?? '—'} · Pain ${r.soreness ?? '—'}</div>
+        <div class="workout-meta">Sleep ${formatSleepHours(r.sleepHours)} · RHR ${r.restingHR ?? '—'} · HRV ${r.hrv ?? '—'} · Fatigue ${r.fatigue ?? '—'} · Pain ${r.soreness ?? '—'}</div>
       </div>
       <button onclick="deleteWellness('${r._key}')" class="btn btn-ghost btn-sm">✕</button>
     </div>`).join('') : '<p class="text-sm c2">ยังไม่มีข้อมูล Wellness</p>';
@@ -259,7 +269,7 @@ function wellnessSummaryRows(current, previous) {
   return [
     ['วันที่บันทึก', `${current.length} วัน`],
     ['Recovery เฉลี่ย', avgRecovery === null ? '—' : `${avgRecovery.toFixed(0)} · ${wellnessTrend(avgRecovery, previousRecovery)}`],
-    ['การนอนเฉลี่ย', avgSleep === null ? '—' : `${avgSleep.toFixed(1)} ชม.`],
+    ['การนอนเฉลี่ย', avgSleep === null ? '—' : formatSleepHours(avgSleep)],
     ['Resting HR เฉลี่ย', avgRhr === null ? '—' : `${avgRhr.toFixed(0)} bpm`],
     ['HRV เฉลี่ย', avgHrv === null ? '—' : `${avgHrv.toFixed(0)} ms`]
   ];
@@ -356,7 +366,7 @@ function renderWellnessAnalytics(sourceRecords) {
   const set = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = value; };
   set('wellness-avg-recovery', avgRecovery === null ? '—' : avgRecovery.toFixed(0));
   set('wellness-recovery-trend', wellnessTrend(avgRecovery, priorRecovery));
-  set('wellness-avg-sleep', avgSleep === null ? '—' : `${avgSleep.toFixed(1)}h`);
+  set('wellness-avg-sleep', avgSleep === null ? '—' : formatSleepHours(avgSleep,{compact:true}));
   set('wellness-sleep-trend', wellnessTrend(avgSleep, priorSleep, 'h'));
   set('wellness-avg-hrv', avgHrv === null ? '—' : avgHrv.toFixed(0));
   set('wellness-hrv-trend', wellnessTrend(avgHrv, priorHrv));

@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260707-4">
+<link rel="manifest" href="manifest.json?v=20260707-5">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260707-4">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260707-4">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260707-4">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260707-5">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260707-5">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260707-5">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -2042,6 +2042,14 @@ img, video, iframe, canvas { max-width: 100%; }
                 <option value="5">5 days</option>
               </select>
             </div>
+            <div class="form-group"><label>Long Run Day</label>
+              <select id="coach-long-run-day">
+                <option value="0" selected>Sunday</option>
+                <option value="6">Saturday</option>
+                <option value="5">Friday</option>
+                <option value="1">Monday</option>
+              </select>
+            </div>
             <div class="form-group"><label>Start Date</label><input type="date" id="coach-start-date"></div>
             <div class="form-group">
               <label>Training Duration</label>
@@ -3191,7 +3199,7 @@ async function renderDashboardHomeInsights() {
   const set=(id,value)=>{const element=document.getElementById(id);if(element)element.textContent=value;};
   const wellness=AppState.get('wellness')||[];
   const todayRecord=wellness.find(record=>record.date===toLocalDateStr());
-  set('dash-sleep',todayRecord?.sleepHours!=null?`${todayRecord.sleepHours}h`:'—');
+  set('dash-sleep',todayRecord?.sleepHours!=null?formatSleepHours(todayRecord.sleepHours,{compact:true}):'—');
   set('dash-hrv',todayRecord?.hrv!=null?`${todayRecord.hrv} ms`:'—');
   set('dash-rhr',todayRecord?.restingHR!=null?`${todayRecord.restingHR} bpm`:'—');
   set('dash-pain',todayRecord?.soreness!=null?`${todayRecord.soreness}/10`:'—');
@@ -3228,7 +3236,7 @@ async function renderDashboardHomeInsights() {
   const focusSleep=document.getElementById('dash-focus-sleep');
   const focusLoad=document.getElementById('dash-focus-load');
   if(focusRecovery)focusRecovery.textContent=`ฟื้นตัว ${readiness.score}`;
-  if(focusSleep)focusSleep.textContent=`นอน ${todayRecord?.sleepHours!=null?`${todayRecord.sleepHours} ชม.`:'—'}`;
+  if(focusSleep)focusSleep.textContent=`นอน ${todayRecord?.sleepHours!=null?formatSleepHours(todayRecord.sleepHours,{compact:true}):'—'}`;
   if(focusLoad)focusLoad.textContent=`โหลด 7 วัน ${Math.round(metrics.acute)}`;
   if(focusMain&&focusMeta){
     if(!todayRecord){
