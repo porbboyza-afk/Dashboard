@@ -53,6 +53,7 @@ function buildPostRunFacts(workout){
   const hrDelta=targetHR&&hr?Math.round(hr-targetHR):null;
   const load=sessionLoad(workout||{});
   const readiness=calculateReadiness();
+  const readinessLoad=readiness?.load||{};
   const wellness=(AppState.get('wellness')||[]).find(row=>row.date===workout?.date)||null;
   const riskFlags=[];
   if(distDelta!==null&&Math.abs(distDelta)>15)riskFlags.push(distDelta>0?'distance_over_target':'distance_under_target');
@@ -75,7 +76,20 @@ function buildPostRunFacts(workout){
     },
     subjective:{rpe:workout?.rpe||null,pain:workout?.pain||null,painLocation:workout?.painLocation||'',feeling:workout?.feeling||'',note:workout?.note||''},
     wellness:wellness?{sleepHours:wellness.sleepHours??null,restingHR:wellness.restingHR??null,hrv:wellness.hrv??null,spo2:wellness.spo2??null,fatigue:wellness.fatigue??null,soreness:wellness.soreness??null}:null,
-    readiness:{score:readiness.score,level:readiness.level,load:readiness.load},
+    readiness:{
+      score:readiness.score,
+      level:readiness.level,
+      load:{
+        acute:readinessLoad.acute??0,
+        chronicWeekly:readinessLoad.chronicWeekly??0,
+        acwr:readinessLoad.acwr??null,
+        monotony:readinessLoad.monotony??0,
+        strain:readinessLoad.strain??0,
+        historyDays:readinessLoad.historyDays??0,
+        baselineReady:!!readinessLoad.baselineReady,
+        daily:Array.isArray(readinessLoad.daily)?readinessLoad.daily.map(value=>Number.isFinite(value)?value:0):[]
+      }
+    },
     riskFlags,
     intervalAnalysis:workout?.interval?{
       reps:workout.interval.reps||0,repDist:workout.interval.repDist||0,repPace:workout.interval.repPace||'',restTime:workout.interval.restTime||0,

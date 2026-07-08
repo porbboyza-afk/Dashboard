@@ -421,6 +421,9 @@ def main():
                     intervalReps: facts.intervalAnalysis?.reps,
                     intervalPlan: facts.intervalAnalysis?.plannedMainSet || '',
                     highRpeFlag: facts.riskFlags.includes('high_rpe'),
+                    loadHasAcuteActs: Object.prototype.hasOwnProperty.call(facts.readiness.load, 'acuteActs'),
+                    loadHasChronicActs: Object.prototype.hasOwnProperty.call(facts.readiness.load, 'chronicActs'),
+                    factsJsonOk: JSON.stringify(facts).includes('"readiness"'),
                     pageActive: document.getElementById('page-post-run-review')?.classList.contains('active'),
                     bodyRendered: !!document.querySelector('#postrun-review-body .postrun-hero')
                   };
@@ -431,6 +434,7 @@ def main():
             assert_true(checks, "post_run_match_ok", post_run_rules["matchScore"] == 100 and post_run_rules["targetType"] == "Interval", "Post-run review did not match the planned interval session")
             assert_true(checks, "post_run_comparison_ok", post_run_rules["distDelta"] == 0 and post_run_rules["paceDelta"] == 0, "Post-run target comparison is wrong")
             assert_true(checks, "post_run_interval_schema_ok", post_run_rules["intervalReps"] == 6 and "400m" in post_run_rules["intervalPlan"], "Post-run intervalAnalysis schema is missing planned/actual interval data")
+            assert_true(checks, "post_run_firebase_payload_ok", post_run_rules["loadHasAcuteActs"] is False and post_run_rules["loadHasChronicActs"] is False and post_run_rules["factsJsonOk"] is True, "Post-run facts still contain non-serializable readiness load activity arrays")
             assert_true(checks, "post_run_render_ok", post_run_rules["pageActive"] is True and post_run_rules["bodyRendered"] is True, "Post-run review page did not render selected workout")
 
             duplicate_rules = page.evaluate(
