@@ -88,6 +88,8 @@ ensureContains(indexPath, [
   '<script src="js/coach.js"></script>',
   '<script src="js/races.js"></script>',
   'function mdToHtml(text)',
+  'function duplicateCandidatePairs',
+  'function isDuplicateCandidate',
   'out.innerHTML = mdToHtml(reply);',
   '.coach-plan-row',
   '.coach-adaptive-card',
@@ -178,7 +180,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-health-20260708-3",
+  "mydash-v3-health-20260708-4",
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',

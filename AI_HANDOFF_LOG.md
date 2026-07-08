@@ -2,6 +2,42 @@
 
 Last updated: 2026-07-08 Asia/Bangkok
 
+## 2026-07-08 Strava Duplicate Guard Preparation
+
+Context:
+
+- User may pay for Strava for one month later to recover/sync old activity data.
+- User correctly anticipated that Strava and Garmin/Health Connect data can duplicate with small distance/time differences.
+- Goal is to prepare detection before a large Strava sync, without deleting raw records.
+
+Code changes:
+
+- Added fuzzy duplicate detection near the central activity merge helpers in `index.html`:
+  - `isDuplicateCandidate(a,b)`
+  - `duplicateCandidatePairs(activities)`
+  - `activitySourceKey(w)`
+- Detection rules:
+  - same date,
+  - different sources,
+  - one side is Strava-like (`strava`, `strava_recovered`, `strava_archive`),
+  - distance difference <= 0.25 km and <= 4%,
+  - time difference <= 180 seconds and <= 6%.
+- Garmin/Health Connect remains primary through existing source priority.
+- `getAllActivities()` now attaches `_possibleDuplicates` to the primary row for display/review.
+- Activity detail now displays `Possible duplicate` when a primary row has candidate duplicates.
+- Sources overview now includes live possible duplicate count in addition to staged recovery duplicate count.
+- No raw workout, Strava cache, or Firebase record is deleted by this guard.
+- PWA cache bumped to:
+  - `mydash-v3-health-20260708-4`
+  - manifest id `./?v=14`
+
+Test coverage added:
+
+- `comprehensive_refactor_test.py` verifies:
+  - Garmin/Health Connect and Strava runs on the same day with near distance/time are detected as one duplicate candidate,
+  - Garmin/Health Connect is selected as primary,
+  - Strava is attached under `_possibleDuplicates`.
+
 ## 2026-07-08 Coach Cleanup Before Post-Run Review
 
 Context:

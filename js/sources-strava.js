@@ -534,6 +534,7 @@ function renderSourcesOverview({healthStatus={},recovery={},workouts=[],stravaTo
   const recoveryCounts=recoveryStatusCounts(recovery);
   const stagedTotal=Object.keys(recovery||{}).length;
   const duplicateCount=recoveryCounts.duplicate_candidate||0;
+  const liveDuplicatePairs=typeof duplicateCandidatePairs==='function'?duplicateCandidatePairs():[];
   const reviewCount=recoveryCounts.review_later||0;
   const restoredStageCount=recoveryCounts.restore_candidate||0;
   const healthReady=healthCount>0||healthStatus?.last_sync;
@@ -561,6 +562,7 @@ function renderSourcesOverview({healthStatus={},recovery={},workouts=[],stravaTo
         <div class="stat-label">Recovered Strava</div>
         <span class="stat-value" style="font-size:28px">${recoveredCount}</span>
         <span class="stat-unit">saved</span>
+        <div class="text-xs c3 mt-8">Live possible duplicates: ${liveDuplicatePairs.length}</div>
         <div class="text-xs c3 mt-8">${stagedTotal} staged · ${duplicateCount} duplicate · ${reviewCount} review</div>
       </div>
       <div class="stat-card">

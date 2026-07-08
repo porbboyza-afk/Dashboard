@@ -373,6 +373,36 @@ def main():
             assert_true(checks, "interval_edit_preload_ok", interval_edit_rules["type"] == "interval" and interval_edit_rules["reps"] == "6" and interval_edit_rules["repDist"] == "0.4" and interval_edit_rules["repPace"] == "4:15", "Interval edit did not preload main set")
             assert_true(checks, "interval_edit_extras_ok", interval_edit_rules["restTime"] == "1.5" and interval_edit_rules["warmupDist"] == "1.2" and interval_edit_rules["cooldownDist"] == "1.6" and interval_edit_rules["intervalPanelVisible"] is True, "Interval edit did not preserve rest/warmup/cooldown")
 
+            duplicate_rules = page.evaluate(
+                """
+                () => {
+                  const oldWorkouts = window._workouts;
+                  const oldStravaWorkouts = window._stravaWorkouts;
+                  window._workouts = [
+                    {_key:'garmin-1', date:'2026-07-08', type:'run', dist:10.08, time:3120, source:'health_connect', sourceApp:'Garmin Connect'}
+                  ];
+                  window._stravaWorkouts = [
+                    {_key:'strava-1', date:'2026-07-08', type:'run', dist:10.01, time:3135, source:'strava'}
+                  ];
+                  const pairs = duplicateCandidatePairs();
+                  const all = getAllActivities();
+                  const primary = all.find(w => w.source === 'health_connect');
+                  window._workouts = oldWorkouts;
+                  window._stravaWorkouts = oldStravaWorkouts;
+                  return {
+                    pairCount: pairs.length,
+                    primarySource: pairs[0]?.primary?.source,
+                    duplicateSource: pairs[0]?.duplicate?.source,
+                    possibleCount: primary?._possibleDuplicates?.length || 0,
+                    possibleSource: primary?._possibleDuplicates?.[0]?.source || ''
+                  };
+                }
+                """
+            )
+            checks["duplicate_rules"] = duplicate_rules
+            assert_true(checks, "duplicate_candidate_detected", duplicate_rules["pairCount"] == 1 and duplicate_rules["primarySource"] == "health_connect" and duplicate_rules["duplicateSource"] == "strava", "Fuzzy duplicate candidate was not detected with Garmin primary")
+            assert_true(checks, "duplicate_candidate_attached", duplicate_rules["possibleCount"] == 1 and duplicate_rules["possibleSource"] == "strava", "Possible duplicate was not attached to primary activity")
+
             coach_plan_rules = page.evaluate(
                 """
                 () => {

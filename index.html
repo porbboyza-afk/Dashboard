@@ -6,15 +6,15 @@
 <title>MyDash</title>
 
 <!-- PWA -->
-<link rel="manifest" href="manifest.json?v=20260708-3">
+<link rel="manifest" href="manifest.json?v=20260708-4">
 <meta name="theme-color" content="#FF4D00">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyDash">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260708-3">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260708-3">
-<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260708-3">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=20260708-4">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260708-4">
+<link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260708-4">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -2962,6 +2962,42 @@ function activitySourcePriority(w){
   if(source==='strava')return 20;
   return 10;
 }
+function activitySourceKey(w){
+  return `${w?.source||'manual'}:${w?._key||w?.id||w?.stravaId||w?.date||''}`;
+}
+function isStravaLike(w){
+  return ['strava','strava_recovered','strava_archive'].includes(w?.source||'');
+}
+function isDuplicateCandidate(a,b){
+  if(!a||!b||a===b)return false;
+  if((a.date||'')!==(b.date||''))return false;
+  const sourceA=a.source||'manual',sourceB=b.source||'manual';
+  if(sourceA===sourceB)return false;
+  if(!(isStravaLike(a)||isStravaLike(b)))return false;
+  const distA=parseFloat(a.dist||0),distB=parseFloat(b.dist||0);
+  const timeA=parseFloat(a.time||0),timeB=parseFloat(b.time||0);
+  if(!distA||!distB||!timeA||!timeB)return false;
+  const distDiff=Math.abs(distA-distB);
+  const timeDiff=Math.abs(timeA-timeB);
+  const distPct=distDiff/Math.max(distA,distB);
+  const timePct=timeDiff/Math.max(timeA,timeB);
+  return distDiff<=0.25&&distPct<=0.04&&timeDiff<=180&&timePct<=0.06;
+}
+function duplicateCandidatePairs(activities=[...(window._workouts||[]),...(window._stravaWorkouts||[])]){
+  const rows=activities.filter(w=>w?.date).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const pairs=[];
+  for(let i=0;i<rows.length;i++){
+    for(let j=i+1;j<rows.length;j++){
+      if(rows[j].date!==rows[i].date)break;
+      if(isDuplicateCandidate(rows[i],rows[j])){
+        const primary=activitySourcePriority(rows[i])>=activitySourcePriority(rows[j])?rows[i]:rows[j];
+        const duplicate=primary===rows[i]?rows[j]:rows[i];
+        pairs.push({primary,duplicate,reason:'same-day distance/time near match',distDiff:+Math.abs((parseFloat(rows[i].dist)||0)-(parseFloat(rows[j].dist)||0)).toFixed(2),timeDiff:Math.round(Math.abs((parseFloat(rows[i].time)||0)-(parseFloat(rows[j].time)||0)))});
+      }
+    }
+  }
+  return pairs;
+}
 function getAllActivities(){
   const seen=new Map();
   [...(window._workouts||[]),...(window._stravaWorkouts||[])].forEach(w=>{
@@ -2973,7 +3009,15 @@ function getAllActivities(){
       old._dedupedWith=[...(old._dedupedWith||[]),w.source||'manual'];
     }
   });
-  return [...seen.values()].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const merged=[...seen.values()];
+  duplicateCandidatePairs().forEach(pair=>{
+    const primaryKey=activitySourceKey(pair.primary);
+    const target=merged.find(w=>activitySourceKey(w)===primaryKey||workoutFingerprint(w)===workoutFingerprint(pair.primary));
+    if(target){
+      target._possibleDuplicates=[...(target._possibleDuplicates||[]),{source:pair.duplicate.source||'manual',key:pair.duplicate._key||pair.duplicate.id||'',dist:pair.duplicate.dist,time:pair.duplicate.time,reason:pair.reason,distDiff:pair.distDiff,timeDiff:pair.timeDiff}];
+    }
+  });
+  return merged.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 }
 function resetWorkoutForm(){
   _editingWorkoutKey=null;
@@ -3107,6 +3151,7 @@ function showActivityDetail(wEncoded) {
         ${row('Feeling', w.feeling ? escapeHTML(w.feeling) : null)}
         ${row('Source', escapeHTML(source.title), source.color)}
         ${row('Merged duplicates', w._dedupedWith?.length ? escapeHTML([...new Set(w._dedupedWith)].join(', ')) : null, 'var(--orange)')}
+        ${row('Possible duplicate', w._possibleDuplicates?.length ? escapeHTML(w._possibleDuplicates.map(d=>`${d.source} ${d.dist}km/${Math.round(d.time||0)}min`).join(', ')) : null, 'var(--red)')}
         ${w.note ? `<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">หมายเหตุ</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${escapeHTML(w.note)}</div></div>` : ''}
       </div>
       ${w.interval ? `
