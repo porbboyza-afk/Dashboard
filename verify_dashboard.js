@@ -13,6 +13,7 @@ const shareCardScriptPath = path.join(root, 'js', 'share-card.js');
 const wellnessScriptPath = path.join(root, 'js', 'wellness.js');
 const statsScriptPath = path.join(root, 'js', 'stats.js');
 const coachScriptPath = path.join(root, 'js', 'coach.js');
+const postRunReviewScriptPath = path.join(root, 'js', 'post-run-review.js');
 const settingsScriptPath = path.join(root, 'js', 'settings.js');
 const backupExportScriptPath = path.join(root, 'js', 'backup-export.js');
 const racesScriptPath = path.join(root, 'js', 'races.js');
@@ -28,6 +29,7 @@ const extraScripts = [
   backupExportScriptPath,
   coachScriptPath,
   racesScriptPath,
+  postRunReviewScriptPath,
 ];
 
 function checkJsFile(filePath) {
@@ -87,6 +89,8 @@ ensureContains(indexPath, [
   '<script src="js/backup-export.js"></script>',
   '<script src="js/coach.js"></script>',
   '<script src="js/races.js"></script>',
+  '<script src="js/post-run-review.js"></script>',
+  'id="page-post-run-review"',
   'function mdToHtml(text)',
   'function duplicateCandidatePairs',
   'function isDuplicateCandidate',
@@ -161,6 +165,8 @@ ensureContains(coachScriptPath, [
   'function coachDailyDecision',
   'function coachApplyDailyDecisionToPlan',
   'function validateCoachPlan(plan',
+  'function dedupeCoachSessionsByDate',
+  'function coachApplyPromptDateGuard',
   'function buildFallbackTrainingPlan',
   'function coachSessionDetails',
   'function coachSessionDisplayDetails',
@@ -173,6 +179,15 @@ ensureContains(coachScriptPath, [
 ensureFunctionCount(coachScriptPath, 'renderCoachDailyDecision', 1);
 ensureFunctionCount(coachScriptPath, 'reviewPlanAI', 1);
 
+ensureContains(postRunReviewScriptPath, [
+  'function renderPostRunReview',
+  'function openPostRunReview',
+  'function buildPostRunFacts',
+  'function generatePostRunAIReview',
+  'intervalAnalysis',
+  'post_run_reviews',
+]);
+
 ensureContains(racesScriptPath, [
   'function coachPlanRaceEntry',
   'function mergeRaceEntries',
@@ -180,7 +195,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-health-20260708-4",
+  "mydash-v3-health-20260708-6",
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',
@@ -192,6 +207,7 @@ ensureContains(swPath, [
   './js/backup-export.js',
   './js/coach.js',
   './js/races.js',
+  './js/post-run-review.js',
 ]);
 
 console.log(`Syntax OK: ${inlineCount} inline scripts, ${extraScripts.length} external scripts, manifest, service worker, Apps Script`);

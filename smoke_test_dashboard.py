@@ -104,6 +104,12 @@ def main():
                 "document.getElementById('page-fitness-stats')?.classList.contains('active')"
             )
 
+            page.evaluate("showPage('post-run-review')")
+            page.wait_for_timeout(300)
+            results["checks"]["post_run_review_active"] = page.evaluate(
+                "document.getElementById('page-post-run-review')?.classList.contains('active')"
+            )
+
             page.evaluate("showPage('coach')")
             page.wait_for_timeout(300)
             results["checks"]["coach_active"] = page.evaluate(
@@ -141,6 +147,7 @@ def main():
         "strava_active",
         "wellness_active",
         "fitness_stats_active",
+        "post_run_review_active",
         "coach_active",
         "settings_active",
     ]

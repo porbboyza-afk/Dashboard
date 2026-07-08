@@ -339,6 +339,35 @@ function coachSessionDisplayDescription(session,index=0){
   const d=coachSessionDisplayDetails(session,index);
   return hasThaiText(session.description)?session.description:(d.targetDescription||coachSessionTypeThai(session.type));
 }
+function coachSessionDateScore(session,index=0){
+  const priorityScore={key:300,normal:200,optional:100}[session.priority]||0;
+  const typeScore={Long:90,Interval:80,Tempo:70,Easy:50,Recovery:40,Rest:10}[session.type]||20;
+  const distScore=Math.min(50,Math.round((parseFloat(session.targetDist)||0)*2));
+  return priorityScore+typeScore+distScore-(index*.001);
+}
+function dedupeCoachSessionsByDate(sessions){
+  const byDate=new Map();
+  sessions.forEach((session,index)=>{
+    const current=byDate.get(session.date);
+    if(!current||coachSessionDateScore(session,index)>coachSessionDateScore(current.session,current.index)){
+      if(current){
+        session.notes=[session.notes,'Same-day duplicate removed by planner guard; MyDash keeps one workout per date.'].filter(Boolean).join(' | ');
+      }
+      byDate.set(session.date,{session,index});
+    }else{
+      current.session.notes=[current.session.notes,'Same-day duplicate removed by planner guard; MyDash keeps one workout per date.'].filter(Boolean).join(' | ');
+    }
+  });
+  return [...byDate.values()].map(row=>row.session).sort((a,b)=>a.date.localeCompare(b.date));
+}
+function coachApplyPromptDateGuard(prompt,days){
+  const rule=[
+    '- Each calendar date may appear at most once in sessions. Never schedule two workouts on the same YYYY-MM-DD.',
+    `- Keep weekly non-rest sessions at or below ${parseInt(days)||4}. Do not stack an easy run and quality workout on the same day.`
+  ].join('\n');
+  return String(prompt).replace('- No hard sessions on consecutive days.', `${rule}\n- No hard sessions on consecutive days.`)
+    .replace('but never put a workout on Race/GoalDate.', 'with one session maximum per date, but never put a workout on Race/GoalDate.');
+}
 function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile}){
   if(!plan||typeof plan!=='object')throw new Error('Plan JSON is not an object');
   const sessions=Array.isArray(plan.sessions)?plan.sessions:[];
@@ -369,9 +398,10 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
         targetDescription:String(details.targetDescription||'').slice(0,180)
       }
     };
-  }).filter(session=>!(raceDate&&session.date===raceDate)).sort((a,b)=>a.date.localeCompare(b.date));
-  for(let i=1;i<normalized.length;i++){
-    const prev=normalized[i-1],cur=normalized[i];
+  }).filter(session=>!(raceDate&&session.date===raceDate));
+  const uniqueSessions=dedupeCoachSessionsByDate(normalized);
+  for(let i=1;i<uniqueSessions.length;i++){
+    const prev=uniqueSessions[i-1],cur=uniqueSessions[i];
     if(isHardSession(prev.type)&&isHardSession(cur.type)){
       const days=(new Date(cur.date+'T12:00:00')-new Date(prev.date+'T12:00:00'))/86400000;
       if(days<=1){cur.type='Easy';cur.notes=[cur.notes,'ลดเป็นวิ่งเบาอัตโนมัติเพื่อเลี่ยงซ้อมหนักติดกัน'].filter(Boolean).join(' · ');cur.details=coachSessionDetails(cur.type,cur.targetDist,goalProfile,Math.floor(i/4));cur.description=cur.details.targetDescription;}
@@ -382,7 +412,7 @@ function validateCoachPlan(plan,{goal,startDate,endDate,totalWeeks,goalProfile})
     startDate:plan.startDate||startDate,
     endDate:plan.endDate||endDate,
     totalWeeks:plan.totalWeeks||totalWeeks,
-    sessions:normalized,
+    sessions:uniqueSessions,
     goalProfile
   };
 }
@@ -452,7 +482,7 @@ async function generateTrainingPlan(){
     try{
       const data=await callNewsChat([
         {role:'system',content:`You are a conservative running coach for this specific goal: ${goal}. Return JSON only. Prioritize the selected race distance, target time, injury prevention, and deterministic safety rules. User-facing plan text must be Thai.`},
-        {role:'user',content:prompt}
+        {role:'user',content:coachApplyPromptDateGuard(prompt,days)}
       ],{useSearch:false,temperature:.25,maxTokens:4096});
       const rawText=data?.choices?.[0]?.message?.content||'';
       if(!rawText)throw new Error(data?.error?.message||'AI returned no content');

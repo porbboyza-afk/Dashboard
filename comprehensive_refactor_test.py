@@ -37,6 +37,7 @@ EXPECTED_SCRIPT_ORDER = [
     "js/backup-export.js",
     "js/coach.js",
     "js/races.js",
+    "js/post-run-review.js",
 ]
 
 EXPECTED_GLOBALS = [
@@ -72,6 +73,9 @@ EXPECTED_GLOBALS = [
     "updateCoachEndDate",
     "renderCoachTracking",
     "switchCoachTab",
+    "renderPostRunReview",
+    "openPostRunReview",
+    "buildPostRunFacts",
     "mergeRaceEntries",
     "renderRaceList",
 ]
@@ -81,6 +85,7 @@ PAGES = [
     "fitness-log",
     "fitness-stats",
     "coach",
+    "post-run-review",
     "strava",
     "news",
     "wellness",
@@ -185,7 +190,8 @@ def main():
                 """
                 () => {
                   const workouts = [
-                    {date:'2026-07-07', type:'run', dist:8.2, time:42, hr:156, cad:172, avgPace:5.12, rpe:6, source:'health_connect', sourceApp:'com.garmin.android.apps.connectmobile', purpose:'tempo'},
+                    {_key:'hc-run-1', date:'2026-07-07', type:'run', dist:8.2, time:42, hr:156, cad:172, avgPace:5.12, rpe:6, source:'health_connect', sourceApp:'com.garmin.android.apps.connectmobile', purpose:'tempo'},
+                    {_key:'interval-1', date:'2026-07-08', type:'interval', dist:5.8, time:36, hr:164, cad:176, avgPace:0, rpe:8, source:'manual', purpose:'interval', pain:1, interval:{reps:6, repDist:0.4, repPace:'4:15', repHR:170, restTime:1.5, restHR:124, warmup:{dist:1.2,time:8,pace:'6:40'}, cooldown:{dist:1.6,time:11,pace:'6:50'}}},
                     {date:'2026-07-05', type:'run', dist:12.0, time:68, hr:148, cad:168, avgPace:5.67, rpe:5, source:'strava_recovered'},
                     {date:'2026-07-03', type:'bike', dist:22.0, time:55, hr:132, cad:80, avgPace:2.5, rpe:3, source:'manual'}
                   ];
@@ -202,17 +208,20 @@ def main():
                     adjustments:[],
                     goalProfile:{distance:'10K', targetTime:'47:59', targetPace:4.798, unavailableRaw:'', unavailable:[]},
                     sessions:[
-                      {date:'2026-07-07', type:'Interval', targetDist:6, targetPace:'4:35', targetHR:165, description:'Fast reps', notes:'Fallback structured plan', priority:'key'},
+                      {date:'2026-07-07', type:'Interval', targetDist:6, targetPace:'4:35', targetHR:165, description:'Fast reps', notes:'Fallback structured plan', priority:'key', details:{mainSet:'6 x 400m @ 4:15/km', warmup:'easy', cooldown:'easy'}},
+                      {date:'2026-07-08', type:'Interval', targetDist:5.8, targetPace:'4:15', targetHR:170, description:'Interval reps', notes:'Structured interval', priority:'key', details:{mainSet:'6 x 400m @ 4:15/km, rest 90s', warmup:'easy', cooldown:'easy'}},
                       {date:'2026-07-09', type:'Easy', targetDist:5, targetPace:'', targetHR:145, description:'Easy run', notes:'', priority:'normal'}
                     ]
                   };
                   window._workouts = workouts;
                   window._wellness = wellness;
                   window._coachPlan = coachPlan;
+                  window._postRunReviews = [];
                   if (window.AppState) {
                     AppState.set('workouts', workouts);
                     AppState.set('wellness', wellness);
                     AppState.set('coachPlan', coachPlan);
+                    AppState.set('postRunReviews', []);
                   }
                   localStorage.setItem('mydash-sync-queue', JSON.stringify([{action:'upsert', type:'ping', data:{date:'2026-07-07'}}]));
                 }
@@ -267,6 +276,8 @@ def main():
                   switchCoachTab('race');
                   window._races = mergeRaceEntries([], window._coachPlan);
                   renderRaceList();
+                  openPostRunReview('interval-1');
+                  renderPostRunReview();
                   showShareStatsModal();
                   renderShareCanvas();
                   closeShareStats();
@@ -285,6 +296,8 @@ def main():
                   wellnessCards: document.querySelectorAll('#wellness-list .workout-row').length,
                   statsCanvasExists: !!document.querySelector('#hrzone-chart, #pace-trend-chart, canvas'),
                   coachPlanDays: document.querySelectorAll('.plan-day').length,
+                  postRunRows: document.querySelectorAll('#postrun-workout-list .postrun-activity-row').length,
+                  postRunBody: !!document.querySelector('#postrun-review-body .postrun-hero'),
                   raceCards: document.querySelectorAll('#race-list-container .card').length,
                   raceBannerFullRow: (() => {
                     const banner = document.querySelector('#dash-race-banner');
@@ -373,6 +386,53 @@ def main():
             assert_true(checks, "interval_edit_preload_ok", interval_edit_rules["type"] == "interval" and interval_edit_rules["reps"] == "6" and interval_edit_rules["repDist"] == "0.4" and interval_edit_rules["repPace"] == "4:15", "Interval edit did not preload main set")
             assert_true(checks, "interval_edit_extras_ok", interval_edit_rules["restTime"] == "1.5" and interval_edit_rules["warmupDist"] == "1.2" and interval_edit_rules["cooldownDist"] == "1.6" and interval_edit_rules["intervalPanelVisible"] is True, "Interval edit did not preserve rest/warmup/cooldown")
 
+            post_run_rules = page.evaluate(
+                """
+                () => {
+                  const workout = {
+                    _key:'postrun-interval-1',
+                    date:'2026-07-08',
+                    type:'interval',
+                    dist:5.8,
+                    time:36,
+                    hr:164,
+                    rpe:8,
+                    pain:1,
+                    purpose:'interval',
+                    interval:{reps:6, repDist:0.4, repPace:'4:15', restTime:1.5}
+                  };
+                  window._workouts = [workout];
+                  window._coachPlan = {
+                    goal:'10K sub 48',
+                    goalProfile:{distance:'10K', targetTime:'47:59', targetPace:4.798, unavailableRaw:'', unavailable:[]},
+                    sessions:[{date:'2026-07-08', type:'Interval', targetDist:5.8, targetPace:'4:15', targetHR:170, details:{mainSet:'6 x 400m @ 4:15/km'}}]
+                  };
+                  AppState.set('workouts', [workout]);
+                  AppState.set('coachPlan', window._coachPlan);
+                  AppState.set('wellness', [{date:'2026-07-08', sleepHours:7.2, restingHR:50, hrv:60, soreness:1}]);
+                  const facts = buildPostRunFacts(workout);
+                  openPostRunReview('postrun-interval-1');
+                  return {
+                    key: postRunWorkoutKey(workout),
+                    matchScore: facts.planMatch.score,
+                    targetType: facts.planMatch.session?.type,
+                    distDelta: facts.targetComparison.distDeltaPct,
+                    paceDelta: facts.targetComparison.paceDelta?.seconds,
+                    intervalReps: facts.intervalAnalysis?.reps,
+                    intervalPlan: facts.intervalAnalysis?.plannedMainSet || '',
+                    highRpeFlag: facts.riskFlags.includes('high_rpe'),
+                    pageActive: document.getElementById('page-post-run-review')?.classList.contains('active'),
+                    bodyRendered: !!document.querySelector('#postrun-review-body .postrun-hero')
+                  };
+                }
+                """
+            )
+            checks["post_run_rules"] = post_run_rules
+            assert_true(checks, "post_run_match_ok", post_run_rules["matchScore"] == 100 and post_run_rules["targetType"] == "Interval", "Post-run review did not match the planned interval session")
+            assert_true(checks, "post_run_comparison_ok", post_run_rules["distDelta"] == 0 and post_run_rules["paceDelta"] == 0, "Post-run target comparison is wrong")
+            assert_true(checks, "post_run_interval_schema_ok", post_run_rules["intervalReps"] == 6 and "400m" in post_run_rules["intervalPlan"], "Post-run intervalAnalysis schema is missing planned/actual interval data")
+            assert_true(checks, "post_run_render_ok", post_run_rules["pageActive"] is True and post_run_rules["bodyRendered"] is True, "Post-run review page did not render selected workout")
+
             duplicate_rules = page.evaluate(
                 """
                 () => {
@@ -430,10 +490,26 @@ def main():
                     sessions:[{date:'2026-07-10', type:'Interval', targetDist:8, targetPace:'4:30'}]
                   };
                   const downgraded = coachApplyDailyDecisionToPlan(hardPlan, {date:'2026-07-10', action:'downgrade', status:'yellow', readinessScore:58, reasons:['test']});
+                  const duplicateDatePlan = validateCoachPlan({
+                    goal:'10K sub 48',
+                    startDate:'2026-07-08',
+                    endDate:'2026-08-02',
+                    totalWeeks:4,
+                    sessions:[
+                      {date:'2026-07-21', type:'Easy', targetDist:4.4, priority:'normal'},
+                      {date:'2026-07-21', type:'Tempo', targetDist:5.5, priority:'key'},
+                      {date:'2026-07-23', type:'Easy', targetDist:5, priority:'normal'}
+                    ]
+                  }, {goal:'10K sub 48', startDate:'2026-07-08', endDate:'2026-08-02', totalWeeks:4, goalProfile});
+                  const duplicateDateRows = duplicateDatePlan.sessions.filter(s => s.date === '2026-07-21');
+                  const guardedPrompt = coachApplyPromptDateGuard('Rules\\n- No hard sessions on consecutive days.\\nEnd but never put a workout on Race/GoalDate.', '4');
                   return {
                     sleepFull: formatSleepHours(4.9),
                     sleepCompact: formatSleepHours(4.9, {compact:true}),
                     hasRaceDayWorkout: plan.sessions.some(s => s.date === '2026-08-02'),
+                    duplicateDateCount: duplicateDateRows.length,
+                    duplicateDateKeptType: duplicateDateRows[0]?.type,
+                    promptHasOnePerDateRule: guardedPrompt.includes('Never schedule two workouts on the same YYYY-MM-DD') && guardedPrompt.includes('one session maximum per date'),
                     longRunDayOk: longDays.length > 0 && longDays.every(day => day === 0),
                     unavailableAction: moveDecision.action,
                     movedOffUnavailable: moved.plan.sessions[0].date !== '2026-07-09',
@@ -452,6 +528,8 @@ def main():
             assert_true(checks, "sleep_format_full_ok", coach_plan_rules["sleepFull"] == "4 ชม. 54 นาที", "Sleep full format is wrong")
             assert_true(checks, "sleep_format_compact_ok", coach_plan_rules["sleepCompact"] == "4ชม 54น", "Sleep compact format is wrong")
             assert_true(checks, "no_race_day_workout", coach_plan_rules["hasRaceDayWorkout"] is False, "Plan contains a workout on race day")
+            assert_true(checks, "coach_no_duplicate_dates", coach_plan_rules["duplicateDateCount"] == 1 and coach_plan_rules["duplicateDateKeptType"] == "Tempo", "Coach plan did not collapse same-date duplicate sessions")
+            assert_true(checks, "coach_prompt_date_guard", coach_plan_rules["promptHasOnePerDateRule"] is True, "Coach AI prompt is missing one-session-per-date guard")
             assert_true(checks, "long_run_day_ok", coach_plan_rules["longRunDayOk"] is True, "Long run day preference was not respected")
             assert_true(checks, "daily_move_action_ok", coach_plan_rules["unavailableAction"] == "move", "Unavailable day did not trigger move")
             assert_true(checks, "daily_move_saved_ok", coach_plan_rules["movedOffUnavailable"] is True and coach_plan_rules["movedBeforeRace"] is True and coach_plan_rules["movedDailyDecisionSaved"] is True, "Daily move was not applied/saved safely")

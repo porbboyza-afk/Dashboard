@@ -2,6 +2,115 @@
 
 Last updated: 2026-07-08 Asia/Bangkok
 
+## 2026-07-08 Post-Run Review Implementation
+
+Context:
+
+- User asked whether the handoff recommendation referred to:
+  - duplicate review/resolve UI, or
+  - Post-Run Review with interval schema.
+- Confirmed both were in the handoff.
+- This session implemented the Post-Run Review path. Duplicate review/resolve UI remains separate future work.
+
+Code changes:
+
+- Added `js/post-run-review.js`.
+  - `openPostRunReview(key)` opens the review page for a selected workout.
+  - `renderPostRunReview()` renders recent activities, plan match, plan-vs-actual facts, recovery context, risk flags, interval detail, and AI output.
+  - `buildPostRunFacts(workout)` calculates structured facts before AI runs:
+    - matched coach plan session,
+    - distance delta,
+    - pace delta,
+    - HR delta,
+    - session load,
+    - wellness/readiness context,
+    - subjective RPE/pain/feeling/note,
+    - `intervalAnalysis: null | {...}`.
+  - Interval workouts use `interval.repPace` for pace comparison when aggregate `avgPace` is missing.
+  - `generatePostRunAIReview(key)` sends only structured facts to the AI and saves the result under:
+    - `users/{uid}/post_run_reviews/{workoutKey}`
+  - AI is explicitly review-only. It does not change `coach_plan` automatically.
+- `index.html`
+  - Added desktop navigation item: `Post-Run Review`.
+  - Added page `page-post-run-review`.
+  - Added responsive CSS for the review layout.
+  - Added review buttons in Recent Activities and Activity Detail.
+  - Added AppState/Firebase support for `postRunReviews`.
+- `js/ui-core.js`
+  - `showPage('post-run-review')` now renders the review page.
+- `manifest.json` and `sw.js`
+  - PWA cache bumped to `mydash-v3-health-20260708-6`.
+  - Manifest id bumped to `./?v=16`.
+- Tests updated:
+  - `verify_dashboard.js` checks the new script/page/helpers.
+  - `smoke_test_dashboard.py` opens the Post-Run Review page.
+  - `comprehensive_refactor_test.py` verifies:
+    - page activation,
+    - review list/body render,
+    - coach plan match,
+    - plan-vs-actual comparison,
+    - interval schema and planned/actual interval data.
+
+Verification passed:
+
+- `node verify_dashboard.js`
+- `node --check js\post-run-review.js`
+- `node --check js\ui-core.js`
+- `python smoke_test_dashboard.py`
+- `python comprehensive_refactor_test.py`
+- `git diff --check`
+
+Remaining related work:
+
+- Build UI review/resolve duplicate candidates for Health Connect/Garmin vs Strava imports.
+- Add an explicit "Apply suggestion" flow later if Post-Run Review should propose coach plan adjustments. Do not let AI mutate the plan automatically.
+
+## 2026-07-08 Coach Same-Date Session Guard
+
+Context:
+
+- User showed the AI Coach plan rendering two workouts on the same date (`Tuesday 21 July`): one easy run and one tempo run.
+- The correct behavior is one planned training session per calendar date. MyDash should not stack an easy run and a quality session on the same day unless a future feature explicitly models two-a-day training.
+
+Code changes:
+
+- `js/coach.js`
+  - Added `dedupeCoachSessionsByDate()` and `coachSessionDateScore()`.
+  - `validateCoachPlan()` now collapses same-date sessions after race-day filtering.
+  - If duplicates occur, MyDash keeps the higher-value session by priority/type/distance, e.g. `Tempo` over `Easy` for the user's screenshot case.
+  - Added `coachApplyPromptDateGuard()` so the AI prompt explicitly says:
+    - each `YYYY-MM-DD` can appear at most once,
+    - weekly non-rest session count must stay at or below the selected training days/week,
+    - do not stack an easy run and quality workout on the same day.
+- `comprehensive_refactor_test.py`
+  - Added a browser test matching the screenshot scenario:
+    - `2026-07-21 Easy 4.4 km`
+    - `2026-07-21 Tempo 5.5 km`
+    - expected result: one row remains for `2026-07-21`, keeping `Tempo`.
+  - Added a prompt guard assertion.
+- `verify_dashboard.js`
+  - Added static guards for the new coach helper functions.
+- PWA cache bumped to:
+  - `mydash-v3-health-20260708-5`
+  - manifest id `./?v=15`
+
+Verification passed:
+
+- `node verify_dashboard.js`
+- `node --check js\coach.js`
+- `python smoke_test_dashboard.py`
+- `python comprehensive_refactor_test.py`
+
+Post-run review status check:
+
+- No full Post-Run Review page exists yet.
+- Existing related features are only:
+  - Activity Log create/edit,
+  - AI Coach progress review via `reviewPlanAI()`,
+  - Strava detail/session analysis,
+  - Statistics weekly/monthly AI analysis.
+- The earlier planned product feature remains: build a dedicated Post-Run Review flow with interval-aware schema, including `intervalAnalysis: null | {...}`.
+
 ## 2026-07-08 Session Work Log - Strava Duplicate Guard Closeout
 
 Purpose:

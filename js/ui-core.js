@@ -65,6 +65,7 @@ function showPage(id) {
   document.querySelector(`.nav-item[data-page="${id}"]`)?.classList.add('active');
   if (id === 'today') renderTodayStats();
   if (id === 'fitness-log') document.getElementById('f-date').value = toLocalDateStr();
+  if (id === 'post-run-review' && typeof renderPostRunReview === 'function') renderPostRunReview();
   if (id === 'fitness-stats') { initStatsNav(); renderCurrentStatsView(); }
   if (id === 'wellness') setTimeout(renderWellness, 50);
   if (id === 'news') {
