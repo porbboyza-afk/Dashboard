@@ -2,6 +2,88 @@
 
 Last updated: 2026-07-08 Asia/Bangkok
 
+## 2026-07-08 Session Work Log - Strava Duplicate Guard Closeout
+
+Purpose:
+
+- Prepare MyDash for a possible one-month Strava paid recovery/import later.
+- Main risk discussed with the user: the same run can exist twice after import, one from Garmin/Health Connect and one from Strava, with slightly different distance/time values.
+- Requirement: detect and surface possible duplicates before any large Strava import, without deleting raw data.
+
+What happened:
+
+- Started from commit `0088608 Clean coach adaptive duplicate`.
+- Confirmed repo work happened in `C:\Users\pucca\Dashboard-GitHub`.
+- Read `AI_HANDOFF_LOG.md` before changing behavior.
+- Existing strategic direction remains:
+  - Strava is legacy/inactive for normal sync.
+  - Garmin Connect -> Health Connect -> MyDash companion -> Firebase -> Web dashboard is the preferred path.
+  - Strava may still be used later as a short-term paid historical archive recovery source.
+
+Implementation details:
+
+- `index.html`
+  - Added `activitySourceKey(w)` to create a stable source/key identity for duplicate review.
+  - Added `isStravaLike(w)` for `strava`, `strava_recovered`, and `strava_archive`.
+  - Added `isDuplicateCandidate(a,b)` with fuzzy rules:
+    - same date,
+    - different source,
+    - at least one side is Strava-like,
+    - distance difference <= `0.25 km` and <= `4%`,
+    - time difference <= `180 seconds` and <= `6%`.
+  - Added `duplicateCandidatePairs(activities)` to find same-day near matches.
+  - Updated `getAllActivities()` to attach `_possibleDuplicates` to the primary row.
+  - Kept Garmin/Health Connect primary by reusing existing `activitySourcePriority()`.
+  - Added `Possible duplicate` row in the activity detail view.
+- `js/sources-strava.js`
+  - Added `liveDuplicatePairs`.
+  - Displayed `Live possible duplicates: N` under the Recovered Strava card.
+  - Important encoding note: this file contains Thai/non-ASCII text. Avoid PowerShell `Set-Content` or broad string rewrites. Use `apply_patch` with narrow ASCII context, or restore from Git before retrying if encoding looks wrong.
+- `comprehensive_refactor_test.py`
+  - Added browser test data with one Health Connect/Garmin run and one Strava run on the same date.
+  - Verified exactly one duplicate candidate is detected.
+  - Verified Health Connect remains primary.
+  - Verified Strava is attached under `_possibleDuplicates`.
+  - Restored `window._workouts` and `window._stravaWorkouts` after the duplicate test so later race/coach tests are not polluted.
+- `verify_dashboard.js`
+  - Added required snippets for `duplicateCandidatePairs` and `isDuplicateCandidate`.
+  - Updated expected cache version.
+- `manifest.json` and `sw.js`
+  - Bumped PWA cache/version markers to `mydash-v3-health-20260708-4` and manifest id `./?v=14`.
+
+Verification run and results:
+
+- `node verify_dashboard.js` passed.
+- `node --check js\sources-strava.js` passed.
+- `git diff --check` passed.
+- `python smoke_test_dashboard.py` passed with no page errors, console errors, or request failures.
+- `python comprehensive_refactor_test.py` passed, including:
+  - duplicate candidate detection,
+  - interval edit preservation,
+  - wellness manual edit preservation,
+  - coach/race readiness checks.
+
+Commits pushed:
+
+- `d12d869 Prepare Strava duplicate guard`
+  - Main code/test/cache/log implementation.
+- `3347d70 Log Strava duplicate guard outcome`
+  - Added final outcome summary to this handoff log.
+
+Current state after closeout:
+
+- Repo was clean after `3347d70` was pushed.
+- No Firebase data migration was made.
+- No raw Strava, Health Connect, workout, or cache data was deleted.
+- Duplicate guard is review-only. It surfaces candidate rows for human review.
+- If Strava is paid for one month later, import/recovery should run first, then review `Possible duplicate` candidates before marking anything ignored/archive-only.
+
+Recommended next AI action:
+
+- Before adding more features, read this log and check `git status --short`.
+- If continuing Strava recovery, build a review/resolve UI for `_possibleDuplicates` instead of auto-deleting.
+- If continuing the training feature work, next planned product feature is still Post-Run Review with interval-aware schema from the first commit.
+
 ## 2026-07-08 Strava Duplicate Guard Preparation
 
 Context:
