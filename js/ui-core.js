@@ -63,6 +63,23 @@ function showPage(id) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + id)?.classList.add('active');
   document.querySelector(`.nav-item[data-page="${id}"]`)?.classList.add('active');
+  const pageTitles = {
+    today: 'Dashboard',
+    'fitness-log': 'Activity Log',
+    'post-run-review': 'Post-Run Review',
+    'fitness-stats': 'Training Insights',
+    coach: 'Coach',
+    wellness: 'Wellness',
+    strava: 'Data Sources',
+    news: 'AI Q&A',
+    settings: 'Settings'
+  };
+  const workspaceTitle = document.getElementById('workspace-title');
+  if (workspaceTitle) workspaceTitle.textContent = pageTitles[id] || 'MyDash';
+  const workspaceStatus = document.getElementById('workspace-status-label');
+  if (workspaceStatus) workspaceStatus.textContent = id === 'strava' ? 'Source status' : 'Live data';
+  const main = document.querySelector('.main');
+  if (main) main.scrollTo({ top: 0, behavior: 'auto' });
   if (id === 'today') renderTodayStats();
   if (id === 'fitness-log') document.getElementById('f-date').value = toLocalDateStr();
   if (id === 'post-run-review' && typeof renderPostRunReview === 'function') renderPostRunReview();

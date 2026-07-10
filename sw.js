@@ -1,9 +1,9 @@
-const CACHE_NAME = 'mydash-v3-training-hub-20260711-1';
+const CACHE_NAME = 'mydash-v3-full-app-redesign-20260711-1';
 const APP_SHELL = [
   './',
   './index.html',
-  './training-hub-ui.css',
-  './manifest.json?v=20260710-3',
+  './app-redesign.css?v=20260711-1',
+  './manifest.json?v=20260711-2',
   './icon-192.png?v=20260710-3',
   './icon-512.png?v=20260710-3',
   './js/date-utils.js',

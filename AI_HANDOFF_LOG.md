@@ -1,6 +1,38 @@
 # AI Handoff Log
 
-Last updated: 2026-07-10 Asia/Bangkok
+Last updated: 2026-07-11 Asia/Bangkok
+
+## 2026-07-11 Local-Only Full-App UI Redesign
+
+Status:
+
+- Implemented and verified locally. Do not push until the user has reviewed this full redesign as a whole.
+- This replaces the short-lived `training-hub-ui.css` experiment, which caused desktop card/layout regressions. That file is removed and must not be restored.
+
+Design system changes:
+
+- Added `app-redesign.css` as the single layout layer for the entire app, preserving existing page markup and JavaScript behavior.
+- Rebuilt the app shell around a performance-workspace pattern:
+  - dark, structured desktop navigation rail;
+  - persistent workspace top bar with dynamic page title and live/source state;
+  - neutral performance palette with coral action and green readiness signals;
+  - compact 8 px surfaces, consistent forms, tabs, tables, plan rows, recovery cards, and chart containers.
+- Updated all pages through shared rules: Dashboard, Activity Log, Post-Run Review, Statistics, Coach, Wellness, Sources, AI Q&A, and Settings.
+- Responsive grid rules now collapse predictably at desktop/tablet/mobile widths. The tested desktop viewport had no horizontal overflow.
+- PWA cache changed to `mydash-v3-full-app-redesign-20260711-1`; manifest id is `./?v=21` and its theme is aligned to the new UI.
+
+Behavior safety:
+
+- No Firebase path, workout, wellness, Coach V2, review matching, or data-source behavior was changed.
+- `showPage()` now updates the workspace header and returns the main scroll region to the top when switching pages.
+
+Verification passed:
+
+- `node verify_dashboard.js`
+- `node coach_v2_test.js`
+- `python smoke_test_dashboard.py`
+- `python comprehensive_refactor_test.py`
+- `git diff --check`
 
 ## 2026-07-10 Local-Only Coach Progression Upgrade
 

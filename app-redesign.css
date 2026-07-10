@@ -1,0 +1,184 @@
+/* MyDash full-app performance workspace. This layer intentionally owns layout only. */
+:root {
+  --bg: #f3f6f5;
+  --bg2: #e7edeb;
+  --surface: #ffffff;
+  --surface2: #f8faf9;
+  --text: #17211e;
+  --text2: #52615c;
+  --text3: #78857f;
+  --border: #dce5e1;
+  --border2: #bdcbc5;
+  --accent: #e65132;
+  --accent-light: #fff0eb;
+  --accent-mid: #ffd9ce;
+  --green: #097968;
+  --green-light: #e4f5ef;
+  --red: #c93b32;
+  --red-light: #ffebe8;
+  --orange: #d97706;
+  --purple: #7c3f9f;
+  --teal: #007e80;
+  --sidebar-w: 264px;
+  --r-sm: 6px;
+  --r: 8px;
+  --r-lg: 8px;
+  --r-xl: 10px;
+  --shadow-sm: none;
+  --shadow: 0 8px 28px rgba(24, 48, 41, .08);
+  --shadow-lg: 0 18px 50px rgba(24, 48, 41, .12);
+  --shadow-card: none;
+}
+
+[data-theme="dark"] {
+  --bg: #151b19;
+  --bg2: #202a27;
+  --surface: #1b2421;
+  --surface2: #222d29;
+  --text: #f0f6f2;
+  --text2: #bdc9c3;
+  --text3: #8e9d96;
+  --border: #33423c;
+  --border2: #4a5b54;
+  --accent-light: #3a251f;
+  --accent-mid: #5c3028;
+  --green-light: #17372f;
+  --red-light: #3a2423;
+}
+
+body { background: var(--bg); }
+.sidebar {
+  width: var(--sidebar-w);
+  background: #17211e;
+  border: 0;
+  box-shadow: 10px 0 30px rgba(17, 35, 29, .08);
+}
+[data-theme="dark"] .sidebar { background: #111715; }
+.sidebar-top { padding: 26px 14px 18px; }
+.logo-row { padding: 0 10px; margin-bottom: 34px; gap: 11px; }
+.logo-icon { width: 38px; height: 38px; border-radius: 8px; background: var(--accent); box-shadow: none; }
+.logo-text { color: #fff; font-family: var(--font-body); font-size: 19px; font-weight: 800; letter-spacing: .2px; }
+.logo-ver { color: #94a59e; font-size: 8px; letter-spacing: 1.3px; margin-top: 3px; }
+.nav-section-label { color: #778980; padding: 16px 12px 7px; margin: 0; font-size: 8px; letter-spacing: 1.5px; }
+.nav-item { color: #b6c4bd; padding: 9px 12px; margin: 2px 0; border-left: 0; border-radius: 6px; font-size: 13px; }
+.nav-item:hover { color: #fff; background: #26322e; }
+.nav-item.active { color: #fff; background: #2b3a34; border-left: 0; box-shadow: inset 3px 0 0 var(--accent); }
+.nav-icon { width: 29px; height: 29px; background: #26332e; border-radius: 6px; font-size: 14px; }
+.nav-item.active .nav-icon { background: var(--accent); }
+.sidebar-bottom { border-top: 1px solid #2d3a35; padding: 13px; }
+.user-row { border-radius: 6px; padding: 8px; }
+.user-row:hover { background: #26322e; }
+.user-name { color: #fff; }
+.user-status { color: #8fd2bd; }
+.user-status::before { background: #4aca93; }
+.btn-logout { color: #9cafA6; }
+
+.main { margin-left: var(--sidebar-w); width: calc(100vw - var(--sidebar-w)); max-width: calc(100vw - var(--sidebar-w)); padding: 0 clamp(24px, 3vw, 52px) 44px; }
+.workspace-topbar { height: 78px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); margin-bottom: 30px; }
+.workspace-eyebrow { color: var(--text3); font: 700 9px var(--font-mono); letter-spacing: 1.4px; margin-bottom: 5px; }
+.workspace-title { color: var(--text); font-size: 21px; font-weight: 750; line-height: 1; }
+.workspace-status { display: inline-flex; align-items: center; gap: 7px; color: var(--text2); font: 600 10px var(--font-mono); text-transform: uppercase; letter-spacing: .7px; }
+.workspace-status-dot { width: 8px; height: 8px; border-radius: 50%; background: #31b982; box-shadow: 0 0 0 4px rgba(49,185,130,.12); }
+.page { max-width: 1540px; margin: 0 auto; padding-bottom: 20px; }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+.page-title { font-family: var(--font-body); font-size: 30px; font-weight: 760; line-height: 1.1; letter-spacing: 0; text-transform: none; margin: 0; }
+.page-subtitle { max-width: 700px; font: 500 12px/1.55 var(--font-body); color: var(--text2); letter-spacing: 0; }
+#page-today .dashboard-hero { margin-bottom: 24px; align-items: flex-end; }
+.dashboard-hero-title, .dashboard-hero-name { font-family: var(--font-body); font-size: clamp(30px, 3vw, 46px); font-weight: 750; letter-spacing: 0; line-height: 1; text-transform: none; }
+.dashboard-hero [style*="font-family:var(--font-display)"] { font-family: var(--font-body) !important; font-weight: 760; letter-spacing: 0 !important; }
+.dashboard-hero-name { color: var(--accent); }
+.dashboard-hero-sub { color: var(--text2); font-size: 13px; }
+.health-focus-strip { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--green); border-radius: 8px; padding: 16px 18px; box-shadow: none; }
+.health-focus-main { font-size: 15px; }
+.health-focus-pill { background: var(--surface2); border-color: var(--border); border-radius: 5px; font: 600 10px var(--font-mono); }
+.dashboard-hero-kpis { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); padding: 20px; }
+.card, .stat-card { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); box-shadow: none; }
+.card { padding: 20px; }
+.card:hover { box-shadow: 0 7px 18px rgba(23, 49, 40, .055); }
+.card-label, .stat-label { color: var(--text3); font-size: 9px; letter-spacing: 1.25px; }
+.stat-value { font-family: var(--font-body); font-weight: 760; font-size: 40px; letter-spacing: 0; }
+.dashboard-health-value, .training-mix-item, .strava-pr { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; }
+.empty-state { background: var(--surface2); border-color: var(--border2); border-radius: 7px; }
+
+.grid { gap: 16px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dashboard-insight-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.cal-stats-row { grid-template-columns: minmax(0, 1fr) minmax(260px, .36fr); gap: 16px; }
+.wellness-top-grid { grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr); gap: 16px; }
+.wellness-chart-grid, .wellness-summary-grid { gap: 16px; }
+.news-layout { grid-template-columns: minmax(0, 1fr) minmax(310px, .32fr); }
+.postrun-layout { gap: 16px; }
+
+.btn { min-height: 36px; border-radius: 6px; box-shadow: none; text-transform: none; letter-spacing: 0; font-size: 12px; }
+.btn-primary { background: var(--accent); }
+.btn-ghost { background: var(--surface); border-color: var(--border2); color: var(--text2); }
+.btn-ghost:hover:not(:disabled) { background: var(--surface2); border-color: var(--text2); }
+input, select, textarea { border: 1px solid var(--border2); border-radius: 6px; background: var(--surface); padding: 10px 12px; }
+input:focus, select:focus, textarea:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,126,128,.11); }
+label { color: var(--text2); font-size: 9px; letter-spacing: 1.1px; }
+.seg-tabs { width: auto; display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 3px; gap: 2px; margin-bottom: 20px; }
+.seg-tab { border: 0; border-radius: 5px; margin: 0; padding: 8px 13px; color: var(--text2); font: 700 10px var(--font-body); letter-spacing: .3px; text-transform: none; }
+.seg-tab.active { color: var(--text); background: var(--bg2); border: 0; }
+.week-nav-btn { border-radius: 5px; border-color: var(--border); background: var(--surface); }
+table th { background: var(--surface2); color: var(--text3); }
+table td, table th { border-color: var(--border); }
+.workout-row, .coach-plan-row, .postrun-activity-row { border-color: var(--border); }
+.coach-plan-row:hover, .workout-row:hover, .postrun-activity-row:hover { background: var(--surface2); }
+.coach-session-icon { border-radius: 7px; }
+.coach-adaptive-card, .coach-recovery-card { border-radius: 8px; }
+.wellness-kpi { border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); }
+.wellness-range-tabs { background: var(--surface2); border-radius: 6px; }
+.wellness-range-btn { border-radius: 4px; }
+
+@media (max-width: 1240px) and (min-width: 769px) {
+  :root { --sidebar-w: 222px; }
+  .main { padding-left: 26px; padding-right: 26px; }
+  .g4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3, .dashboard-insight-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-insight-grid > :last-child { grid-column: 1 / -1; }
+  .cal-stats-row { grid-template-columns: minmax(0, 1fr) 250px; }
+  .news-layout { grid-template-columns: minmax(0, 1fr) 290px; }
+}
+
+@media (max-width: 900px) and (min-width: 769px) {
+  .sidebar-top { padding-left: 10px; padding-right: 10px; }
+  .logo-row { padding: 0 6px; }
+  .nav-item { padding-left: 9px; padding-right: 9px; }
+  .cal-stats-row, .wellness-top-grid, .news-layout { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .main { margin-left: 0; width: 100vw; max-width: 100vw; padding: 0 14px calc(90px + env(safe-area-inset-bottom)); }
+  .workspace-topbar { height: 64px; margin-bottom: 20px; padding-right: 58px; }
+  .workspace-eyebrow { font-size: 8px; }
+  .workspace-title { font-size: 18px; }
+  .workspace-status { display: none; }
+  .page-header { display: block; padding-bottom: 16px; margin-bottom: 16px; }
+  .page-title { font-size: 25px; margin-bottom: 6px; }
+  .page-subtitle { font-size: 12px; }
+  #page-today .dashboard-hero { display: block; margin-bottom: 18px; }
+  #page-today .dashboard-hero .btn { margin-top: 14px; }
+  .dashboard-hero-title, .dashboard-hero-name { font-size: 34px; }
+  .health-focus-strip { display: block; padding: 15px; }
+  .health-focus-metrics { margin-top: 12px; }
+  .dashboard-hero-kpis { padding: 16px; }
+  .card { padding: 16px; }
+  .g2, .g3, .g4, .dashboard-insight-grid, .cal-stats-row, .wellness-top-grid, .news-layout { grid-template-columns: 1fr; }
+  .dashboard-insight-grid > :last-child { grid-column: auto; }
+  .wellness-chart-grid, .wellness-summary-grid { grid-template-columns: 1fr; }
+  .seg-tabs { display: flex; width: 100%; overflow-x: auto; }
+  .seg-tab { flex: 1 0 auto; text-align: center; }
+  .btn { min-height: 38px; }
+  #readiness-dashboard-card > div { display: block !important; }
+  #readiness-dashboard-card > div > div:last-child { min-width: 0 !important; margin-top: 14px; }
+}
+
+@media (max-width: 420px) {
+  .main { padding-left: 12px; padding-right: 12px; }
+  .workspace-topbar { padding-right: 54px; }
+  .dashboard-hero-title, .dashboard-hero-name { font-size: 30px; }
+  .dashboard-hero-kpis > div > div:first-child { flex-basis: 100%; }
+  .health-focus-pill { white-space: normal; }
+}

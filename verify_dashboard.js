@@ -96,7 +96,8 @@ JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 checkJsFile(appsScriptPath);
 
 ensureContains(indexPath, [
-  '<link rel="stylesheet" href="training-hub-ui.css">',
+  '<link rel="stylesheet" href="app-redesign.css?v=20260711-1">',
+  'class="workspace-topbar"',
   '<script src="js/date-utils.js"></script>',
   '<script src="js/ui-core.js"></script>',
   '<script src="js/app-state.js"></script>',
@@ -122,6 +123,11 @@ ensureContains(indexPath, [
   'out.innerHTML = mdToHtml(reply);',
   '.coach-plan-row',
   '.coach-adaptive-card',
+]);
+
+ensureContains(swPath, [
+  'mydash-v3-full-app-redesign-20260711-1',
+  './app-redesign.css?v=20260711-1',
 ]);
 
 ensureContains(shareCardScriptPath, [
@@ -312,8 +318,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-training-hub-20260711-1",
-  './training-hub-ui.css',
+  "mydash-v3-full-app-redesign-20260711-1",
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',
