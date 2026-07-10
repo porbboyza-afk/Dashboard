@@ -2,6 +2,47 @@
 
 Last updated: 2026-07-10 Asia/Bangkok
 
+## 2026-07-10 Local-Only Web Structure Refactor: State, Bootstrap, Activity Model
+
+Status:
+
+- Implemented and verified locally. Do not push or deploy until the user explicitly approves.
+- This is the first infrastructure pass before the full-app UI redesign. It preserves the existing global handler and Firebase data contracts.
+
+Completed boundaries:
+
+- `js/app-state.js`: owns AppState, the default AI proxy URL, and legacy `window._*` compatibility aliases.
+- `js/app-bootstrap.js`: owns startup settings hydration, Firebase realtime listeners, and AppState-to-UI subscriptions. It keeps `window._appReady` as the Firebase auth compatibility entry point.
+- `js/activity-model.js`: owns source metadata/badges, activity fingerprints, source priority, duplicate-candidate rules, and `getAllActivities()`.
+- `js/today-dashboard-view-model.js`: owns Today weekly volume/count/recent activities, streak, PR, and load-level calculations.
+
+Compatibility and data safety:
+
+- No Firebase path, workout record, plan record, review record, or legacy Strava data was migrated or deleted.
+- Health Connect remains the primary exact-duplicate source; near Strava duplicates remain review-only candidates.
+- `js/backup-export.js` exposes `window.DEFAULT_GAS_URL` for bootstrap settings hydration.
+- `index.html` is reduced from 4,106 to 3,973 lines in this slice; UI rendering remains there for now.
+- Today keeps its existing DOM renderer, but it now consumes `MyDashTodayDashboard` instead of calculating weekly activity data inline.
+
+Verification passed after the final activity-model extraction:
+
+- `node --check js\\app-state.js`
+- `node --check js\\app-bootstrap.js`
+- `node --check js\\activity-model.js`
+- `node --check js\\today-dashboard-view-model.js`
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+- `python comprehensive_refactor_test.py`
+- `git diff --check`
+
+Next structural order:
+
+1. Extract Activity Detail, Wellness, and Statistics view models.
+2. Move the remaining Today health/readiness and sync-status calculation into view models/repositories.
+3. Move direct Firebase writes behind repositories while preserving the current global UI API.
+4. Remove duplicate function definitions and then replace inline `onclick` handlers.
+5. Start the full-app UI redesign on these stable boundaries.
+
 ## 2026-07-10 Coach Recovery Model + Training Dashboard View Model
 
 Status:

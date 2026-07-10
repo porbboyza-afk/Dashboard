@@ -1,7 +1,7 @@
 # MyDash Architecture Refactor Plan
 
 Last updated: 2026-07-10 Asia/Bangkok
-Status: Coach/Review V2 implemented and pushed; recovery model plus the first training dashboard view-model refactor slice implemented in the current working tree.
+Status: Coach/Review V2 implemented and pushed; state, startup, and activity-model boundaries are verified locally before the broader full-app UI redesign.
 
 ## Decision
 
@@ -29,7 +29,7 @@ Implementation order:
 
 ## Current Structural Risks
 
-- `index.html` combines Firebase setup, state, page markup, rendering, and global helpers.
+- `index.html` still combines page markup, rendering, and many global helpers. App state, startup/listeners, and activity normalization have now been extracted.
 - Inline `onclick` handlers require global functions and script-order coupling.
 - Duplicate function definitions exist; the last loaded definition wins.
 - `AppState` and `window._*` aliases create multiple access paths to the same state.
@@ -159,4 +159,8 @@ Review facts must store `planId`, `revisionId`, `sessionId`, `matchType`, `facts
 - [x] V2 pushed to GitHub (`f26a39c`).
 - [x] Broader web refactor started with `js/training-dashboard-view-model.js`.
 - [x] Recovery/rest-day model added to Coach Engine V2.
+- [x] AppState extracted from `index.html` with legacy aliases preserved.
+- [x] Startup settings hydration, Firebase listeners, and UI state subscriptions extracted.
+- [x] Activity source, dedupe, and merge rules extracted.
+- [x] Today weekly activity, streak, PR, and load-level calculations extracted behind a view model.
 - [ ] Remaining pages migrated behind view models.

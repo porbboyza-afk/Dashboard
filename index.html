@@ -2568,6 +2568,10 @@ img, video, iframe, canvas { max-width: 100%; }
 
 <script src="js/date-utils.js"></script>
 <script src="js/ui-core.js"></script>
+<script src="js/app-state.js"></script>
+<script src="js/app-bootstrap.js"></script>
+<script src="js/activity-model.js"></script>
+<script src="js/today-dashboard-view-model.js"></script>
 <script>
 'use strict';
 
@@ -2777,168 +2781,8 @@ function mdToHtml(text) {
 }
 
 // ══════════════════════════════════════════════════
-//  APP STATE — centralized state with subscriptions
+//  APP BOOTSTRAP lives in js/app-state.js and js/app-bootstrap.js
 // ══════════════════════════════════════════════════
-const DEFAULT_AI_PROXY_URL = 'https://mydash-ai-proxy.porbboyza.workers.dev';
-
-const AppState = (() => {
-  const _data = {
-    workouts:       [],
-    stravaWorkouts: [],
-    stravaActs:     [],
-    coachPlan:      null,
-    postRunReviews: [],
-    wellness:       [],
-    
-    deepseekKey:     '',
-    aiProxyUrl:      DEFAULT_AI_PROXY_URL,
-    appReady:       false,
-  };
-  const _listeners = {};
-  // Pending flags — prevent duplicate concurrent updates
-  const _pending = {};
-
-  return {
-    get(key) {
-      return _data[key];
-    },
-
-    set(key, value) {
-      // Skip if identical reference (arrays/objects still update)
-      _data[key] = value;
-      if (_listeners[key]) {
-        _listeners[key].forEach(cb => {
-          try { cb(value); } catch(e) { console.warn(`AppState[${key}] subscriber error:`, e); }
-        });
-      }
-    },
-
-    // Subscribe to state changes. Returns unsubscribe function.
-    subscribe(key, cb) {
-      if (!_listeners[key]) _listeners[key] = [];
-      _listeners[key].push(cb);
-      return () => {
-        _listeners[key] = _listeners[key].filter(fn => fn !== cb);
-      };
-    },
-
-    // Guard against concurrent async ops on same key
-    isPending(key) { return !!_pending[key]; },
-    setPending(key, val) { _pending[key] = val; },
-
-    // Debug helper — shows current state in console
-    debug() { console.table(Object.fromEntries(Object.entries(_data).map(([k,v])=>[k, Array.isArray(v)?`Array(${v.length})`:v]))); }
-  };
-})();
-
-// ── Backward-compatible window._ proxies ──
-// Existing code using window._workouts etc. still works unchanged.
-Object.defineProperties(window, {
-  _workouts:       { get: () => AppState.get('workouts'),       set: v => AppState.set('workouts', v),       configurable:true },
-  _stravaWorkouts: { get: () => AppState.get('stravaWorkouts'), set: v => AppState.set('stravaWorkouts', v), configurable:true },
-  _stravaActs:     { get: () => AppState.get('stravaActs'),     set: v => AppState.set('stravaActs', v),     configurable:true },
-  _coachPlan:      { get: () => AppState.get('coachPlan'),      set: v => AppState.set('coachPlan', v),      configurable:true },
-  _postRunReviews: { get: () => AppState.get('postRunReviews'), set: v => AppState.set('postRunReviews', v), configurable:true },
-  _wellness:       { get: () => AppState.get('wellness'),       set: v => AppState.set('wellness', v),       configurable:true },
-  
-  _deepseekKey:    { get: () => AppState.get('deepseekKey'),    set: v => AppState.set('deepseekKey', v),    configurable:true },
-  _aiProxyUrl:     { get: () => AppState.get('aiProxyUrl'),     set: v => AppState.set('aiProxyUrl', v),     configurable:true },
-  _appReady:       { get: () => AppState.get('appReady'),       set: v => AppState.set('appReady', v),       configurable:true },
-});
-
-// ── APP READY ──
-window._appReady = async (user) => {
-  if (!user) {
-    document.getElementById('loading-overlay').style.display = 'none';
-    showPage('today');
-    renderTodayStats();
-    renderIntegratedHealth();
-    renderDashboardHomeInsights();
-    renderDashboardSyncStatus();
-    return;
-  }
-  hideLoading(); showPage('today');
-  try {
-    const cfg = await window._fb.getData('settings')||{};
-    if (cfg.deepseekKey) {
-      AppState.set('deepseekKey', cfg.deepseekKey);
-      const k=document.getElementById('set-deepseek-key'); if(k)k.value=cfg.deepseekKey;
-      const s=document.getElementById('deepseek-key-status'); if(s)s.innerHTML='<span style="color:var(--green)">✓ Ready</span>';
-    }
-    AppState.set('aiProxyUrl', cfg.aiProxyUrl || DEFAULT_AI_PROXY_URL);
-    const safe=(id,val)=>{const el=document.getElementById(id);if(el&&val)el.value=val;};
-    safe('set-ai-proxy-url',cfg.aiProxyUrl || DEFAULT_AI_PROXY_URL);
-    safe('set-strava-id',cfg.stravaId);safe('set-strava-secret',cfg.stravaSecret);safe('set-strava-redirect',cfg.stravaRedirect);
-    safe('set-gas-url',cfg.gasUrl||DEFAULT_GAS_URL);safe('set-gas-token',cfg.gasToken);
-    loadAthleteProfile(cfg.athleteProfile||DEFAULT_ATHLETE_PROFILE);
-
-  } catch(e) { console.warn('Settings:',e.message); }
-  try { startRealtimeListeners(); } catch(e) { showToast('Firebase: '+e.message,'error'); }
-};
-
-function startRealtimeListeners() {
-  window._fb.listen('workouts', data => {
-    AppState.set('workouts',
-      data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.date||'').localeCompare(a.date||'')) : []
-    );
-  });
-  window._fb.listen('coach_plan', data => {
-    AppState.set('coachPlan', data || null);
-  });
-  window._fb.listen('post_run_reviews', data => {
-    AppState.set('postRunReviews',
-      data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.date||'').localeCompare(a.date||'')) : []
-    );
-  });
-  window._fb.listen('wellness', data => {
-    AppState.set('wellness',
-      data ? Object.entries(data).map(([k,v])=>({_key:k,...v})).sort((a,b)=>(b.date||'').localeCompare(a.date||'')) : []
-    );
-  });
-  window._fb.listen('strava_activities', data => {
-    if (!data) return;
-    const acts = Array.isArray(data) ? data : Object.values(data);
-    renderStravaActivities(acts);
-  });
-}
-
-// ── AppState Subscribers — UI reacts to state changes automatically ──
-AppState.subscribe('workouts', () => {
-  renderRecentWorkouts();
-  renderTodayStats();
-  renderIntegratedHealth();
-  if (document.getElementById('page-fitness-stats')?.classList.contains('active')) renderCurrentStatsView();
-  if (document.getElementById('page-post-run-review')?.classList.contains('active')) renderPostRunReview();
-  matchWorkoutsToPlan(true);
-});
-
-AppState.subscribe('stravaWorkouts', () => {
-  renderTodayStats();
-  renderIntegratedHealth();
-  if (document.getElementById('page-fitness-stats')?.classList.contains('active')) renderCurrentStatsView();
-  matchWorkoutsToPlan(true);
-});
-
-
-AppState.subscribe('coachPlan', () => {
-  if (document.getElementById('page-coach')?.classList.contains('active')) renderCoachTracking();
-  if (document.getElementById('page-post-run-review')?.classList.contains('active')) renderPostRunReview();
-});
-
-AppState.subscribe('postRunReviews', () => {
-  if (document.getElementById('page-post-run-review')?.classList.contains('active')) renderPostRunReview();
-});
-
-AppState.subscribe('wellness', () => {
-  renderWellness();
-  if (document.getElementById('page-post-run-review')?.classList.contains('active')) renderPostRunReview();
-  renderIntegratedHealth();
-  if(document.getElementById('page-today')?.classList.contains('active'))renderDashboardHomeInsights();
-});
-
-AppState.subscribe('deepseekKey', key => {
-  if (key) console.info('[AppState] DeepSeek API key loaded ✓');
-});
 
 // ── UI HELPERS ──
 function showLoading(msg='Loading'){document.getElementById('loading-msg').textContent=msg;document.getElementById('loading-overlay').classList.add('show');}
@@ -2948,11 +2792,12 @@ function showToast(msg,type='success'){const t=document.getElementById('toast');
 // ── TODAY ──
 function renderTodayStats(){
   const cutoff=getThisWeekStart();
-  const all=getAllActivities();
-  const recent=all.filter(w=>new Date(w.date+'T00:00:00')>=cutoff);
-  const totalDist=recent.reduce((s,w)=>s+parseFloat(w.dist||0),0);
+  const dashboard=window.MyDashTodayDashboard.build({
+    activities:getAllActivities(),
+    weekStart:toLocalDateStr(cutoff)
+  });
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-  set('t-workouts',recent.length);
+  set('t-workouts',dashboard.weeklyActivityCount);
   setTimeout(renderDashboardExtras, 100);
   setTimeout(renderDashboardHomeInsights, 120);
   setTimeout(renderCalendar, 200);
@@ -2960,15 +2805,14 @@ function renderTodayStats(){
 
   // Update ring
   const ringEl=document.getElementById('ring-num');
-  if(ringEl)ringEl.textContent=totalDist.toFixed(2);
+  if(ringEl)ringEl.textContent=dashboard.weeklyDistanceKm.toFixed(2);
   const fill=document.getElementById('ring-fill-km');
-  if(fill){const circ=176;const goal=40;const pct=Math.min(1,totalDist/goal);fill.style.strokeDashoffset=circ*(1-pct);}
+  if(fill){const circ=176;const goal=40;const pct=Math.min(1,dashboard.weeklyDistanceKm/goal);fill.style.strokeDashoffset=circ*(1-pct);}
 
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
   const recentEl=document.getElementById('today-recent-workouts');
   // Show this week's activities from all active sources.
-  const allCombined=getAllActivities();
-  const weekRecent=allCombined.filter(w=>(w.date||'')>=toLocalDateStr(cutoff)).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+  const weekRecent=dashboard.recentActivities;
   window._dashWeekActs = weekRecent;
   if(recentEl) recentEl.innerHTML=weekRecent.length
     ? weekRecent.map((w,i)=>{
@@ -3017,89 +2861,6 @@ window.calcAvgPace=function(){
 // ── WORKOUT CRUD ──
 let _editingWorkoutKey = null;
 function fieldValue(id){return document.getElementById(id)?.value?.trim()||'';}
-function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function sourceMeta(wOrSource){
-  const source=typeof wOrSource==='string'?wOrSource:(wOrSource?.source||'manual');
-  const sourceApp=typeof wOrSource==='object'?String(wOrSource.sourceApp||'').toLowerCase():'';
-  if(source==='health_connect')return {label:sourceApp.includes('garmin')?'GARMIN':'HC',title:'Health Connect',color:'var(--green)',bg:'rgba(52,199,89,.14)'};
-  if(source==='strava_recovered')return {label:'STRAVA LEGACY',title:'Recovered Strava cache',color:'var(--strava)',bg:'rgba(252,76,2,.15)'};
-  if(source==='strava_archive')return {label:'STRAVA ARCHIVE',title:'Strava archive import',color:'var(--strava)',bg:'rgba(252,76,2,.15)'};
-  if(source==='strava')return {label:'STRAVA API',title:'Legacy Strava API',color:'var(--strava)',bg:'rgba(252,76,2,.15)'};
-  return {label:'MANUAL',title:'Manual / MyDash Cloud',color:'var(--accent)',bg:'var(--accent-light)'};
-}
-function sourceBadge(wOrSource,compact=false){
-  const meta=sourceMeta(wOrSource);
-  return `<span title="${escapeHTML(meta.title)}" style="display:inline-flex;align-items:center;vertical-align:middle;font-size:${compact?'8':'9'}px;background:${meta.bg};color:${meta.color};border-radius:999px;padding:${compact?'1px 5px':'2px 7px'};font-weight:800;margin-left:5px;letter-spacing:.2px">${meta.label}</span>`;
-}
-function workoutFingerprint(w){
-  return `${w.date||''}|${String(w.type||'').toLowerCase()}|${Math.round(parseFloat(w.dist||0)*20)}|${Math.round(parseFloat(w.time||0))}`;
-}
-function activitySourcePriority(w){
-  const source=w?.source||'manual';
-  if(source==='health_connect')return 50;
-  if(source==='manual'||!w?.source)return 45;
-  if(source==='strava_recovered')return 30;
-  if(source==='strava_archive')return 25;
-  if(source==='strava')return 20;
-  return 10;
-}
-function activitySourceKey(w){
-  return `${w?.source||'manual'}:${w?._key||w?.id||w?.stravaId||w?.date||''}`;
-}
-function isStravaLike(w){
-  return ['strava','strava_recovered','strava_archive'].includes(w?.source||'');
-}
-function isDuplicateCandidate(a,b){
-  if(!a||!b||a===b)return false;
-  if((a.date||'')!==(b.date||''))return false;
-  const sourceA=a.source||'manual',sourceB=b.source||'manual';
-  if(sourceA===sourceB)return false;
-  if(!(isStravaLike(a)||isStravaLike(b)))return false;
-  const distA=parseFloat(a.dist||0),distB=parseFloat(b.dist||0);
-  const timeA=parseFloat(a.time||0),timeB=parseFloat(b.time||0);
-  if(!distA||!distB||!timeA||!timeB)return false;
-  const distDiff=Math.abs(distA-distB);
-  const timeDiff=Math.abs(timeA-timeB);
-  const distPct=distDiff/Math.max(distA,distB);
-  const timePct=timeDiff/Math.max(timeA,timeB);
-  return distDiff<=0.25&&distPct<=0.04&&timeDiff<=180&&timePct<=0.06;
-}
-function duplicateCandidatePairs(activities=[...(window._workouts||[]),...(window._stravaWorkouts||[])]){
-  const rows=activities.filter(w=>w?.date).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  const pairs=[];
-  for(let i=0;i<rows.length;i++){
-    for(let j=i+1;j<rows.length;j++){
-      if(rows[j].date!==rows[i].date)break;
-      if(isDuplicateCandidate(rows[i],rows[j])){
-        const primary=activitySourcePriority(rows[i])>=activitySourcePriority(rows[j])?rows[i]:rows[j];
-        const duplicate=primary===rows[i]?rows[j]:rows[i];
-        pairs.push({primary,duplicate,reason:'same-day distance/time near match',distDiff:+Math.abs((parseFloat(rows[i].dist)||0)-(parseFloat(rows[j].dist)||0)).toFixed(2),timeDiff:Math.round(Math.abs((parseFloat(rows[i].time)||0)-(parseFloat(rows[j].time)||0)))});
-      }
-    }
-  }
-  return pairs;
-}
-function getAllActivities(){
-  const seen=new Map();
-  [...(window._workouts||[]),...(window._stravaWorkouts||[])].forEach(w=>{
-    const fp=workoutFingerprint(w);
-    const old=seen.get(fp);
-    if(!old||activitySourcePriority(w)>activitySourcePriority(old)){
-      seen.set(fp,{...w,_dedupedWith:old?[...(old._dedupedWith||[]),old.source||'manual']:w._dedupedWith});
-    }else if(old){
-      old._dedupedWith=[...(old._dedupedWith||[]),w.source||'manual'];
-    }
-  });
-  const merged=[...seen.values()];
-  duplicateCandidatePairs().forEach(pair=>{
-    const primaryKey=activitySourceKey(pair.primary);
-    const target=merged.find(w=>activitySourceKey(w)===primaryKey||workoutFingerprint(w)===workoutFingerprint(pair.primary));
-    if(target){
-      target._possibleDuplicates=[...(target._possibleDuplicates||[]),{source:pair.duplicate.source||'manual',key:pair.duplicate._key||pair.duplicate.id||'',dist:pair.duplicate.dist,time:pair.duplicate.time,reason:pair.reason,distDiff:pair.distDiff,timeDiff:pair.timeDiff}];
-    }
-  });
-  return merged.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-}
 function resetWorkoutForm(){
   _editingWorkoutKey=null;
   ['r-distance','r-time','r-hr','r-cadence','r-avg-pace','r-stride','r-rpe','r-shoe','r-temp','r-weather','r-pain','r-pain-location','r-feeling','r-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -3252,60 +3013,22 @@ function showActivityDetail(wEncoded) {
 // ══════════════════════════════════════════════
 // STREAK
 // ══════════════════════════════════════════════
-function computeStreak(allActs) {
-  if (!allActs.length) return 0;
-  const days = new Set(allActs.map(w => w.date));
-  let streak = 0;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const d = new Date(today);
-  // allow today or yesterday as start
-  const todayStr = toLocalDateStr(today);
-  const yest = new Date(today); yest.setDate(yest.getDate()-1);
-  const yestStr = toLocalDateStr(yest);
-  if (!days.has(todayStr) && !days.has(yestStr)) return 0;
-  if (!days.has(todayStr)) d.setDate(d.getDate()-1);
-  while (days.has(toLocalDateStr(d))) {
-    streak++;
-    d.setDate(d.getDate()-1);
-  }
-  return streak;
-}
-
 // ══════════════════════════════════════════════
 // PERSONAL RECORDS
 // ══════════════════════════════════════════════
-function computePR(allActs) {
-  const prs = { '5k': null, '10k': null, 'longest': null };
-  allActs.forEach(w => {
-    const dist = parseFloat(w.dist || 0);
-    const pace = parseFloat(w.avgPace || 0); // min/km
-    if (dist >= 4.9 && pace > 0) {
-      if (!prs['5k'] || pace < prs['5k'].pace)
-        prs['5k'] = { pace, date: w.date, dist };
-    }
-    if (dist >= 9.8 && pace > 0) {
-      if (!prs['10k'] || pace < prs['10k'].pace)
-        prs['10k'] = { pace, date: w.date, dist };
-    }
-    if (!prs.longest || dist > prs.longest.dist)
-      prs.longest = { dist, date: w.date, pace };
-  });
-  return prs;
-}
-
 // ── DASHBOARD RACE BANNER ──
 function renderDashboardExtras() {
   const all = getAllActivities();
 
   // Streak
-  const streak = computeStreak(all);
+  const streak = window.MyDashTodayDashboard.computeStreak(all);
   const sEl = document.getElementById('streak-num');
   const sLbl = document.getElementById('streak-label');
   if (sEl) sEl.textContent = streak;
   if (sLbl) sLbl.textContent = streak === 0 ? 'วัน — เริ่มเลย!' : streak >= 7 ? 'วัน 🔥🔥' : 'วัน';
 
   // PR
-  const prs = computePR(all);
+  const prs = window.MyDashTodayDashboard.computePR(all);
   const p5 = document.getElementById('pr-5k-disp');
   const p10 = document.getElementById('pr-10k-disp');
   if (p5) p5.textContent = prs['5k'] ? `5K  ${formatPace(prs['5k'].pace)}/km` : '5K  —';
@@ -3313,20 +3036,6 @@ function renderDashboardExtras() {
 
   // Weekly goal
   renderGoalDisplay(all);
-}
-
-function dashboardLoadLevel(metrics) {
-  const load = Math.round(metrics.acute);
-  if (metrics.acwr !== null) {
-    if (metrics.acwr < .8) return {label:'เบา',color:'var(--accent)'};
-    if (metrics.acwr <= 1.3) return {label:'ปานกลาง',color:'var(--green)'};
-    if (metrics.acwr <= 1.5) return {label:'ค่อนข้างหนัก',color:'var(--orange)'};
-    return {label:'หนักมาก',color:'var(--red)'};
-  }
-  if (load < 200) return {label:'เบา',color:'var(--accent)'};
-  if (load < 400) return {label:'ปานกลาง',color:'var(--green)'};
-  if (load < 600) return {label:'ค่อนข้างหนัก',color:'var(--orange)'};
-  return {label:'หนักมาก',color:'var(--red)'};
 }
 
 async function renderDashboardHomeInsights() {
@@ -3354,7 +3063,7 @@ async function renderDashboardHomeInsights() {
   const changeElement=document.getElementById('dash-week-change');
   if(changeElement&&change!==null)changeElement.style.color=Math.abs(change)<=20?'var(--green)':change>20?'var(--orange)':'var(--accent)';
   const metrics=calculateLoadMetrics(activities);
-  const level=dashboardLoadLevel(metrics);
+  const level=window.MyDashTodayDashboard.loadLevel(metrics);
   set('dash-load-au',`${Math.round(metrics.acute)} AU`);
   set('dash-load-level',level.label);
   const levelElement=document.getElementById('dash-load-level');if(levelElement)levelElement.style.color=level.color;

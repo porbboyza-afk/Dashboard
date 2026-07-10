@@ -1,0 +1,126 @@
+(function(root) {
+  'use strict';
+
+  function byDateDescending(data) {
+    return data
+      ? Object.entries(data)
+        .map(([key, value]) => ({ _key: key, ...value }))
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      : [];
+  }
+
+  function startRealtimeListeners() {
+    root._fb.listen('workouts', data => {
+      root.AppState.set('workouts', byDateDescending(data));
+    });
+    root._fb.listen('coach_plan', data => {
+      root.AppState.set('coachPlan', data || null);
+    });
+    root._fb.listen('post_run_reviews', data => {
+      root.AppState.set('postRunReviews', byDateDescending(data));
+    });
+    root._fb.listen('wellness', data => {
+      root.AppState.set('wellness', byDateDescending(data));
+    });
+    root._fb.listen('strava_activities', data => {
+      if (!data) return;
+      const activities = Array.isArray(data) ? data : Object.values(data);
+      root.renderStravaActivities(activities);
+    });
+  }
+
+  async function appReady(user) {
+    if (!user) {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.style.display = 'none';
+      root.showPage('today');
+      root.renderTodayStats();
+      root.renderIntegratedHealth();
+      root.renderDashboardHomeInsights();
+      root.renderDashboardSyncStatus();
+      return;
+    }
+
+    root.hideLoading();
+    root.showPage('today');
+    try {
+      const config = await root._fb.getData('settings') || {};
+      if (config.deepseekKey) {
+        root.AppState.set('deepseekKey', config.deepseekKey);
+        const keyInput = document.getElementById('set-deepseek-key');
+        if (keyInput) keyInput.value = config.deepseekKey;
+        const status = document.getElementById('deepseek-key-status');
+        if (status) status.innerHTML = '<span style="color:var(--green)">Ready</span>';
+      }
+
+      root.AppState.set('aiProxyUrl', config.aiProxyUrl || root.DEFAULT_AI_PROXY_URL);
+      const setValue = (id, value) => {
+        const element = document.getElementById(id);
+        if (element && value) element.value = value;
+      };
+      setValue('set-ai-proxy-url', config.aiProxyUrl || root.DEFAULT_AI_PROXY_URL);
+      setValue('set-strava-id', config.stravaId);
+      setValue('set-strava-secret', config.stravaSecret);
+      setValue('set-strava-redirect', config.stravaRedirect);
+      setValue('set-gas-url', config.gasUrl || root.DEFAULT_GAS_URL);
+      setValue('set-gas-token', config.gasToken);
+      root.loadAthleteProfile(config.athleteProfile);
+    } catch (error) {
+      console.warn('Settings:', error.message);
+    }
+
+    try {
+      startRealtimeListeners();
+    } catch (error) {
+      root.showToast(`Firebase: ${error.message}`, 'error');
+    }
+  }
+
+  function registerUiSubscriptions() {
+    const { AppState } = root;
+
+    AppState.subscribe('workouts', () => {
+      root.renderRecentWorkouts();
+      root.renderTodayStats();
+      root.renderIntegratedHealth();
+      if (document.getElementById('page-fitness-stats')?.classList.contains('active')) root.renderCurrentStatsView();
+      if (document.getElementById('page-post-run-review')?.classList.contains('active')) root.renderPostRunReview();
+      root.matchWorkoutsToPlan(true);
+    });
+
+    AppState.subscribe('stravaWorkouts', () => {
+      root.renderTodayStats();
+      root.renderIntegratedHealth();
+      if (document.getElementById('page-fitness-stats')?.classList.contains('active')) root.renderCurrentStatsView();
+      root.matchWorkoutsToPlan(true);
+    });
+
+    AppState.subscribe('coachPlan', () => {
+      if (document.getElementById('page-coach')?.classList.contains('active')) root.renderCoachTracking();
+      if (document.getElementById('page-post-run-review')?.classList.contains('active')) root.renderPostRunReview();
+    });
+
+    AppState.subscribe('postRunReviews', () => {
+      if (document.getElementById('page-post-run-review')?.classList.contains('active')) root.renderPostRunReview();
+    });
+
+    AppState.subscribe('wellness', () => {
+      root.renderWellness();
+      if (document.getElementById('page-post-run-review')?.classList.contains('active')) root.renderPostRunReview();
+      root.renderIntegratedHealth();
+      if (document.getElementById('page-today')?.classList.contains('active')) root.renderDashboardHomeInsights();
+    });
+
+    AppState.subscribe('deepseekKey', key => {
+      if (key) console.info('[AppState] DeepSeek API key loaded');
+    });
+  }
+
+  root.AppBootstrap = {
+    appReady,
+    startRealtimeListeners,
+    registerUiSubscriptions,
+  };
+  root._appReady = appReady;
+  registerUiSubscriptions();
+})(window);

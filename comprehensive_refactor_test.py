@@ -28,6 +28,10 @@ EXPECTED_SCRIPT_ORDER = [
     "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js",
     "js/date-utils.js",
     "js/ui-core.js",
+    "js/app-state.js",
+    "js/app-bootstrap.js",
+    "js/activity-model.js",
+    "js/today-dashboard-view-model.js",
     "js/share-card.js",
     "js/wellness.js",
     "js/stats.js",
@@ -561,6 +565,15 @@ def main():
                   const v2SpecificWeeks = v2Plan.phaseSchedule.filter(row => row.phase === 'Specific').length;
                   const v2MultiDistance = ['Base','5K','10K','Half','Marathon'].every(distance => !!MyDashTraining.getProfile(distance));
                   const v2Dashboard = MyDashTrainingDashboard.build(v2Plan, {activities:[{date:v2Plan.sessions.find(s => s.type !== 'Rest')?.date}], wellness:[{date:'2026-07-10', sleepHours:7.1}], today:'2026-07-20'});
+                  const todayDashboard = MyDashTodayDashboard.build({
+                    weekStart:'2026-07-13',
+                    activities:[
+                      {date:'2026-07-12', dist:8},
+                      {date:'2026-07-13', dist:5.25},
+                      {date:'2026-07-14', dist:7.5},
+                      {date:'2026-07-15', dist:3}
+                    ]
+                  });
                   const v2FiveDay = MyDashTraining.EngineV2.createPlan({
                     goal:'10K 5-day browser test', distance:'10K', targetTime:'49:59', benchmark:'10K 52:30',
                     level:'intermediate', daysPerWeek:5, startDate:'2026-07-13', endDate:'2026-09-07', totalWeeks:8,
@@ -601,6 +614,9 @@ def main():
                     v2MultiDistance,
                     v2RecoveryCards: Array.isArray(v2Plan.recoveryCards) && v2Plan.recoveryCards.length > 0,
                     v2DashboardSummary: v2Dashboard.summary.totalSessions > 0 && v2Dashboard.intensity.quality.sessions > 0,
+                    todayDashboardWeeklyCount: todayDashboard.weeklyActivityCount,
+                    todayDashboardWeeklyDistance: todayDashboard.weeklyDistanceKm,
+                    todayDashboardRecentDate: todayDashboard.recentActivities[0]?.date || '',
                     v2FiveDayHasQuality: v2FiveDay.sessions.some(s => ['Tempo','Interval'].includes(s.type)),
                     v2FiveDayHasRecovery: v2FiveDay.sessions.some(s => s.type === 'Recovery')
                   };
@@ -627,6 +643,7 @@ def main():
             assert_true(checks, "coach_v2_multi_distance_ok", coach_plan_rules["v2MultiDistance"] is True, "Coach V2 profiles do not cover Base, 5K, 10K, Half, and Marathon")
             assert_true(checks, "coach_v2_recovery_model_ok", coach_plan_rules["v2RecoveryCards"] is True and coach_plan_rules["v2FiveDayHasQuality"] is True and coach_plan_rules["v2FiveDayHasRecovery"] is True, "Coach V2 recovery model or 5-day structure is missing")
             assert_true(checks, "training_dashboard_vm_ok", coach_plan_rules["v2DashboardSummary"] is True, "Training dashboard view model did not summarize the plan")
+            assert_true(checks, "today_dashboard_vm_ok", coach_plan_rules["todayDashboardWeeklyCount"] == 3 and coach_plan_rules["todayDashboardWeeklyDistance"] == 15.75 and coach_plan_rules["todayDashboardRecentDate"] == "2026-07-15", "Today dashboard view model did not calculate weekly activities correctly")
 
             coach_v2_save = page.evaluate(
                 """

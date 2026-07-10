@@ -10,6 +10,10 @@ const appsScriptPath = path.join(root, 'apps-script', 'Code.gs');
 const newsAiScriptPath = path.join(root, 'js', 'news-ai.js');
 const sourcesStravaScriptPath = path.join(root, 'js', 'sources-strava.js');
 const shareCardScriptPath = path.join(root, 'js', 'share-card.js');
+const appStateScriptPath = path.join(root, 'js', 'app-state.js');
+const appBootstrapScriptPath = path.join(root, 'js', 'app-bootstrap.js');
+const activityModelScriptPath = path.join(root, 'js', 'activity-model.js');
+const todayDashboardViewModelScriptPath = path.join(root, 'js', 'today-dashboard-view-model.js');
 const wellnessScriptPath = path.join(root, 'js', 'wellness.js');
 const statsScriptPath = path.join(root, 'js', 'stats.js');
 const coachScriptPath = path.join(root, 'js', 'coach.js');
@@ -25,6 +29,10 @@ const racesScriptPath = path.join(root, 'js', 'races.js');
 const extraScripts = [
   path.join(root, 'js', 'date-utils.js'),
   path.join(root, 'js', 'ui-core.js'),
+  appStateScriptPath,
+  appBootstrapScriptPath,
+  activityModelScriptPath,
+  todayDashboardViewModelScriptPath,
   newsAiScriptPath,
   sourcesStravaScriptPath,
   shareCardScriptPath,
@@ -90,6 +98,10 @@ checkJsFile(appsScriptPath);
 ensureContains(indexPath, [
   '<script src="js/date-utils.js"></script>',
   '<script src="js/ui-core.js"></script>',
+  '<script src="js/app-state.js"></script>',
+  '<script src="js/app-bootstrap.js"></script>',
+  '<script src="js/activity-model.js"></script>',
+  '<script src="js/today-dashboard-view-model.js"></script>',
   '<script src="js/share-card.js"></script>',
   '<script src="js/wellness.js"></script>',
   '<script src="js/stats.js"></script>',
@@ -106,8 +118,6 @@ ensureContains(indexPath, [
   '<script src="js/post-run-review.js"></script>',
   'id="page-post-run-review"',
   'function mdToHtml(text)',
-  'function duplicateCandidatePairs',
-  'function isDuplicateCandidate',
   'out.innerHTML = mdToHtml(reply);',
   '.coach-plan-row',
   '.coach-adaptive-card',
@@ -171,6 +181,35 @@ ensureContains(backupExportScriptPath, [
   'async function exportMyDashJSON',
   'function exportActivitiesCSV',
   'async function restoreMyDashJSON',
+]);
+
+ensureContains(appStateScriptPath, [
+  'DEFAULT_AI_PROXY_URL',
+  'root.AppState = AppState',
+  'Object.defineProperties(root',
+  '_coachPlan',
+]);
+
+ensureContains(appBootstrapScriptPath, [
+  'function startRealtimeListeners',
+  'function appReady',
+  'function registerUiSubscriptions',
+  'root._appReady = appReady',
+]);
+
+ensureContains(activityModelScriptPath, [
+  'function getAllActivities',
+  'function duplicateCandidatePairs',
+  'function isDuplicateCandidate',
+  'function sourceMeta',
+  'Object.assign(root',
+]);
+
+ensureContains(todayDashboardViewModelScriptPath, [
+  'function build',
+  'weeklyActivityCount',
+  'weeklyDistanceKm',
+  'root.MyDashTodayDashboard',
 ]);
 
 ensureContains(coachScriptPath, [
@@ -276,6 +315,10 @@ ensureContains(swPath, [
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',
+  './js/app-state.js',
+  './js/app-bootstrap.js',
+  './js/activity-model.js',
+  './js/today-dashboard-view-model.js',
   './js/share-card.js',
   './js/wellness.js',
   './js/stats.js',

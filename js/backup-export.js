@@ -1,5 +1,6 @@
 // Apps Script backup and export/import logic extracted from index.html.
 const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxyYeWVjX5VlNbusJ_nUlu4k6tEk2Jd5P9IP3VocAjiFH8ZUIXda6S8HeME6W6_s_PvFg/exec';
+window.DEFAULT_GAS_URL = DEFAULT_GAS_URL;
 
 async function saveBackupSettings() {
   const url = document.getElementById('set-gas-url').value.trim();
