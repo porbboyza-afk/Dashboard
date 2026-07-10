@@ -2,6 +2,18 @@
 
 Last updated: 2026-07-10 Asia/Bangkok
 
+## 2026-07-10 Coach V2 Effort Anchors Follow-up
+
+Status:
+
+- Athlete Settings are now explicit Engine V2 inputs rather than unused form data.
+- Easy effort uses configured HR bounds plus recent easy-run pace/HR evidence; high-HR gray-zone runs are excluded from the easy-pace evidence set.
+- Easy and long sessions expose a pace range, HR cap, talk test, and stored intensity basis instead of one falsely precise pace.
+- Configured tempo pace/HR is used, with continuous threshold work introduced before limited segmented work; segmented tempo does not dominate the block.
+- Thai and English unavailable weekdays plus exact dates are normalized, enforced during scheduling, and checked again by plan validation.
+- Every generated plan stores `inputAudit` so target time, benchmark, availability, athlete settings, and evidence usage can be inspected later.
+- Regression coverage includes Base, 5K, 10K, Half, Marathon, HR-grounded easy pace, tempo structure, unavailable dates, UI persistence, and Firebase compatibility writes.
+
 ## 2026-07-10 Active Decision - Coach/Review V2 Before Web Refactor
 
 Status:

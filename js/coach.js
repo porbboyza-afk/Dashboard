@@ -330,6 +330,9 @@ function coachLocalReviewFallback(plan,context,safety,compact){
 function coachDateMatchesUnavailable(dateStr,goalProfile){
   const unavailable=goalProfile?.unavailable||[];
   if(!unavailable.length)return false;
+  if(window.MyDashTraining?.EngineV2?.unavailableSet&&window.MyDashTraining?.EngineV2?.isUnavailable){
+    return window.MyDashTraining.EngineV2.isUnavailable(dateStr,window.MyDashTraining.EngineV2.unavailableSet(unavailable));
+  }
   const d=new Date(dateStr+'T12:00:00');
   const weekday=d.toLocaleDateString('en-US',{weekday:'short'}).toLowerCase();
   const weekdayLong=d.toLocaleDateString('en-US',{weekday:'long'}).toLowerCase();
@@ -676,7 +679,8 @@ async function generateTrainingPlan(){
       goal,distance:context.goalProfile.distance,targetTime:context.goalProfile.targetTime,benchmark:context.goalProfile.benchmark,
       level,daysPerWeek:days,startDate,endDate,totalWeeks,longRunDay:context.goalProfile.longRunDay,
       unavailable:context.goalProfile.unavailable,unavailableRaw:context.goalProfile.unavailableRaw,
-      currentWeeklyKm:context.volumes.d30/4.285,currentWeeklyKmSource:'activity_history',recentActivities:getAllActivities(),asOfDate:toLocalDateStr()
+      currentWeeklyKm:context.volumes.d30/4.285,currentWeeklyKmSource:'activity_history',recentActivities:getAllActivities(),asOfDate:toLocalDateStr(),
+      athleteSettings:typeof getAthleteProfile==='function'?getAthleteProfile():(window._athleteProfile||{})
     });
     if(!planPayload.validation?.valid)throw new Error(`Plan validation failed: ${planPayload.validation?.errors?.join(', ')||'unknown error'}`);
     await window.MyDashCoachRepository.savePlan(planPayload);
@@ -684,8 +688,12 @@ async function generateTrainingPlan(){
     if(!savedPlan?.createdAt||savedPlan.createdAt!==planPayload.createdAt)throw new Error('Cloud save failed. Please sign in again and retry.');
     AppState.set('coachPlan',savedPlan);
     const athlete=planPayload.athleteProfile||{};
+    const easy=athlete.effortTargets?.easy||{};
+    const tempo=athlete.effortTargets?.tempo||{};
+    const easyRange=easy.paceFast&&easy.paceSlow?`${window.MyDashTraining.EngineV2.formatPace(easy.paceFast)}-${window.MyDashTraining.EngineV2.formatPace(easy.paceSlow)}/km`:'n/a';
+    const tempoRange=tempo.paceFast&&tempo.paceSlow?`${window.MyDashTraining.EngineV2.formatPace(tempo.paceFast)}-${window.MyDashTraining.EngineV2.formatPace(tempo.paceSlow)}/km`:'n/a';
     const warning=planPayload.validation.warnings.length?`<br><span style="color:var(--orange)">ตรวจเพิ่ม: ${escapeHTML(planPayload.validation.warnings.join(', '))}</span>`:'';
-    if(out){out.style.color='var(--text)';out.innerHTML=`<div style="color:var(--green);font-weight:700;margin-bottom:10px">สร้างและบันทึก Training Engine V2 แล้ว</div><div style="font-size:12px;color:var(--text2)">Goal: <strong style="color:var(--text)">${escapeHTML(planPayload.goal)}</strong><br>${planPayload.sessions.length} sessions · ${planPayload.totalWeeks} weeks · ${escapeHTML(planPayload.goalProfile.distance)}<br>Pace basis: ${escapeHTML(athlete.paceBasis||'conservative')} · confidence ${escapeHTML(athlete.confidence||'low')}${warning}</div>`;}
+    if(out){out.style.color='var(--text)';out.innerHTML=`<div style="color:var(--green);font-weight:700;margin-bottom:10px">สร้างและบันทึก Training Engine V2 แล้ว</div><div style="font-size:12px;color:var(--text2)">Goal: <strong style="color:var(--text)">${escapeHTML(planPayload.goal)}</strong><br>${planPayload.sessions.length} sessions · ${planPayload.totalWeeks} weeks · ${escapeHTML(planPayload.goalProfile.distance)}<br>Easy: ${escapeHTML(easyRange)}${easy.hrMin&&easy.hrMax?` · HR ${escapeHTML(easy.hrMin)}-${escapeHTML(easy.hrMax)}`:''}<br>Tempo: ${escapeHTML(tempoRange)}${tempo.hrMin&&tempo.hrMax?` · HR ${escapeHTML(tempo.hrMin)}-${escapeHTML(tempo.hrMax)}`:''}<br>Pace basis: ${escapeHTML(athlete.paceBasis||'conservative')} · easy evidence ${escapeHTML(athlete.easyPaceEvidence?.sessions||0)} runs · confidence ${escapeHTML(athlete.confidence||'low')}${warning}</div>`;}
     showToast('สร้างแผน V2 และบันทึก Cloud แล้ว','success');
   }catch(e){if(out)out.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;}
   finally{if(btn){btn.innerHTML='สร้างแผน + บันทึก Firebase';btn.disabled=false;}}
@@ -751,7 +759,7 @@ function renderCoachTracking(){
     return `<div class="${cls}"><div class="plan-day-header"><div class="plan-day-date">${dateStr} · ${escapeHTML(phaseLabel)}</div>${badge}</div>
       <div class="coach-plan-row"><span class="coach-session-icon">${typeEmoji[s.type]||'🏃'}</span>
       <div class="coach-session-main"><div class="coach-session-title" style="color:${typeColor[s.type]||'var(--text)'}">${displayType}${s.targetDist>0?' · '+s.targetDist+' กม.':''}</div>
-      <div class="coach-session-desc">${escapeHTML(displayDescription)}${s.targetPace?' · pace '+escapeHTML(s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
+      <div class="coach-session-desc">${escapeHTML(displayDescription)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
       ${displayDetails.mainSet?`<div class="coach-session-preview"><strong>ชุดหลัก:</strong> ${escapeHTML(displayDetails.mainSet)}</div>`:''}
       ${s.notes?`<div class="coach-session-note">เหตุผล/หมายเหตุ: ${escapeHTML(hasThaiText(s.notes)?s.notes:'ทำตามรายละเอียดก่อนวิ่ง และปรับลดถ้าร่างกายไม่พร้อม')}</div>`:''}${actualLine}</div>
       <div class="coach-session-actions">
@@ -778,7 +786,7 @@ function showCoachSessionDetail(index){
       <div>
         <div class="card-label">รายละเอียดการซ้อม</div>
         <div class="coach-detail-title" style="color:${coachDecisionColor(isHardSession(s.type)?'yellow':'green')}">${escapeHTML(typeThai)}${s.targetDist>0?' · '+s.targetDist+' กม.':''}</div>
-        <div class="text-sm c2 mt-4">${escapeHTML(s.date)}${s.targetPace?' · pace '+escapeHTML(s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
+        <div class="text-sm c2 mt-4">${escapeHTML(s.date)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
       </div>
       <button class="coach-detail-close" onclick="document.getElementById('coach-session-detail-overlay').remove()">✕</button>
     </div>
@@ -834,7 +842,7 @@ function renderCoachDailyDecision(plan){
       <div class="coach-adaptive-main">
         <div class="card-label">Adaptive Coach Today</div>
         <div class="coach-adaptive-action" style="color:${color}">${escapeHTML(thai.label)} · ${escapeHTML(thai.action)}</div>
-        <div class="text-sm c2">${todaySession?`แผนหลักวันนี้: ${escapeHTML(coachSessionTypeThai(todaySession.type))} ${todaySession.targetDist||''} กม. ${todaySession.targetPace?`· pace ${escapeHTML(todaySession.targetPace)}`:''}`:'วันนี้ไม่มี session หนักในแผน'}</div>
+        <div class="text-sm c2">${todaySession?`แผนหลักวันนี้: ${escapeHTML(coachSessionTypeThai(todaySession.type))} ${todaySession.targetDist||''} กม. ${(todaySession.targetPaceRange||todaySession.targetPace)?`· pace ${escapeHTML(todaySession.targetPaceRange||todaySession.targetPace)}`:''}`:'วันนี้ไม่มี session หนักในแผน'}</div>
         <div class="coach-adaptive-explain"><strong>Daily decision:</strong> ${escapeHTML(actionText)}${daily.alreadyApplied?' · applied to cloud':''}</div>
         <div class="coach-adaptive-explain">${escapeHTML(coachAdaptiveGuidance(daily.safety,todaySession))}</div>
         <div class="text-xs c3 mt-8">เหตุผลจากข้อมูลวันนี้: ${reasons}</div>

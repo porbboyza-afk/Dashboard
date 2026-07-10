@@ -82,6 +82,35 @@ async function main() {
   assert.equal(sparseHistoryPlan.validation.valid,true,'Sparse history uses a conservative viable baseline');
   assert.equal(sparseHistoryPlan.athleteProfile.volumeBasis,'insufficient_history_conservative_fallback','Sparse history is not treated as a reliable baseline');
 
+  const evidencePlan=engine.createPlan({
+    goal:'10K HR grounded plan',distance:'10K',targetTime:'45:00',benchmark:'10K 46:00',
+    level:'intermediate',daysPerWeek:4,startDate:'2026-07-13',endDate:'2026-09-07',totalWeeks:8,longRunDay:0,
+    unavailable:'วันจันทร์,Fri,2026-08-05',unavailableRaw:'วันจันทร์,Fri,2026-08-05',currentWeeklyKm:30,
+    athleteSettings:{maxHR:186,lthr:169,easyHRMin:130,easyHRMax:142,z1Max:130,z2Max:145,z3Max:155,z4Max:169,z5Max:186,thresholdPace:'4:21',tempoFast:'4:55',tempoSlow:'5:05'},
+    recentActivities:[
+      {date:'2026-07-02',type:'run',purpose:'easy',dist:8,avgPace:6.05,hr:136,rpe:3},
+      {date:'2026-07-05',type:'long run',dist:12,avgPace:6.20,hr:139,rpe:4},
+      {date:'2026-07-08',type:'run',purpose:'easy',dist:7,avgPace:6.10,hr:134,rpe:3},
+      {date:'2026-07-09',type:'run',purpose:'steady',dist:8,avgPace:5.35,hr:150,rpe:6}
+    ],asOfDate:'2026-07-10',now:1783900000002
+  });
+  assert.equal(evidencePlan.validation.valid,true,evidencePlan.validation.errors.join(','));
+  assert.equal(evidencePlan.athleteProfile.easyPaceEvidence.sessions,3,'Only easy-HR evidence is accepted');
+  assert.equal(evidencePlan.athleteProfile.effortTargets.easy.hrMax,142,'Configured easy HR cap is used');
+  assert(evidencePlan.athleteProfile.effortTargets.easy.paceFast>5.35,'Easy pace guard excludes 5:21 gray-zone pace');
+  assert.equal(evidencePlan.athleteProfile.effortTargets.tempo.paceFast,4+55/60,'Configured tempo fast pace is used');
+  assert.equal(evidencePlan.athleteProfile.effortTargets.tempo.paceSlow,5+5/60,'Configured tempo slow pace is used');
+  assert(evidencePlan.sessions.filter(session=>['easy','recovery','long'].includes(session.intent)).every(session=>session.targetHR===142&&session.targetPaceRange),'Easy sessions expose HR cap and pace range');
+  assert(!evidencePlan.sessions.some(session=>session.type!=='Rest'&&[1,5].includes(new Date(session.date+'T12:00:00').getDay())),'Thai/English unavailable weekdays are respected');
+  assert(!evidencePlan.sessions.some(session=>session.type!=='Rest'&&session.date==='2026-08-05'),'Unavailable date is respected');
+  assert.equal(evidencePlan.inputAudit.athleteSettings.easyHRMax,142,'Plan records settings used');
+  assert.equal(evidencePlan.inputAudit.targetTime,'45:00','Plan records target time used');
+  const thresholdSessions=evidencePlan.sessions.filter(session=>session.workoutSpec?.intent==='threshold');
+  const continuousThreshold=thresholdSessions.filter(session=>session.workoutSpec.structure==='continuous');
+  const segmentedThreshold=thresholdSessions.filter(session=>session.workoutSpec.structure==='repetitions');
+  assert(continuousThreshold.length>=2,'Plan includes repeated continuous tempo development');
+  assert(segmentedThreshold.length<=continuousThreshold.length,'Segmented tempo does not dominate continuous tempo');
+
   const intervalWorkout={_key:'w1',date:'2026-07-22',type:'interval',purpose:'interval',dist:7,time:42,updatedAt:10};
   const intervalSession={sessionId:'s1',date:'2026-07-22',type:'Interval',intent:'vo2',targetDist:7,targetPace:'4:45'};
   const easySession={sessionId:'s2',date:'2026-07-22',type:'Easy',intent:'easy',targetDist:6,targetPace:'6:10'};
@@ -123,6 +152,8 @@ async function main() {
     profiles:Object.keys(plans),
     tenKPhases:tenPhases,
     tenKSpecificWorkKm:tenSpecific.map(session=>session.workoutSpec.qualityDistanceKm),
+    easyEffort:evidencePlan.athleteProfile.effortTargets.easy,
+    tempoStructures:thresholdSessions.map(session=>session.workoutSpec.structure),
     reviewTypes:[exact.type,mismatch.type,probable.type,noPlan.type,historical.type],
     persistence:'versioned-and-archivable'
   },null,2));

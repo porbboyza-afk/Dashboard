@@ -174,6 +174,7 @@ ensureContains(backupExportScriptPath, [
 ensureContains(coachScriptPath, [
   'function updateCoachGoalDefaults',
   'MyDashTraining.EngineV2.createPlan',
+  "athleteSettings:typeof getAthleteProfile==='function'",
   'MyDashCoachRepository.savePlan',
   'function coachTrainingWeekdays',
   'function coachDateForWeekday',
@@ -222,6 +223,9 @@ ensureContains(trainingEngineScriptPath, [
   'ENGINE_VERSION=2',
   'function allocatePhases',
   'function buildAthleteModel',
+  'function easyPaceEvidence',
+  'session_on_unavailable_date',
+  'inputAudit',
   'function qualitySpec',
   'function createPlan',
   'function validatePlan',
@@ -252,7 +256,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-coach-v2-20260710-1",
+  "mydash-v3-coach-v2-20260710-2",
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',

@@ -630,6 +630,7 @@ def main():
                   window._fb.setData=async (path,value)=>{writes[path]=value;};
                   window._fb.getData=async path=>writes[path]??null;
                   window._fb.removeData=async path=>{delete writes[path];};
+                  window._athleteProfile={maxHR:186,lthr:169,easyHRMin:130,easyHRMax:142,z1Max:130,z2Max:145,z3Max:155,z4Max:169,z5Max:186,thresholdPace:'4:21',tempoFast:'4:55',tempoSlow:'5:05'};
                   document.getElementById('coach-goal').value='10K integration test';
                   document.getElementById('coach-race-distance').value='10K';
                   document.getElementById('coach-target-time').value='49:59';
@@ -650,6 +651,11 @@ def main():
                     mirrorPlanId:writes.coach_plan?.planId,
                     statePlanId:window._coachPlan?.planId,
                     outputText:document.getElementById('coach-output')?.innerText||'',
+                    easyHRMax:saved?.athleteProfile?.effortTargets?.easy?.hrMax,
+                    easyPaceFast:saved?.athleteProfile?.effortTargets?.easy?.paceFast,
+                    tempoPaceFast:saved?.athleteProfile?.effortTargets?.tempo?.paceFast,
+                    inputAuditHRMax:saved?.inputAudit?.athleteSettings?.easyHRMax,
+                    continuousTempo:(saved?.sessions||[]).filter(s=>s.workoutSpec?.intent==='threshold'&&s.workoutSpec?.structure==='continuous').length,
                     valid:saved?.validation?.valid===true
                   };
                   Object.assign(window._fb,original);
@@ -661,6 +667,7 @@ def main():
             )
             checks["coach_v2_save"] = coach_v2_save
             assert_true(checks, "coach_v2_persistence_ok", coach_v2_save["engineVersion"] == 2 and coach_v2_save["valid"] is True and coach_v2_save["versionedWrite"] is True and coach_v2_save["activePointer"] == coach_v2_save["planId"] and coach_v2_save["mirrorPlanId"] == coach_v2_save["planId"] and coach_v2_save["statePlanId"] == coach_v2_save["planId"] and "Training Engine V2" in coach_v2_save["outputText"], "Coach V2 UI did not generate and persist the versioned plan through the compatibility mirror")
+            assert_true(checks, "coach_v2_effort_settings_ok", coach_v2_save["easyHRMax"] == 142 and coach_v2_save["easyPaceFast"] > 5.35 and abs(coach_v2_save["tempoPaceFast"] - (4 + 55/60)) < 0.001 and coach_v2_save["inputAuditHRMax"] == 142 and coach_v2_save["continuousTempo"] >= 2, "Coach V2 UI did not use athlete HR/pace settings or continuous tempo progression")
 
             no_plan_training_text = page.evaluate(
                 """
