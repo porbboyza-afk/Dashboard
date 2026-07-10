@@ -2,6 +2,7 @@ const CACHE_NAME = 'mydash-v3-coach-v2-20260710-3';
 const APP_SHELL = [
   './',
   './index.html',
+  './training-hub-ui.css',
   './manifest.json?v=20260710-3',
   './icon-192.png?v=20260710-3',
   './icon-512.png?v=20260710-3',

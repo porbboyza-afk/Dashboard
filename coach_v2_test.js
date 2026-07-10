@@ -61,9 +61,12 @@ async function main() {
   assert(tenPhases.filter(phase=>phase==='Build').length>=2, '10K: meaningful build block');
   assert(tenPhases.filter(phase=>phase==='Specific').length>=2, '10K: meaningful specific block');
   const tenSpecific = ten.sessions.filter(session=>session.phase==='Specific'&&session.workoutSpec.qualityDistanceKm>0);
+  const tenLongRuns = ten.sessions.filter(session=>session.type==='Long');
   assert(tenSpecific.length>=2, '10K: multiple specific sessions');
   assert(Math.max(...tenSpecific.map(session=>session.workoutSpec.qualityDistanceKm))>=5, '10K: specific workload reaches 5 km');
   assert(tenSpecific.some(session=>session.workoutSpec.repKm>=1), '10K: kilometer race-specific repetitions');
+  assert(Math.max(...tenLongRuns.map(session=>session.targetDist))===14, '10K: intermediate long run reaches 14 km from a 12 km baseline');
+  assert(tenSpecific.some(session=>session.workoutSpec.reps>=5&&session.workoutSpec.repKm>=1), '10K: specific intervals use a sufficient repeat count');
   assert(ten.sessions.filter(session=>session.phase==='RaceWeek').every(session=>!['Tempo','Interval','Long'].includes(session.type)), '10K: light race week');
   const peakTarget = Math.max(...ten.phaseSchedule.filter(row=>!['Taper','RaceWeek'].includes(row.phase)).map(row=>row.targetVolumeKm));
   assert(ten.phaseSchedule.filter(row=>['Taper','RaceWeek'].includes(row.phase)).every(row=>row.targetVolumeKm<peakTarget*.8), '10K: taper volume reduction');
@@ -73,6 +76,16 @@ async function main() {
   assert(plans['5K'].sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.repKm===1), '5K: 1 km specific reps');
   assert(plans.Half.sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.repKm>=2), 'Half: longer specific reps');
   assert(plans.Marathon.sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.qualityDistanceKm>=9), 'Marathon: marathon-specific work block');
+
+  const longRunProfilePlans={
+    '5K':engine.createPlan({goal:'5K long run profile',distance:'5K',level:'intermediate',daysPerWeek:4,startDate:'2026-07-13',endDate:'2026-09-07',totalWeeks:8,longRunDay:0,currentWeeklyKm:28,longestRecentRunKm:10,recentActivities:[],now:1783900000005}),
+    Half:engine.createPlan({goal:'Half long run profile',distance:'Half',level:'intermediate',daysPerWeek:4,startDate:'2026-07-13',endDate:'2026-10-05',totalWeeks:12,longRunDay:0,currentWeeklyKm:40,longestRecentRunKm:15,recentActivities:[],now:1783900000006}),
+    Marathon:engine.createPlan({goal:'Marathon long run profile',distance:'Marathon',level:'intermediate',daysPerWeek:4,startDate:'2026-07-13',endDate:'2026-11-02',totalWeeks:16,longRunDay:0,currentWeeklyKm:48,longestRecentRunKm:20,recentActivities:[],now:1783900000007})
+  };
+  assert.equal(Math.max(...longRunProfilePlans['5K'].sessions.filter(session=>session.type==='Long').map(session=>session.targetDist)),11,'5K: intermediate long run cap is 11 km');
+  assert.equal(Math.max(...longRunProfilePlans.Half.sessions.filter(session=>session.type==='Long').map(session=>session.targetDist)),20,'Half: intermediate long run cap is 20 km');
+  assert.equal(Math.max(...longRunProfilePlans.Marathon.sessions.filter(session=>session.type==='Long').map(session=>session.targetDist)),32,'Marathon: intermediate long run cap is 32 km');
+  Object.values(longRunProfilePlans).forEach(plan=>assert.equal(plan.validation.valid,true,`Long run profile valid: ${plan.goalProfile.distance}`));
   assert.equal(ten.athleteProfile.paceBasis, 'recent_benchmark', 'Benchmark drives training pace');
   assert.equal(engine.parseBenchmark('Half 1:45').minutes,105,'Half benchmark accepts H:MM');
   assert.equal(engine.parseBenchmark('Marathon 4:05').minutes,245,'Marathon benchmark accepts H:MM');
@@ -179,6 +192,7 @@ async function main() {
     profiles:Object.keys(plans),
     tenKPhases:tenPhases,
     tenKSpecificWorkKm:tenSpecific.map(session=>session.workoutSpec.qualityDistanceKm),
+    tenKLongRunKm:tenLongRuns.map(session=>session.targetDist),
     easyEffort:evidencePlan.athleteProfile.effortTargets.easy,
     tempoStructures:thresholdSessions.map(session=>session.workoutSpec.structure),
     recoverySummary:evidencePlan.recoverySummary,

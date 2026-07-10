@@ -2,6 +2,37 @@
 
 Last updated: 2026-07-10 Asia/Bangkok
 
+## 2026-07-10 Local-Only Coach Progression Upgrade
+
+Status:
+
+- Implemented and verified locally. Do not push until the user approves the Coach and UI local work.
+- The immediate issue was that 10K long runs could remain near 10 km because weekly-volume ratio was the only active target, despite a higher profile cap.
+
+Coach changes:
+
+- Long runs now use distance-specific phase targets plus the athlete's recent longest run, an 8% weekly progression guard, step-back weeks, and a volume safety guard.
+- Intermediate profile targets now peak at:
+  - 5K: 11 km
+  - 10K: 14 km
+  - Half Marathon: 20 km
+  - Marathon: 32 km
+- A 10K intermediate example with 28 km/week and a recent 12 km long run now progresses:
+  - 12, 12, 13, 11.4 step-back, 14, 14, 10.1 taper km.
+- 10K specific intervals progress to controlled kilometer-scale work, including 5 x 1.2 km (6 km quality), subject to profile and weekly-volume budgets.
+- Continuous tempo is favored over broken tempo. Validation rejects a plan when segmented threshold sessions dominate beyond the profile ratio.
+- Taper sessions now reduce easy minimum distance and warm-up/cool-down padding so low taper targets are achievable rather than falsely exceeding planned weekly volume.
+- Added World Athletics speed-session and long-run durability research references to generated plan metadata.
+
+Verification passed:
+
+- `node coach_v2_test.js`
+- `node --check js\\domain\\training\\engine-v2.js`
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+- `python comprehensive_refactor_test.py`
+- `git diff --check`
+
 ## 2026-07-10 Local-Only Web Structure Refactor: State, Bootstrap, Activity Model
 
 Status:

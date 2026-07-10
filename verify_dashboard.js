@@ -96,6 +96,7 @@ JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 checkJsFile(appsScriptPath);
 
 ensureContains(indexPath, [
+  '<link rel="stylesheet" href="training-hub-ui.css">',
   '<script src="js/date-utils.js"></script>',
   '<script src="js/ui-core.js"></script>',
   '<script src="js/app-state.js"></script>',
@@ -312,6 +313,7 @@ ensureContains(racesScriptPath, [
 
 ensureContains(swPath, [
   "mydash-v3-coach-v2-20260710-3",
+  './training-hub-ui.css',
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',

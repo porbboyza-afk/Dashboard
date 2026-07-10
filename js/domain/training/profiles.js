@@ -1,13 +1,15 @@
 (function(root){
   'use strict';
 
-  const METHODOLOGY_VERSION = 'mydash-running-2026.07.10';
+  const METHODOLOGY_VERSION = 'mydash-running-2026.07.10.1';
 
   const PROFILES = {
     Base: {
       key:'Base', label:'Base Building', race:false, distanceKm:null,
       defaultWeeks:8, defaultWeeklyKm:{beginner:12,intermediate:24,advanced:40},
-      minLongKm:5, maxLongKm:{beginner:10,intermediate:14,advanced:18}, longRatio:.32,
+      minLongKm:5, maxLongKm:{beginner:9,intermediate:12,advanced:15}, longRatio:.32, maxLongRatio:.50,
+      longRunTargets:{Base:{beginner:7,intermediate:9,advanced:11},Build:{beginner:8,intermediate:10,advanced:13},Specific:{beginner:9,intermediate:12,advanced:15}},
+      qualityBudgetKm:{Base:0,Build:5,Specific:4,Taper:2}, continuousTempoRatio:.75,
       thresholdWorkKm:{min:2.5,max:5}, specificWorkKm:{min:3,max:5},
       buildIntervals:[
         {intent:'hill_strength',reps:8,repSeconds:30,recoverySeconds:90,intensity:'hill_controlled'},
@@ -18,7 +20,9 @@
     '5K': {
       key:'5K', label:'5K', race:true, distanceKm:5,
       defaultWeeks:8, defaultWeeklyKm:{beginner:15,intermediate:28,advanced:45},
-      minLongKm:6, maxLongKm:{beginner:11,intermediate:15,advanced:19}, longRatio:.30,
+      minLongKm:6, maxLongKm:{beginner:8,intermediate:11,advanced:13}, longRatio:.36, maxLongRatio:.50,
+      longRunTargets:{Base:{beginner:7,intermediate:9,advanced:10},Build:{beginner:8,intermediate:10,advanced:12},Specific:{beginner:8,intermediate:11,advanced:13}},
+      qualityBudgetKm:{Base:0,Build:4,Specific:5,Taper:2.5}, continuousTempoRatio:.60,
       thresholdWorkKm:{min:3,max:5}, specificWorkKm:{min:3.2,max:5},
       buildIntervals:[
         {intent:'vo2',reps:8,repKm:.4,recoverySeconds:90,intensity:'current_5k'},
@@ -34,23 +38,27 @@
     '10K': {
       key:'10K', label:'10K', race:true, distanceKm:10,
       defaultWeeks:10, defaultWeeklyKm:{beginner:18,intermediate:32,advanced:52},
-      minLongKm:7, maxLongKm:{beginner:13,intermediate:18,advanced:23}, longRatio:.32,
-      thresholdWorkKm:{min:3,max:6}, specificWorkKm:{min:4,max:6},
+      minLongKm:7, maxLongKm:{beginner:10,intermediate:14,advanced:16}, longRatio:.38, maxLongRatio:.52,
+      longRunTargets:{Base:{beginner:8,intermediate:12,advanced:14},Build:{beginner:9,intermediate:13,advanced:15},Specific:{beginner:10,intermediate:14,advanced:16}},
+      qualityBudgetKm:{Base:0,Build:5,Specific:8,Taper:3}, continuousTempoRatio:.60,
+      thresholdWorkKm:{min:3,max:6}, specificWorkKm:{min:4,max:8},
       buildIntervals:[
         {intent:'vo2',reps:6,repKm:.4,recoverySeconds:90,intensity:'current_5k'},
         {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_5k'},
-        {intent:'race_specific',reps:5,repKm:1,recoverySeconds:90,intensity:'current_10k'}
+        {intent:'race_specific',reps:4,repKm:1,recoverySeconds:105,intensity:'current_10k'}
       ],
       specificIntervals:[
-        {intent:'race_specific',reps:5,repKm:1,recoverySeconds:90,intensity:'current_10k'},
-        {intent:'race_specific',reps:3,repKm:1.6,recoverySeconds:150,intensity:'current_10k'},
-        {intent:'race_specific',reps:3,repKm:2,recoverySeconds:180,intensity:'current_10k'}
+        {intent:'race_specific',reps:5,repKm:1,recoverySeconds:105,intensity:'current_10k'},
+        {intent:'race_specific',reps:6,repKm:1,recoverySeconds:120,intensity:'current_10k'},
+        {intent:'race_specific',reps:5,repKm:1.2,recoverySeconds:150,intensity:'current_10k'}
       ]
     },
     Half: {
       key:'Half', label:'Half Marathon', race:true, distanceKm:21.0975,
       defaultWeeks:12, defaultWeeklyKm:{beginner:24,intermediate:40,advanced:65},
-      minLongKm:9, maxLongKm:{beginner:18,intermediate:23,advanced:28}, longRatio:.35,
+      minLongKm:9, maxLongKm:{beginner:16,intermediate:20,advanced:23}, longRatio:.40, maxLongRatio:.52,
+      longRunTargets:{Base:{beginner:12,intermediate:15,advanced:17},Build:{beginner:14,intermediate:18,advanced:20},Specific:{beginner:16,intermediate:20,advanced:23}},
+      qualityBudgetKm:{Base:0,Build:6,Specific:10,Taper:4}, continuousTempoRatio:.65,
       thresholdWorkKm:{min:4,max:8}, specificWorkKm:{min:6,max:10},
       buildIntervals:[
         {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_10k'},
@@ -66,7 +74,9 @@
     Marathon: {
       key:'Marathon', label:'Marathon', race:true, distanceKm:42.195,
       defaultWeeks:16, defaultWeeklyKm:{beginner:30,intermediate:48,advanced:75},
-      minLongKm:12, maxLongKm:{beginner:26,intermediate:32,advanced:35}, longRatio:.38,
+      minLongKm:12, maxLongKm:{beginner:26,intermediate:32,advanced:32}, longRatio:.42, maxLongRatio:.55,
+      longRunTargets:{Base:{beginner:18,intermediate:22,advanced:24},Build:{beginner:22,intermediate:28,advanced:30},Specific:{beginner:26,intermediate:32,advanced:32}},
+      qualityBudgetKm:{Base:0,Build:6,Specific:12,Taper:5}, continuousTempoRatio:.70,
       thresholdWorkKm:{min:4,max:8}, specificWorkKm:{min:6,max:14},
       buildIntervals:[
         {intent:'threshold',reps:5,repKm:1,recoverySeconds:90,intensity:'threshold'},

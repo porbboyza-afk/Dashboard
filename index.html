@@ -1392,6 +1392,7 @@ img, video, iframe, canvas { max-width: 100%; }
   .coach-session-actions { grid-template-columns:1fr; }
 }
 </style>
+<link rel="stylesheet" href="training-hub-ui.css">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1478,9 +1479,9 @@ img, video, iframe, canvas { max-width: 100%; }
       <div class="dashboard-hero">
         <div class="dashboard-hero-copy">
           <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:6px" id="today-date-label"></div>
-          <div class="dashboard-hero-title">Good day</div>
+          <div class="dashboard-hero-title">Training overview</div>
           <div class="dashboard-hero-name" id="greeting-name">—</div>
-          <div class="dashboard-hero-sub">สุขภาพมาก่อน · การซ้อมรองลงมา</div>
+          <div class="dashboard-hero-sub">Readiness, training load, and the next useful action</div>
         </div>
         <button class="btn btn-primary btn-sm" onclick="showPage('fitness-log')" style="align-self:flex-end">+ บันทึก</button>
       </div>
@@ -1547,7 +1548,7 @@ img, video, iframe, canvas { max-width: 100%; }
         </div>
       </div>
 
-      <div style="margin-bottom:16px">
+      <div class="dashboard-activity-panel" style="margin-bottom:16px">
         <div class="card compact-card">
           <div class="flex justify-between items-center mb-12">
             <div class="card-label" style="margin:0">Recent Activities</div>
