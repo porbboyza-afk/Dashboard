@@ -121,7 +121,8 @@ async function restoreMyDashJSON(event){
       await window._fb.setData(`workouts/${id}`,w);
     }
     for(const w of payload.wellness||[])if(w.date)await window._fb.setData(`wellness/${w.date}`,w);
-    if(payload.coachPlan)await window._fb.setData('coach_plan',payload.coachPlan);
+    if(payload.coachPlan?.engineVersion===2&&window.MyDashCoachRepository)await window.MyDashCoachRepository.savePlan(payload.coachPlan);
+    else if(payload.coachPlan)await window._fb.setData('coach_plan',payload.coachPlan);
     if(Array.isArray(payload.stravaActivities))await window._fb.setData('strava_activities',payload.stravaActivities);
     if(payload.stravaDetails&&typeof payload.stravaDetails==='object')await window._fb.setData('strava_activity_details',payload.stravaDetails);
     showToast('✅ Restore completed');

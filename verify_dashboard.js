@@ -14,6 +14,10 @@ const wellnessScriptPath = path.join(root, 'js', 'wellness.js');
 const statsScriptPath = path.join(root, 'js', 'stats.js');
 const coachScriptPath = path.join(root, 'js', 'coach.js');
 const postRunReviewScriptPath = path.join(root, 'js', 'post-run-review.js');
+const trainingProfilesScriptPath = path.join(root, 'js', 'domain', 'training', 'profiles.js');
+const trainingEngineScriptPath = path.join(root, 'js', 'domain', 'training', 'engine-v2.js');
+const reviewMatcherScriptPath = path.join(root, 'js', 'domain', 'review', 'matcher-v2.js');
+const coachRepositoryScriptPath = path.join(root, 'js', 'services', 'coach-repository.js');
 const settingsScriptPath = path.join(root, 'js', 'settings.js');
 const backupExportScriptPath = path.join(root, 'js', 'backup-export.js');
 const racesScriptPath = path.join(root, 'js', 'races.js');
@@ -27,8 +31,12 @@ const extraScripts = [
   statsScriptPath,
   settingsScriptPath,
   backupExportScriptPath,
+  trainingProfilesScriptPath,
+  trainingEngineScriptPath,
+  coachRepositoryScriptPath,
   coachScriptPath,
   racesScriptPath,
+  reviewMatcherScriptPath,
   postRunReviewScriptPath,
 ];
 
@@ -87,8 +95,12 @@ ensureContains(indexPath, [
   '<script src="js/sources-strava.js"></script>',
   '<script src="js/settings.js"></script>',
   '<script src="js/backup-export.js"></script>',
+  '<script src="js/domain/training/profiles.js"></script>',
+  '<script src="js/domain/training/engine-v2.js"></script>',
+  '<script src="js/services/coach-repository.js"></script>',
   '<script src="js/coach.js"></script>',
   '<script src="js/races.js"></script>',
+  '<script src="js/domain/review/matcher-v2.js"></script>',
   '<script src="js/post-run-review.js"></script>',
   'id="page-post-run-review"',
   'function mdToHtml(text)',
@@ -160,6 +172,9 @@ ensureContains(backupExportScriptPath, [
 ]);
 
 ensureContains(coachScriptPath, [
+  'function updateCoachGoalDefaults',
+  'MyDashTraining.EngineV2.createPlan',
+  'MyDashCoachRepository.savePlan',
   'function coachTrainingWeekdays',
   'function coachDateForWeekday',
   'function coachPhaseForWeek',
@@ -177,7 +192,8 @@ ensureContains(coachScriptPath, [
   'function showCoachSessionDetail',
   'function assertCoachCloudSaved',
   'Cloud save failed. Please sign in again and retry.',
-  'Local fallback plan saved',
+  'Training Engine V2',
+  'archivePlan(plan)',
 ]);
 ensureFunctionCount(coachScriptPath, 'renderCoachDailyDecision', 1);
 ensureFunctionCount(coachScriptPath, 'reviewPlanAI', 1);
@@ -189,6 +205,44 @@ ensureContains(postRunReviewScriptPath, [
   'function generatePostRunAIReview',
   'intervalAnalysis',
   'post_run_reviews',
+  'postRunLoadAsOf',
+  'MyDashReviewMatcher',
+]);
+
+ensureContains(trainingProfilesScriptPath, [
+  'METHODOLOGY_VERSION',
+  "'5K'",
+  "'10K'",
+  'Half:',
+  'Marathon:',
+  'normalizeProfileKey',
+]);
+
+ensureContains(trainingEngineScriptPath, [
+  'ENGINE_VERSION=2',
+  'function allocatePhases',
+  'function buildAthleteModel',
+  'function qualitySpec',
+  'function createPlan',
+  'function validatePlan',
+  'workoutSpec',
+  'methodologyVersion',
+]);
+
+ensureContains(reviewMatcherScriptPath, [
+  'FACTS_VERSION=2',
+  'function matchWorkout',
+  "'date_mismatch'",
+  "'historical_plan'",
+  "'no_plan'",
+  'function factsHash',
+]);
+
+ensureContains(coachRepositoryScriptPath, [
+  'coach_plans/',
+  'active_coach_plan_id',
+  'async function savePlan',
+  'async function archivePlan',
 ]);
 
 ensureContains(racesScriptPath, [
@@ -198,7 +252,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-health-20260708-6",
+  "mydash-v3-coach-v2-20260710-1",
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',
@@ -208,8 +262,12 @@ ensureContains(swPath, [
   './js/sources-strava.js',
   './js/settings.js',
   './js/backup-export.js',
+  './js/domain/training/profiles.js',
+  './js/domain/training/engine-v2.js',
+  './js/services/coach-repository.js',
   './js/coach.js',
   './js/races.js',
+  './js/domain/review/matcher-v2.js',
   './js/post-run-review.js',
 ]);
 

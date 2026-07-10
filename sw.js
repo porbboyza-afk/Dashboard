@@ -1,10 +1,10 @@
-const CACHE_NAME = 'mydash-v3-health-20260708-6';
+const CACHE_NAME = 'mydash-v3-coach-v2-20260710-1';
 const APP_SHELL = [
   './',
   './index.html',
-  './manifest.json?v=20260708-6',
-  './icon-192.png?v=20260708-6',
-  './icon-512.png?v=20260708-6',
+  './manifest.json?v=20260710-1',
+  './icon-192.png?v=20260710-1',
+  './icon-512.png?v=20260710-1',
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',
@@ -14,8 +14,12 @@ const APP_SHELL = [
   './js/sources-strava.js',
   './js/settings.js',
   './js/backup-export.js',
+  './js/domain/training/profiles.js',
+  './js/domain/training/engine-v2.js',
+  './js/services/coach-repository.js',
   './js/coach.js',
   './js/races.js',
+  './js/domain/review/matcher-v2.js',
   './js/post-run-review.js'
 ];
 

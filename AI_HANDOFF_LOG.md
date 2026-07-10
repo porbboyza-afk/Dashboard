@@ -1,6 +1,86 @@
 # AI Handoff Log
 
-Last updated: 2026-07-08 Asia/Bangkok
+Last updated: 2026-07-10 Asia/Bangkok
+
+## 2026-07-10 Active Decision - Coach/Review V2 Before Web Refactor
+
+Status:
+
+- Implemented and verified locally; pending commit/push at the time of this entry.
+- The user explicitly wants the Coach/Review improvements delivered and verified before the broader web refactor.
+
+Implementation order:
+
+1. Build deterministic multi-distance Training Engine V2.
+2. Add versioned plan/session lifecycle and Post-Run Review matching.
+3. Integrate through compatibility adapters while preserving the current UI and legacy Firebase path.
+4. Keep Coach V1 as a temporary fallback.
+5. Refactor the remaining web structure after V2 is stable.
+
+Hard constraints:
+
+- Do not add new Coach domain logic to `index.html`.
+- AI explains plans and reviews; deterministic code creates and validates the training structure.
+- Do not design only for 10K. Initial profiles must cover base building, 5K, 10K, half marathon, and marathon.
+- Do not destructively migrate or delete legacy Firebase data.
+- Archive versioned plans instead of erasing plan history.
+- Post-Run Review must distinguish exact, mismatched, unplanned, historical-plan, and no-plan workouts.
+- Preserve current UI behavior through compatibility bridges during migration.
+- Run static, browser, and relevant build verification before push.
+
+Full architecture plan:
+
+- `docs/ARCHITECTURE_REFACTOR_PLAN.md`
+
+Implementation result:
+
+- Added deterministic Training Engine V2 modules:
+  - `js/domain/training/profiles.js`
+  - `js/domain/training/engine-v2.js`
+- Initial goal profiles:
+  - Base Building
+  - 5K
+  - 10K
+  - Half Marathon
+  - Marathon
+- Pace anchors use a recent benchmark when available. Target time is used for feasibility/risk, not blindly treated as current fitness.
+- Sessions now contain stable `sessionId`, `intent`, `workoutSpec`, quality distance, intensity basis, and methodology version.
+- An 8-week 10K example now allocates:
+  - Base: 2 weeks
+  - Build: 2 weeks
+  - Peak / Specific: 2 weeks
+  - Taper: 1 week
+  - Race Week: 1 week
+- Added conservative handling when activity history is too sparse to establish a reliable weekly-volume baseline.
+- Added `js/services/coach-repository.js` with:
+  - `coach_plans/{planId}` writes,
+  - `active_coach_plan_id`,
+  - `coach_plan` compatibility mirror,
+  - archive rather than destructive V2 plan deletion.
+- Added `js/domain/review/matcher-v2.js` with match types:
+  - `exact`
+  - `date_mismatch`
+  - `probable`
+  - `unplanned`
+  - `historical_plan`
+  - `no_plan`
+- Post-Run Review now uses workout-date load context, invalidates stale summaries with facts/revision hashes, and does not present an archived-plan summary as the current answer.
+- AI remains available for plan/review explanation; it no longer creates the primary session structure.
+
+Verification passed:
+
+- `node verify_dashboard.js`
+- `node coach_v2_test.js`
+- JavaScript syntax checks for all new/changed modules
+- Python AST syntax checks
+- `python smoke_test_dashboard.py`
+- `python comprehensive_refactor_test.py`
+- Android `gradlew.bat assembleDebug`
+- `git diff --check`
+
+Next action after delivery:
+
+- Validate generated plans with the user's real goals and training history, then begin the broader web refactor from `docs/ARCHITECTURE_REFACTOR_PLAN.md` without removing the V1 fallback in the same release.
 
 ## 2026-07-08 Coach Phase-Based Planner And Race-Week Guards
 

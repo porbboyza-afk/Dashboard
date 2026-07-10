@@ -29,15 +29,36 @@ function parseTimeToMinutes(value){
   return Number.isFinite(parts[0])?parts[0]:null;
 }
 function raceDistanceKm(distance){
+  if(window.MyDashTraining)return window.MyDashTraining.getProfile(distance).distanceKm||10;
   if(distance==='5K')return 5;
   if(distance==='Half')return 21.0975;
+  if(distance==='Marathon')return 42.195;
   return 10;
 }
 function coachWeekdayName(day){
   return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][parseInt(day)]||'Sun';
 }
 function coachPhaseThai(phase){
-  return {Base:'Base',Build:'Build',Peak:'Peak',Taper:'Taper',RaceWeek:'Race Week'}[phase]||phase||'Build';
+  return {Base:'Base',Build:'Build',Peak:'Peak',Specific:'Peak / Specific',Taper:'Taper',RaceWeek:'Race Week',Consolidate:'Consolidate'}[phase]||phase||'Build';
+}
+function coachCurrentPhase(plan,date=toLocalDateStr()){
+  const rows=plan?.phaseSchedule||[];
+  const match=[...rows].reverse().find(row=>row.startDate&&row.startDate<=date);
+  return match?.phase||plan?.sessions?.find(session=>session.date>=date)?.phase||coachPhaseForDate(date,plan?.startDate,plan?.totalWeeks);
+}
+function updateCoachGoalDefaults(){
+  const select=document.getElementById('coach-race-distance');
+  const target=document.getElementById('coach-target-time');
+  const weeks=document.getElementById('coach-weeks');
+  const profile=window.MyDashTraining?.getProfile(select?.value||'10K');
+  if(!profile)return;
+  if(target){
+    target.disabled=!profile.race;
+    target.placeholder=profile.race?'เช่น 47:59 หรือ 1:45:00':'ไม่ใช้เวลาเป้าหมายสำหรับ Base Building';
+    if(!profile.race)target.value='';
+  }
+  if(weeks&&weeks.value!=='custom')weeks.value=String(profile.defaultWeeks);
+  updateCoachEndDate();
 }
 function datePlusDays(dateStr,days){
   const d=new Date((dateStr||toLocalDateStr())+'T12:00:00');
@@ -82,7 +103,8 @@ function isHardSession(type){
 function getCoachGoalProfile(plan=null,{preferPlan=false}={}){
   const fromPlan=preferPlan&&plan?.goalProfile;
   const distance=(fromPlan?plan.goalProfile.distance:document.getElementById('coach-race-distance')?.value)||plan?.goalProfile?.distance||'10K';
-  const targetTime=(fromPlan?plan.goalProfile.targetTime:document.getElementById('coach-target-time')?.value?.trim())||plan?.goalProfile?.targetTime||'47:59';
+  const raceGoal=window.MyDashTraining?window.MyDashTraining.getProfile(distance).race:distance!=='Base';
+  const targetTime=(fromPlan?plan.goalProfile.targetTime:document.getElementById('coach-target-time')?.value?.trim())||plan?.goalProfile?.targetTime||(raceGoal?'47:59':'');
   const targetMinutes=parseTimeToMinutes(targetTime);
   const km=raceDistanceKm(distance);
   const targetPace=targetMinutes?targetMinutes/km:null;
@@ -633,7 +655,6 @@ async function generateTrainingPlan(){
   const goal=document.getElementById('coach-goal')?.value?.trim();
   if(!goal){showToast('กรุณาใส่เป้าหมาย','error');return;}
   if(!window._fb?.isSignedIn?.()){showToast('กรุณา Sign in ก่อนสร้างและบันทึกแผนลง Cloud','error');showPage('settings');return;}
-  if(!AppState.get('deepseekKey')&&!AppState.get('aiProxyUrl')){showToast('กรุณาตั้งค่า AI Proxy หรือ DeepSeek API Key ก่อน','error');showPage('settings');return;}
   const level=document.getElementById('coach-level')?.value;
   const days=document.getElementById('coach-days')?.value;
   const startDate=document.getElementById('coach-start-date')?.value||toLocalDateStr();
@@ -645,34 +666,29 @@ async function generateTrainingPlan(){
     if (diff > 0) totalWeeks = diff;
   }
   const context=buildCoachContext();
-  const safety=coachSafetyDecision();
   const out=document.getElementById('coach-output');
-  if(out){out.style.color='var(--text2)';out.innerHTML='⏳ Creating plan...';}
-  const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='⏳ Generating...';btn.disabled=true;}
+  if(out){out.style.color='var(--text2)';out.innerHTML='กำลังสร้างแผนด้วย Training Engine V2...';}
+  const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='กำลังสร้างแผน...';btn.disabled=true;}
   try{
-    const prompt=`Create an adaptive running plan.\n\n${formatCoachContext(context)}\n\nLevel:${level}\nTraining days:${days}/week\nPreferred long run day:${context.goalProfile.longRunDayName||coachWeekdayName(context.goalProfile.longRunDay||0)}\nStart:${startDate}${endDate?'\nRace/GoalDate:'+endDate:''}\nWeeks:${totalWeeks}\nDaily safety today:${safety.status} - ${safety.action}\n\nHard rules:\n- Code-calculated health/load data is authoritative; do not invent metrics.\n- No hard sessions on consecutive days.\n- If readiness is yellow, reduce intensity or volume.\n- If readiness is red, use recovery/rest and do not compensate by doubling the next day.\n- If pain >= 6, sick status, or ACWR > 1.5, block interval/tempo.\n- Respect unavailable dates/weekdays and place the weekly long run on the preferred long run day when possible.\n- Race/GoalDate is the race event, not a training workout. Do not schedule any session on Race/GoalDate; taper before it.\n- Strava is legacy/archive; Health Connect/manual workouts are primary.\n- Missing cadence/GPS/splits must be marked unavailable, never estimated as fact.\n- Every session must be actionable from the phone without asking again.\n- Thai user interface: all user-facing text in description, notes, and details must be Thai. Keep only type keys in English.\n\nRespond JSON ONLY:\n{"goal":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","totalWeeks":${totalWeeks},"sessions":[{"date":"YYYY-MM-DD","type":"Easy|Tempo|Interval|Long|Recovery|Rest","description":"สรุปสั้นภาษาไทย","targetDist":5.0,"targetPace":"5:30","targetHR":140,"notes":"เหตุผลภาษาไทยว่าซ้อมวันนี้เพื่ออะไร","priority":"key|normal|optional","details":{"warmup":"warmup ภาษาไทยแบบทำตามได้","mainSet":"main set ภาษาไทย มีจำนวนเซ็ต/pace/เวลาพักถ้าเกี่ยวข้อง","cooldown":"cooldown ภาษาไทย","execution":"วิธีวิ่งและสิ่งที่ต้องระวังภาษาไทย","successCriteria":"เกณฑ์ว่าวิ่งถูกต้องภาษาไทย","intensity":"ง่าย|กลาง-หนัก|หนัก|ฟื้นตัว","targetDescription":"เป้าหมายสั้นภาษาไทย"}}]}\nCreate training sessions across ${totalWeeks} weeks from ${startDate}${endDate?' until before '+endDate:''}. Aim for about ${parseInt(days)*totalWeeks} non-rest sessions, but never put a workout on Race/GoalDate. Include taper near goal date.`;
-    let plan=null,usedFallback=false,fallbackReason='';
-    try{
-      const data=await callNewsChat([
-        {role:'system',content:`You are a conservative running coach for this specific goal: ${goal}. Return JSON only. Prioritize the selected race distance, target time, injury prevention, and deterministic safety rules. User-facing plan text must be Thai.`},
-        {role:'user',content:coachApplyPromptDateGuard(prompt,days)}
-      ],{useSearch:false,temperature:.25,maxTokens:4096});
-      const rawText=data?.choices?.[0]?.message?.content||'';
-      if(!rawText)throw new Error(data?.error?.message||'AI returned no content');
-      plan=validateCoachPlan(extractJsonObject(rawText),{goal,startDate,endDate,totalWeeks,goalProfile:context.goalProfile});
-    }catch(aiError){
-      usedFallback=true;
-      fallbackReason=aiError.message||String(aiError);
-      plan=buildFallbackTrainingPlan({goal,startDate,endDate,totalWeeks,days,context,level});
-    }
-    const planPayload={...plan,goalProfile:context.goalProfile,safetyPolicyVersion:2,createdAt:Date.now(),completedDates:{},adjustments:[],aiFallback:usedFallback,aiFallbackReason:fallbackReason};
-    await window._fb.setData('coach_plan',planPayload);
+    if(!window.MyDashTraining?.EngineV2)throw new Error('Training Engine V2 is not loaded');
+    if(!window.MyDashCoachRepository)throw new Error('Coach repository is not loaded');
+    const planPayload=window.MyDashTraining.EngineV2.createPlan({
+      goal,distance:context.goalProfile.distance,targetTime:context.goalProfile.targetTime,benchmark:context.goalProfile.benchmark,
+      level,daysPerWeek:days,startDate,endDate,totalWeeks,longRunDay:context.goalProfile.longRunDay,
+      unavailable:context.goalProfile.unavailable,unavailableRaw:context.goalProfile.unavailableRaw,
+      currentWeeklyKm:context.volumes.d30/4.285,currentWeeklyKmSource:'activity_history',recentActivities:getAllActivities(),asOfDate:toLocalDateStr()
+    });
+    if(!planPayload.validation?.valid)throw new Error(`Plan validation failed: ${planPayload.validation?.errors?.join(', ')||'unknown error'}`);
+    await window.MyDashCoachRepository.savePlan(planPayload);
     const savedPlan=await window._fb.getData('coach_plan');
     if(!savedPlan?.createdAt||savedPlan.createdAt!==planPayload.createdAt)throw new Error('Cloud save failed. Please sign in again and retry.');
-    if(out){out.style.color='var(--text)';out.innerHTML=`<div style="color:${usedFallback?'var(--orange)':'var(--green)'};font-weight:700;margin-bottom:10px">${usedFallback?'⚠️ Local fallback plan saved':'✅ AI plan saved'}</div><div style="font-size:12px;color:var(--text2)">Goal: <strong style="color:var(--text)">${escapeHTML(plan.goal)}</strong><br>${plan.sessions?.length||0} sessions · ${plan.totalWeeks} weeks${usedFallback?`<br>AI issue: ${escapeHTML(fallbackReason)}`:''}</div>`;}
-    showToast(usedFallback?'Saved local fallback plan':'✅ Plan created and saved!',usedFallback?'warn':'success');
+    AppState.set('coachPlan',savedPlan);
+    const athlete=planPayload.athleteProfile||{};
+    const warning=planPayload.validation.warnings.length?`<br><span style="color:var(--orange)">ตรวจเพิ่ม: ${escapeHTML(planPayload.validation.warnings.join(', '))}</span>`:'';
+    if(out){out.style.color='var(--text)';out.innerHTML=`<div style="color:var(--green);font-weight:700;margin-bottom:10px">สร้างและบันทึก Training Engine V2 แล้ว</div><div style="font-size:12px;color:var(--text2)">Goal: <strong style="color:var(--text)">${escapeHTML(planPayload.goal)}</strong><br>${planPayload.sessions.length} sessions · ${planPayload.totalWeeks} weeks · ${escapeHTML(planPayload.goalProfile.distance)}<br>Pace basis: ${escapeHTML(athlete.paceBasis||'conservative')} · confidence ${escapeHTML(athlete.confidence||'low')}${warning}</div>`;}
+    showToast('สร้างแผน V2 และบันทึก Cloud แล้ว','success');
   }catch(e){if(out)out.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;}
-  finally{if(btn){btn.innerHTML='✨ Generate Plan + Save to Firebase';btn.disabled=false;}}
+  finally{if(btn){btn.innerHTML='สร้างแผน + บันทึก Firebase';btn.disabled=false;}}
 }
 
 function switchCoachTab(tab,el){
@@ -695,7 +711,7 @@ function renderCoachTracking(){
   if(noplan)noplan.style.display='none';if(planView)planView.style.display='block';
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   const today=toLocalDateStr();
-  const currentPhase=coachPhaseForDate(today,plan.startDate,plan.totalWeeks);
+  const currentPhase=coachCurrentPhase(plan,today);
   set('coach-plan-goal-disp','🎯 '+(plan.goal||'—'));
   set('coach-plan-meta-disp',`START ${plan.startDate||'—'} · ${plan.totalWeeks||4} WKS · ${plan.sessions.length} SESSIONS · ${coachPhaseThai(currentPhase).toUpperCase()}`);
   const completedDates=plan.completedDates||{};
@@ -845,8 +861,22 @@ async function assertCoachCloudSaved(expected={}){
   if(expected.completedDate&&!(saved.completedDates||{})[expected.completedDate])throw new Error('Cloud save failed. Completed workout was not confirmed.');
   return saved;
 }
-async function markDone(date){const plan=window._coachPlan;if(!plan)return;const c=plan.completedDates||{};c[date]=Date.now();await window._fb.setData('coach_plan/completedDates',c);await assertCoachCloudSaved({createdAt:plan.createdAt,completedDate:date});showToast('✅ บันทึกว่าทำแล้ว');}
-async function clearCoachPlan(){if(!confirm('ลบแผนซ้อมนี้?'))return;await window._fb.removeData('coach_plan');AppState.set('coachPlan',null);showToast('ลบแผนแล้ว');}
+async function markDone(date){
+  const plan=window._coachPlan;if(!plan)return;
+  const next={...plan,completedDates:{...(plan.completedDates||{}),[date]:Date.now()}};
+  const persisted=next.engineVersion===2&&window.MyDashCoachRepository
+    ? await window.MyDashCoachRepository.saveRevision(next)
+    : (await window._fb.setData('coach_plan/completedDates',next.completedDates),next);
+  await assertCoachCloudSaved({createdAt:persisted.createdAt,completedDate:date});
+  AppState.set('coachPlan',persisted);showToast('✅ บันทึกว่าทำแล้ว');
+}
+async function clearCoachPlan(){
+  if(!confirm('เก็บแผนนี้เป็นประวัติและหยุดใช้งาน?'))return;
+  const plan=window._coachPlan;
+  if(plan?.engineVersion===2&&window.MyDashCoachRepository)await window.MyDashCoachRepository.archivePlan(plan);
+  else await window._fb.removeData('coach_plan');
+  AppState.set('coachPlan',null);showToast('เก็บแผนเป็นประวัติแล้ว');
+}
 function coachSessionsOn(plan,date){return (plan.sessions||[]).filter(s=>s.date===date);}
 function coachHasHardNear(plan,date){
   return [-1,0,1].some(offset=>coachSessionsOn(plan,datePlusDays(date,offset)).some(s=>isHardSession(s.type)));
@@ -867,9 +897,11 @@ function coachFindMoveDate(plan,session){
 }
 async function saveCoachPlanWithAdjustment(plan,adjustment){
   const next={...plan,updatedAt:Date.now(),adjustments:[...(plan.adjustments||[]),{...adjustment,createdAt:Date.now()}]};
-  await window._fb.setData('coach_plan',next);
-  await assertCoachCloudSaved({createdAt:next.createdAt,updatedAt:next.updatedAt,adjustmentCount:next.adjustments.length});
-  AppState.set('coachPlan',next);
+  const persisted=next.engineVersion===2&&window.MyDashCoachRepository
+    ? await window.MyDashCoachRepository.saveRevision(next)
+    : (await window._fb.setData('coach_plan',next),next);
+  await assertCoachCloudSaved({createdAt:persisted.createdAt,updatedAt:persisted.updatedAt,adjustmentCount:persisted.adjustments.length});
+  AppState.set('coachPlan',persisted);
   renderCoachTracking();
 }
 async function coachApplyDailyDecision(date=toLocalDateStr()){

@@ -26,6 +26,8 @@ function postRunPaceDelta(actualPace,targetPace){
 
 function postRunPlanMatch(workout){
   const plan=window._coachPlan;
+  const savedReview=postRunReviewFor(workout);
+  if(window.MyDashReviewMatcher)return window.MyDashReviewMatcher.matchWorkout(workout,plan,savedReview);
   if(!workout||!plan?.sessions?.length)return {session:null,score:0,label:'No coach plan'};
   const sameDate=(plan.sessions||[]).find(session=>session.date===workout.date&&session.type!=='Rest');
   if(sameDate)return {session:sameDate,score:100,label:'Matched by date'};
@@ -40,9 +42,48 @@ function postRunPlanMatch(workout){
   return candidates?{session:candidates.session,score:Math.round(candidates.score),label:`Nearest plan day (${candidates.dayDiff}d)`}:{session:null,score:0,label:'No nearby plan session'};
 }
 
+function postRunLoadAsOf(dateString,excludeWorkout=null){
+  const end=new Date((dateString||'')+'T23:59:59');
+  if(isNaN(end))return {acute:0,chronicWeekly:0,acwr:null,monotony:0,strain:0,historyDays:0,baselineReady:false,daily:[]};
+  const excludedKey=postRunWorkoutKey(excludeWorkout);
+  const all=getAllActivities().filter(workout=>{
+    const date=new Date((workout.date||'')+'T12:00:00');return !isNaN(date)&&date<=end;
+  }).filter(workout=>!excludedKey||postRunWorkoutKey(workout)!==excludedKey);
+  const rowsFor=days=>all.filter(workout=>{
+    const date=new Date((workout.date||'')+'T12:00:00');return date>=new Date(end.getTime()-(days-1)*86400000);
+  });
+  const acuteRows=rowsFor(7),chronicRows=rowsFor(28);
+  const acute=acuteRows.reduce((sum,row)=>sum+sessionLoad(row),0);
+  const chronicWeekly=chronicRows.reduce((sum,row)=>sum+sessionLoad(row),0)/4;
+  const historyDates=chronicRows.map(row=>new Date((row.date||'')+'T12:00:00')).filter(date=>!isNaN(date));
+  const historyDays=historyDates.length?Math.floor((end-Math.min(...historyDates))/86400000)+1:0;
+  const baselineReady=historyDays>=21&&chronicRows.length>=3;
+  const acwr=baselineReady&&chronicWeekly>0?acute/chronicWeekly:null;
+  const daily=Array.from({length:7},(_,index)=>{
+    const date=new Date(end);date.setDate(date.getDate()-(6-index));const key=toLocalDateStr(date);
+    return acuteRows.filter(row=>row.date===key).reduce((sum,row)=>sum+sessionLoad(row),0);
+  });
+  const mean=daily.reduce((sum,value)=>sum+value,0)/7;
+  const deviation=Math.sqrt(daily.reduce((sum,value)=>sum+Math.pow(value-mean,2),0)/7);
+  const monotony=deviation>0?mean/deviation:(mean>0?7:0);
+  return {acute,chronicWeekly,acwr,monotony,strain:acute*monotony,historyDays,baselineReady,daily};
+}
+function postRunReadinessAsOf(workout,wellness){
+  const load=postRunLoadAsOf(workout?.date,workout);
+  const recovery=wellness?calculateRecoveryScore(wellness):null;
+  let score=recovery??55;
+  if(load.acwr!==null&&load.acwr>1.5)score-=18;
+  else if(load.acwr!==null&&load.acwr>1.3)score-=9;
+  if(+wellness?.soreness>=6||wellness?.healthStatus==='injured')score=Math.min(score,45);
+  if(wellness?.healthStatus==='sick')score=Math.min(score,35);
+  score=Math.max(0,Math.min(100,Math.round(score)));
+  return {score,level:score>=80?'ready':score>=65?'caution':score>=45?'recovery':'rest',load};
+}
+
 function buildPostRunFacts(workout){
   const match=postRunPlanMatch(workout);
-  const session=match.session;
+  const activePlan=window._coachPlan;
+  const session=match.compareTargets===false?null:match.session;
   const dist=parseFloat(workout?.dist||0);
   const targetDist=parseFloat(session?.targetDist||0);
   const distDelta=targetDist?+((dist-targetDist)/targetDist*100).toFixed(1):null;
@@ -52,9 +93,9 @@ function buildPostRunFacts(workout){
   const targetHR=parseFloat(session?.targetHR||0);
   const hrDelta=targetHR&&hr?Math.round(hr-targetHR):null;
   const load=sessionLoad(workout||{});
-  const readiness=calculateReadiness();
-  const readinessLoad=readiness?.load||{};
   const wellness=(AppState.get('wellness')||[]).find(row=>row.date===workout?.date)||null;
+  const readiness=postRunReadinessAsOf(workout,wellness);
+  const readinessLoad=readiness?.load||{};
   const riskFlags=[];
   if(distDelta!==null&&Math.abs(distDelta)>15)riskFlags.push(distDelta>0?'distance_over_target':'distance_under_target');
   if(paceDelta&&Math.abs(paceDelta.seconds)>20)riskFlags.push(paceDelta.seconds<0?'pace_faster_than_target':'pace_slower_than_target');
@@ -62,11 +103,17 @@ function buildPostRunFacts(workout){
   if(+workout?.rpe>=8)riskFlags.push('high_rpe');
   if(+workout?.pain>=4)riskFlags.push('pain_reported');
   if(readiness.score<60)riskFlags.push('low_readiness_context');
-  return {
+  const facts={
+    factsVersion:window.MyDashReviewMatcher?.FACTS_VERSION||1,
     workoutKey:postRunWorkoutKey(workout),
+    workoutRevision:window.MyDashReviewMatcher?.workoutRevision(workout)||String(workout?.updatedAt||workout?.createdAt||''),
     date:workout?.date||'',
-    planMatch:{score:match.score,label:match.label,session:session?{
-      date:session.date,type:session.type,targetDist:session.targetDist,targetPace:session.targetPace,targetHR:session.targetHR,description:session.description,details:session.details||null
+    planId:activePlan?.planId||'',revisionId:activePlan?.revisionId||'',
+    planMatch:{type:match.type||'legacy',score:match.score,label:match.label,requiresConfirmation:!!match.requiresConfirmation,compareTargets:match.compareTargets!==false,planId:activePlan?.planId||'',revisionId:activePlan?.revisionId||'',session:match.sessionSnapshot||match.session?{
+      sessionId:match.sessionSnapshot?.sessionId||match.session?.sessionId||'',date:(match.sessionSnapshot||match.session).date,type:(match.sessionSnapshot||match.session).type,
+      intent:match.sessionSnapshot?.intent||match.session?.intent||'',targetDist:(match.sessionSnapshot||match.session).targetDist,targetPace:(match.sessionSnapshot||match.session).targetPace,
+      targetHR:(match.sessionSnapshot||match.session).targetHR,description:(match.sessionSnapshot||match.session).description,details:(match.sessionSnapshot||match.session).details||null,
+      workoutSpec:match.sessionSnapshot?.workoutSpec||match.session?.workoutSpec||null
     }:null},
     targetComparison:{
       actualDist:dist||0,targetDist:targetDist||0,distDeltaPct:distDelta,
@@ -96,9 +143,16 @@ function buildPostRunFacts(workout){
       plannedMainSet:session?.details?.mainSet||''
     }:null
   };
+  facts.factsHash=window.MyDashReviewMatcher?.factsHash(workout,activePlan,match)||'';
+  return facts;
 }
 
 function postRunLocalVerdict(facts){
+  const matchType=facts.planMatch?.type;
+  if(matchType==='date_mismatch')return {label:'Workout differs from plan',color:'var(--orange)',next:'Review this workout as unplanned unless you intentionally replaced the planned session.'};
+  if(matchType==='unplanned')return {label:'Unplanned workout',color:'var(--accent)',next:'Review the actual training effect without comparing it with an unrelated plan session.'};
+  if(matchType==='historical_plan')return {label:'Historical plan',color:'var(--text3)',next:'The old review is historical and is not used as the current plan.'};
+  if(matchType==='no_plan')return {label:'Standalone review',color:'var(--accent)',next:'Review this workout from its actual load, recovery context, and stated intent.'};
   const flags=facts.riskFlags||[];
   if(flags.includes('pain_reported')||flags.includes('heart_rate_above_target')||flags.includes('high_rpe'))return {label:'Review needed',color:'var(--orange)',next:'Keep the next 24 hours easy and recheck recovery before quality work.'};
   if(facts.targetComparison?.distDeltaPct!==null&&Math.abs(facts.targetComparison.distDeltaPct)<=10&&(facts.targetComparison.paceDelta?.onTarget!==false))return {label:'On target',color:'var(--green)',next:'Keep the plan unless tomorrow readiness drops.'};
@@ -118,9 +172,11 @@ function postRunRenderWorkoutList(selectedKey){
     const key=postRunWorkoutKey(workout);
     const review=postRunReviewFor(workout);
     const active=key===selectedKey;
+    const facts=review?buildPostRunFacts(workout):null;
+    const stale=review&&window.MyDashReviewMatcher?.isReviewStale(review,facts);
     return `<button class="postrun-activity-row ${active?'active':''}" onclick="openPostRunReview('${escapeHTML(key)}')">
       <span><strong>${escapeHTML(workout.date||'')}</strong><br><small>${escapeHTML(workout.type||'activity')} ${workout.dist||0}km${workout.avgPace?' @ '+formatPace(workout.avgPace):''}</small></span>
-      <span class="postrun-review-state">${review?'Reviewed':'Open'}</span>
+      <span class="postrun-review-state">${stale?'Review outdated':review?'Reviewed':'Open'}</span>
     </button>`;
   }).join('');
 }
@@ -137,6 +193,7 @@ function renderPostRunReview(){
   _activePostRunWorkoutKey=selectedKey;
   const facts=buildPostRunFacts(workout);
   const review=postRunReviewFor(workout);
+  const reviewStale=!!review&&!!window.MyDashReviewMatcher?.isReviewStale(review,facts);
   const verdict=postRunLocalVerdict(facts);
   const session=facts.planMatch.session;
   const comparison=facts.targetComparison;
@@ -182,8 +239,8 @@ function renderPostRunReview(){
         </div>
         <button class="btn btn-primary btn-sm" id="btn-postrun-ai" onclick="generatePostRunAIReview('${escapeHTML(selectedKey)}')">Generate AI Review</button>
       </div>
-      <div id="postrun-ai-output" class="ai-box mt-12" style="display:${review?.aiSummary?'block':'none'}">${review?.aiSummary?mdToHtml(review.aiSummary):''}</div>
-      ${!review?.aiSummary?`<div class="postrun-local-note mt-12">${escapeHTML(verdict.next)}</div>`:''}
+      <div id="postrun-ai-output" class="ai-box mt-12" style="display:${review?.aiSummary&&!reviewStale?'block':'none'}">${review?.aiSummary&&!reviewStale?mdToHtml(review.aiSummary):''}</div>
+      ${reviewStale?`<div class="postrun-local-note mt-12">Review เดิมอ้างข้อมูลหรือแผนคนละ revision จึงไม่ใช้เป็นคำตอบปัจจุบัน</div>`:!review?.aiSummary?`<div class="postrun-local-note mt-12">${escapeHTML(verdict.next)}</div>`:''}
     </div>`;
 }
 
@@ -204,7 +261,7 @@ async function generatePostRunAIReview(key=''){
   if(button){button.disabled=true;button.innerHTML='Analyzing...';}
   if(output){output.style.display='block';output.innerHTML='Analyzing workout...';}
   try{
-    const prompt=`Post-run review facts JSON:\n${JSON.stringify(facts,null,2)}\n\nReturn a concise Thai post-run review:\n1. Did the workout meet the planned intent?\n2. What went well?\n3. Risk flags from HR/RPE/pain/load.\n4. Recommendation for the next 24-48 hours.\n5. Whether the next coach session should be kept, reduced, or reviewed by the user. Do not change the plan automatically. Separate facts from AI estimate.`;
+    const prompt=`Post-run review facts JSON:\n${JSON.stringify(facts,null,2)}\n\nReturn a concise Thai post-run review:\n1. State the match type (${facts.planMatch.type}) before discussing plan compliance.\n2. If match type is no_plan, unplanned, date_mismatch, or historical_plan, review the actual workout as standalone and do not claim it followed a plan.\n3. What went well?\n4. Risk flags from HR/RPE/pain/load as of the workout date.\n5. Recommendation for the next 24-48 hours.\n6. Whether the next active coach session should be kept, reduced, or reviewed by the user. Do not change the plan automatically. Separate facts from AI estimate.`;
     const data=await callNewsChat([
       {role:'system',content:'You are a conservative running coach. Use only the provided structured facts. Do not invent missing GPS, cadence, splits, HRV, or medical claims. Respond in Thai.'},
       {role:'user',content:prompt}

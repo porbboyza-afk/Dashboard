@@ -35,8 +35,12 @@ EXPECTED_SCRIPT_ORDER = [
     "js/sources-strava.js",
     "js/settings.js",
     "js/backup-export.js",
+    "js/domain/training/profiles.js",
+    "js/domain/training/engine-v2.js",
+    "js/services/coach-repository.js",
     "js/coach.js",
     "js/races.js",
+    "js/domain/review/matcher-v2.js",
     "js/post-run-review.js",
 ]
 
@@ -71,6 +75,7 @@ EXPECTED_GLOBALS = [
     "renderShareCanvas",
     "closeShareStats",
     "updateCoachEndDate",
+    "updateCoachGoalDefaults",
     "renderCoachTracking",
     "switchCoachTab",
     "renderPostRunReview",
@@ -411,6 +416,13 @@ def main():
                   AppState.set('coachPlan', window._coachPlan);
                   AppState.set('wellness', [{date:'2026-07-08', sleepHours:7.2, restingHR:50, hrv:60, soreness:1}]);
                   const facts = buildPostRunFacts(workout);
+                  const mismatch = MyDashReviewMatcher.matchWorkout(workout, {
+                    planId:'mismatch-plan', revisionId:'r1',
+                    sessions:[{sessionId:'easy-1',date:'2026-07-08',type:'Easy',intent:'easy',targetDist:5,targetPace:'6:10'}]
+                  });
+                  const probable = MyDashReviewMatcher.matchWorkout({...workout,date:'2026-07-09'}, window._coachPlan);
+                  const noPlan = MyDashReviewMatcher.matchWorkout(workout, null, null);
+                  const historical = MyDashReviewMatcher.matchWorkout(workout, null, {planId:'old-plan',planMatch:{session:{date:'2026-07-08',type:'Interval'}}});
                   openPostRunReview('postrun-interval-1');
                   return {
                     key: postRunWorkoutKey(workout),
@@ -424,6 +436,13 @@ def main():
                     loadHasAcuteActs: Object.prototype.hasOwnProperty.call(facts.readiness.load, 'acuteActs'),
                     loadHasChronicActs: Object.prototype.hasOwnProperty.call(facts.readiness.load, 'chronicActs'),
                     factsJsonOk: JSON.stringify(facts).includes('"readiness"'),
+                    factsVersion: facts.factsVersion,
+                    exactMatchType: facts.planMatch.type,
+                    mismatchType: mismatch.type,
+                    mismatchCompareTargets: mismatch.compareTargets,
+                    probableType: probable.type,
+                    noPlanType: noPlan.type,
+                    historicalType: historical.type,
                     pageActive: document.getElementById('page-post-run-review')?.classList.contains('active'),
                     bodyRendered: !!document.querySelector('#postrun-review-body .postrun-hero')
                   };
@@ -436,6 +455,7 @@ def main():
             assert_true(checks, "post_run_interval_schema_ok", post_run_rules["intervalReps"] == 6 and "400m" in post_run_rules["intervalPlan"], "Post-run intervalAnalysis schema is missing planned/actual interval data")
             assert_true(checks, "post_run_firebase_payload_ok", post_run_rules["loadHasAcuteActs"] is False and post_run_rules["loadHasChronicActs"] is False and post_run_rules["factsJsonOk"] is True, "Post-run facts still contain non-serializable readiness load activity arrays")
             assert_true(checks, "post_run_render_ok", post_run_rules["pageActive"] is True and post_run_rules["bodyRendered"] is True, "Post-run review page did not render selected workout")
+            assert_true(checks, "post_run_match_modes_ok", post_run_rules["factsVersion"] == 2 and post_run_rules["exactMatchType"] == "exact" and post_run_rules["mismatchType"] == "date_mismatch" and post_run_rules["mismatchCompareTargets"] is False and post_run_rules["probableType"] == "probable" and post_run_rules["noPlanType"] == "no_plan" and post_run_rules["historicalType"] == "historical_plan", "Post-run Review V2 match modes are incomplete")
 
             duplicate_rules = page.evaluate(
                 """
@@ -529,6 +549,16 @@ def main():
                     ]
                   }, {goal:'10K sub 48', startDate:'2026-07-08', endDate:'2026-08-02', totalWeeks:4, goalProfile});
                   const raceEveSession = raceEvePlan.sessions.find(s => s.date === '2026-08-01');
+                  const v2Plan = MyDashTraining.EngineV2.createPlan({
+                    goal:'10K sub 50', distance:'10K', targetTime:'49:59', benchmark:'10K 52:30',
+                    level:'intermediate', daysPerWeek:4, startDate:'2026-07-13', endDate:'2026-09-07', totalWeeks:8,
+                    longRunDay:0, currentWeeklyKm:28, longestRecentRunKm:12, recentActivities:[], now:1783900000000
+                  });
+                  const v2Specific = v2Plan.sessions.filter(s => s.phase === 'Specific' && s.workoutSpec?.qualityDistanceKm > 0);
+                  const v2RaceWeek = v2Plan.sessions.filter(s => s.phase === 'RaceWeek');
+                  const v2BuildWeeks = v2Plan.phaseSchedule.filter(row => row.phase === 'Build').length;
+                  const v2SpecificWeeks = v2Plan.phaseSchedule.filter(row => row.phase === 'Specific').length;
+                  const v2MultiDistance = ['Base','5K','10K','Half','Marathon'].every(distance => !!MyDashTraining.getProfile(distance));
                   return {
                     sleepFull: formatSleepHours(4.9),
                     sleepCompact: formatSleepHours(4.9, {compact:true}),
@@ -553,7 +583,15 @@ def main():
                     downgradeReduced: downgraded.plan.sessions[0].targetDist < 8,
                     downgradeAdjustment: downgraded.adjustment.type,
                     downgradeGoalRisk: downgraded.adjustment.goalImpact.goalRisk,
-                    goalImpactSaved: !!downgraded.plan.dailyDecisions['2026-07-10'].goalImpact?.goal
+                    goalImpactSaved: !!downgraded.plan.dailyDecisions['2026-07-10'].goalImpact?.goal,
+                    v2Valid: v2Plan.validation.valid,
+                    v2EngineVersion: v2Plan.engineVersion,
+                    v2BuildWeeks,
+                    v2SpecificWeeks,
+                    v2SpecificWork: v2Specific.map(s => s.workoutSpec.qualityDistanceKm),
+                    v2RaceWeekLight: v2RaceWeek.every(s => !['Tempo','Interval','Long'].includes(s.type)),
+                    v2Structured: v2Plan.sessions.filter(s => s.type !== 'Rest').every(s => !!s.workoutSpec && !!s.sessionId),
+                    v2MultiDistance
                   };
                 }
                 """
@@ -573,6 +611,56 @@ def main():
             assert_true(checks, "daily_move_saved_ok", coach_plan_rules["movedOffUnavailable"] is True and coach_plan_rules["movedBeforeRace"] is True and coach_plan_rules["movedDailyDecisionSaved"] is True, "Daily move was not applied/saved safely")
             assert_true(checks, "daily_downgrade_ok", coach_plan_rules["downgradeType"] == "Easy" and coach_plan_rules["downgradeReduced"] is True and coach_plan_rules["downgradeAdjustment"] == "auto_downgrade", "Hard day was not downgraded")
             assert_true(checks, "daily_goal_impact_ok", coach_plan_rules["downgradeGoalRisk"] == "medium" and coach_plan_rules["goalImpactSaved"] is True, "Goal impact was not saved")
+            assert_true(checks, "coach_v2_structure_ok", coach_plan_rules["v2Valid"] is True and coach_plan_rules["v2EngineVersion"] == 2 and coach_plan_rules["v2Structured"] is True, "Coach V2 plan schema or validation failed")
+            assert_true(checks, "coach_v2_periodization_ok", coach_plan_rules["v2BuildWeeks"] >= 2 and coach_plan_rules["v2SpecificWeeks"] >= 2 and max(coach_plan_rules["v2SpecificWork"]) >= 5 and coach_plan_rules["v2RaceWeekLight"] is True, "Coach V2 does not provide progressive 10K-specific work and a light race week")
+            assert_true(checks, "coach_v2_multi_distance_ok", coach_plan_rules["v2MultiDistance"] is True, "Coach V2 profiles do not cover Base, 5K, 10K, Half, and Marathon")
+
+            coach_v2_save = page.evaluate(
+                """
+                async () => {
+                  const previousPlan=window._coachPlan;
+                  const original={
+                    isSignedIn:window._fb.isSignedIn,
+                    setData:window._fb.setData,
+                    getData:window._fb.getData,
+                    removeData:window._fb.removeData
+                  };
+                  const writes={};
+                  window._fb.isSignedIn=()=>true;
+                  window._fb.setData=async (path,value)=>{writes[path]=value;};
+                  window._fb.getData=async path=>writes[path]??null;
+                  window._fb.removeData=async path=>{delete writes[path];};
+                  document.getElementById('coach-goal').value='10K integration test';
+                  document.getElementById('coach-race-distance').value='10K';
+                  document.getElementById('coach-target-time').value='49:59';
+                  document.getElementById('coach-benchmark').value='10K 52:30';
+                  document.getElementById('coach-level').value='intermediate';
+                  document.getElementById('coach-days').value='4';
+                  document.getElementById('coach-long-run-day').value='0';
+                  document.getElementById('coach-start-date').value='2026-07-13';
+                  document.getElementById('coach-weeks').value='8';
+                  document.getElementById('coach-end-date').value='2026-09-07';
+                  await generateTrainingPlan();
+                  const saved=writes.coach_plan;
+                  const result={
+                    engineVersion:saved?.engineVersion,
+                    planId:saved?.planId||'',
+                    versionedWrite:!!writes[`coach_plans/${saved?.planId}`],
+                    activePointer:writes.active_coach_plan_id,
+                    mirrorPlanId:writes.coach_plan?.planId,
+                    statePlanId:window._coachPlan?.planId,
+                    outputText:document.getElementById('coach-output')?.innerText||'',
+                    valid:saved?.validation?.valid===true
+                  };
+                  Object.assign(window._fb,original);
+                  window._coachPlan=previousPlan;
+                  AppState.set('coachPlan',previousPlan);
+                  return result;
+                }
+                """
+            )
+            checks["coach_v2_save"] = coach_v2_save
+            assert_true(checks, "coach_v2_persistence_ok", coach_v2_save["engineVersion"] == 2 and coach_v2_save["valid"] is True and coach_v2_save["versionedWrite"] is True and coach_v2_save["activePointer"] == coach_v2_save["planId"] and coach_v2_save["mirrorPlanId"] == coach_v2_save["planId"] and coach_v2_save["statePlanId"] == coach_v2_save["planId"] and "Training Engine V2" in coach_v2_save["outputText"], "Coach V2 UI did not generate and persist the versioned plan through the compatibility mirror")
 
             no_plan_training_text = page.evaluate(
                 """

@@ -36,6 +36,7 @@ let _races = [];
 function coachPlanRaceEntry(plan=window._coachPlan){
   if(!plan?.endDate)return null;
   const goalProfile=plan.goalProfile||{};
+  if(goalProfile.raceGoal===false)return null;
   const distKm=raceDistanceKm(goalProfile.distance||'10K');
   const goalTime=goalProfile.targetTime||'';
   const name=plan.goal||`${goalProfile.distance||'10K'} goal race`;
