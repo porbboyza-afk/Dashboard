@@ -1,13 +1,13 @@
 {
   "name": "MyDash Personal Fitness",
   "short_name": "MyDash",
-  "id": "./?v=19",
+  "id": "./?v=20",
   "description": "Personal workout, wellness and recovery dashboard",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F5F0E8",
-  "theme_color": "#FF4D00",
+  "background_color": "#F4F6F7",
+  "theme_color": "#007C78",
   "icons": [
     {
       "src": "icon-192.png?v=20260710-3",

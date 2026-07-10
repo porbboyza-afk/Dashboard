@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-coach-v2-20260710-3';
+const CACHE_NAME = 'mydash-v3-training-hub-20260711-1';
 const APP_SHELL = [
   './',
   './index.html',

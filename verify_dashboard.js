@@ -312,7 +312,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-coach-v2-20260710-3",
+  "mydash-v3-training-hub-20260711-1",
   './training-hub-ui.css',
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
