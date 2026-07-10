@@ -2,6 +2,46 @@
 
 Last updated: 2026-07-10 Asia/Bangkok
 
+## 2026-07-10 Coach Recovery Model + Training Dashboard View Model
+
+Status:
+
+- Implemented and under verification in the current working tree.
+- Coach Engine V2 now has explicit recovery modeling instead of treating all non-training days as invisible gaps.
+- Training frequency supports 3-6 days/week.
+- Fixed the 5-day schedule pattern so it keeps a quality slot; the previous offset pattern could omit quality work for 5-day plans.
+- Added structured `recoveryCards` and `recoverySummary` to V2 plans.
+- Recovery intents now include:
+  - `passive_rest`
+  - `active_recovery`
+  - `post_long_run`
+  - `post_quality`
+  - `pre_race`
+  - `illness_or_pain`
+- Recovery runs store `recoveryIntent` and `recoveryAdvice` on the session. Rest-day guidance is stored separately in `recoveryCards` so the plan list is not flooded with rest rows.
+- Added references for recovery, active recovery, and sleep consensus papers to the plan `references` payload.
+- Daily Coach now finds the recovery card for today and shows Do/Avoid guidance when there is no planned run.
+- Track Plan now has a training dashboard summary:
+  - completion
+  - completed/planned km
+  - recovery day count
+  - week-by-week volume/phase strip
+  - easy/quality/long/recovery intensity distribution
+- Added `js/training-dashboard-view-model.js` as the first broader UI refactor slice. It summarizes plan, activity, wellness, intensity, and recovery data for UI rendering without embedding the calculation inside HTML.
+- Added a `6 days` option to the Coach form.
+- PWA cache was bumped to `mydash-v3-coach-v2-20260710-3`; manifest id is `./?v=19`.
+
+Verification passed so far:
+
+- `node coach_v2_test.js`
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+- `python comprehensive_refactor_test.py`
+
+Important design decision:
+
+- This is not a full big-bang UI rewrite. It starts the broader refactor with a safe Coach/Training surface, because this is where the plan/recovery logic is most consequential. Continue migrating other dashboard pages through view models instead of adding more calculations directly inside `index.html`.
+
 ## 2026-07-10 Coach V2 Effort Anchors Follow-up
 
 Status:

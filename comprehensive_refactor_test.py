@@ -38,6 +38,7 @@ EXPECTED_SCRIPT_ORDER = [
     "js/domain/training/profiles.js",
     "js/domain/training/engine-v2.js",
     "js/services/coach-repository.js",
+    "js/training-dashboard-view-model.js",
     "js/coach.js",
     "js/races.js",
     "js/domain/review/matcher-v2.js",
@@ -559,6 +560,12 @@ def main():
                   const v2BuildWeeks = v2Plan.phaseSchedule.filter(row => row.phase === 'Build').length;
                   const v2SpecificWeeks = v2Plan.phaseSchedule.filter(row => row.phase === 'Specific').length;
                   const v2MultiDistance = ['Base','5K','10K','Half','Marathon'].every(distance => !!MyDashTraining.getProfile(distance));
+                  const v2Dashboard = MyDashTrainingDashboard.build(v2Plan, {activities:[{date:v2Plan.sessions.find(s => s.type !== 'Rest')?.date}], wellness:[{date:'2026-07-10', sleepHours:7.1}], today:'2026-07-20'});
+                  const v2FiveDay = MyDashTraining.EngineV2.createPlan({
+                    goal:'10K 5-day browser test', distance:'10K', targetTime:'49:59', benchmark:'10K 52:30',
+                    level:'intermediate', daysPerWeek:5, startDate:'2026-07-13', endDate:'2026-09-07', totalWeeks:8,
+                    longRunDay:0, currentWeeklyKm:36, longestRecentRunKm:12, recentActivities:[], now:1783900000001
+                  });
                   return {
                     sleepFull: formatSleepHours(4.9),
                     sleepCompact: formatSleepHours(4.9, {compact:true}),
@@ -591,7 +598,11 @@ def main():
                     v2SpecificWork: v2Specific.map(s => s.workoutSpec.qualityDistanceKm),
                     v2RaceWeekLight: v2RaceWeek.every(s => !['Tempo','Interval','Long'].includes(s.type)),
                     v2Structured: v2Plan.sessions.filter(s => s.type !== 'Rest').every(s => !!s.workoutSpec && !!s.sessionId),
-                    v2MultiDistance
+                    v2MultiDistance,
+                    v2RecoveryCards: Array.isArray(v2Plan.recoveryCards) && v2Plan.recoveryCards.length > 0,
+                    v2DashboardSummary: v2Dashboard.summary.totalSessions > 0 && v2Dashboard.intensity.quality.sessions > 0,
+                    v2FiveDayHasQuality: v2FiveDay.sessions.some(s => ['Tempo','Interval'].includes(s.type)),
+                    v2FiveDayHasRecovery: v2FiveDay.sessions.some(s => s.type === 'Recovery')
                   };
                 }
                 """
@@ -614,6 +625,8 @@ def main():
             assert_true(checks, "coach_v2_structure_ok", coach_plan_rules["v2Valid"] is True and coach_plan_rules["v2EngineVersion"] == 2 and coach_plan_rules["v2Structured"] is True, "Coach V2 plan schema or validation failed")
             assert_true(checks, "coach_v2_periodization_ok", coach_plan_rules["v2BuildWeeks"] >= 2 and coach_plan_rules["v2SpecificWeeks"] >= 2 and max(coach_plan_rules["v2SpecificWork"]) >= 5 and coach_plan_rules["v2RaceWeekLight"] is True, "Coach V2 does not provide progressive 10K-specific work and a light race week")
             assert_true(checks, "coach_v2_multi_distance_ok", coach_plan_rules["v2MultiDistance"] is True, "Coach V2 profiles do not cover Base, 5K, 10K, Half, and Marathon")
+            assert_true(checks, "coach_v2_recovery_model_ok", coach_plan_rules["v2RecoveryCards"] is True and coach_plan_rules["v2FiveDayHasQuality"] is True and coach_plan_rules["v2FiveDayHasRecovery"] is True, "Coach V2 recovery model or 5-day structure is missing")
+            assert_true(checks, "training_dashboard_vm_ok", coach_plan_rules["v2DashboardSummary"] is True, "Training dashboard view model did not summarize the plan")
 
             coach_v2_save = page.evaluate(
                 """

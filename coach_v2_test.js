@@ -14,10 +14,12 @@ function load(relativePath) {
 
 load('js/domain/training/profiles.js');
 load('js/domain/training/engine-v2.js');
+load('js/training-dashboard-view-model.js');
 load('js/domain/review/matcher-v2.js');
 
 const training = context.window.MyDashTraining;
 const engine = training.EngineV2;
+const trainingDashboard = context.window.MyDashTrainingDashboard;
 const matcher = context.window.MyDashReviewMatcher;
 
 function targetFor(distance) {
@@ -110,6 +112,31 @@ async function main() {
   const segmentedThreshold=thresholdSessions.filter(session=>session.workoutSpec.structure==='repetitions');
   assert(continuousThreshold.length>=2,'Plan includes repeated continuous tempo development');
   assert(segmentedThreshold.length<=continuousThreshold.length,'Segmented tempo does not dominate continuous tempo');
+  assert(evidencePlan.recoveryCards.some(card=>card.intent==='post_quality'||card.intent==='post_long_run'),'Plan stores recovery cards for non-running days');
+  const dashboardVm=trainingDashboard.build(evidencePlan,{activities:[{date:evidencePlan.sessions.find(session=>session.type!=='Rest').date}],wellness:[{date:'2026-07-10',sleepHours:7.5}],today:'2026-07-20'});
+  assert(dashboardVm.summary.totalSessions>0,'Training dashboard summarizes sessions');
+  assert(dashboardVm.summary.completedSessions===1,'Training dashboard counts completed planned activity');
+  assert(dashboardVm.intensity.quality.sessions>0,'Training dashboard summarizes quality sessions');
+  assert(Object.keys(dashboardVm.recoverySummary).length>0,'Training dashboard exposes recovery summary');
+
+  const fiveDayPlan=engine.createPlan({
+    goal:'10K five-day plan',distance:'10K',targetTime:'49:30',benchmark:'10K 52:30',
+    level:'intermediate',daysPerWeek:5,startDate:'2026-07-13',endDate:'2026-09-07',totalWeeks:8,longRunDay:0,
+    currentWeeklyKm:36,longestRecentRunKm:12,recentActivities:[],now:1783900000003
+  });
+  assert.equal(fiveDayPlan.validation.valid,true,fiveDayPlan.validation.errors.join(','));
+  assert(fiveDayPlan.sessions.some(session=>['Tempo','Interval'].includes(session.type)),'5-day plan still includes quality work');
+  assert(fiveDayPlan.sessions.some(session=>session.type==='Recovery'&&session.recoveryIntent==='post_long_run'),'5-day plan includes post-long-run recovery run');
+
+  const sixDayPlan=engine.createPlan({
+    goal:'Half six-day plan',distance:'Half',targetTime:'1:52:00',benchmark:'10K 52:30',
+    level:'intermediate',daysPerWeek:6,startDate:'2026-07-13',endDate:'2026-10-05',totalWeeks:12,longRunDay:0,
+    currentWeeklyKm:44,longestRecentRunKm:15,recentActivities:[],now:1783900000004
+  });
+  assert.equal(sixDayPlan.validation.valid,true,sixDayPlan.validation.errors.join(','));
+  assert.equal(sixDayPlan.daysPerWeek,6,'6-day plan stores requested frequency');
+  assert(sixDayPlan.sessions.some(session=>session.recoveryIntent==='post_quality'),'6-day plan includes post-quality recovery run');
+  assert(sixDayPlan.recoveryCards.some(card=>card.intent==='passive_rest'),'6-day plan keeps at least one passive rest day');
 
   const intervalWorkout={_key:'w1',date:'2026-07-22',type:'interval',purpose:'interval',dist:7,time:42,updatedAt:10};
   const intervalSession={sessionId:'s1',date:'2026-07-22',type:'Interval',intent:'vo2',targetDist:7,targetPace:'4:45'};
@@ -154,6 +181,7 @@ async function main() {
     tenKSpecificWorkKm:tenSpecific.map(session=>session.workoutSpec.qualityDistanceKm),
     easyEffort:evidencePlan.athleteProfile.effortTargets.easy,
     tempoStructures:thresholdSessions.map(session=>session.workoutSpec.structure),
+    recoverySummary:evidencePlan.recoverySummary,
     reviewTypes:[exact.type,mismatch.type,probable.type,noPlan.type,historical.type],
     persistence:'versioned-and-archivable'
   },null,2));

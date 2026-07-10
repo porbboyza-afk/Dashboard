@@ -782,10 +782,30 @@ tbody tr:hover td { background: var(--bg); }
 .coach-session-note { font-size:11px; color:var(--text3); margin-top:6px; line-height:1.5; }
 .coach-session-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; flex:0 0 172px; }
 .coach-session-actions .btn { min-height:30px; }
+.training-insights { display:grid; grid-template-columns:1.1fr .9fr; gap:12px; }
+.training-insight-panel { background:var(--surface); border:1.5px solid var(--border); border-radius:8px; padding:14px; }
+.training-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.training-kpi { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px; min-width:0; }
+.training-kpi-value { font-family:var(--font-mono); font-size:22px; line-height:1.1; font-weight:900; color:var(--text); }
+.training-kpi-label { font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.6px; margin-top:4px; }
+.intensity-row { display:grid; grid-template-columns:82px 1fr 54px; gap:8px; align-items:center; margin-top:8px; font-size:12px; color:var(--text2); }
+.intensity-track { height:8px; border-radius:4px; background:var(--bg2); overflow:hidden; }
+.intensity-fill { height:100%; border-radius:4px; background:var(--accent); min-width:2px; }
+.training-week-strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(64px,1fr)); gap:6px; margin-top:12px; }
+.training-week-cell { border:1px solid var(--border); background:var(--bg); border-radius:8px; padding:8px; min-height:58px; }
+.training-week-cell strong { display:block; font-size:11px; color:var(--text); margin-bottom:3px; }
+.training-week-cell span { display:block; font-size:10px; color:var(--text3); line-height:1.35; }
 .coach-adaptive-card { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; }
 .coach-adaptive-main { flex:1; min-width:240px; }
 .coach-adaptive-action { font-size:18px; font-weight:900; line-height:1.3; margin-bottom:6px; }
 .coach-adaptive-explain { font-size:13px; color:var(--text2); line-height:1.7; margin-top:8px; }
+.coach-recovery-card { margin-top:12px; background:var(--bg); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:8px; padding:12px; }
+.coach-recovery-title { font-size:13px; font-weight:900; color:var(--text); margin-bottom:4px; }
+.coach-recovery-summary { font-size:12px; color:var(--text2); line-height:1.6; }
+.coach-recovery-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+.coach-recovery-grid div { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:9px; font-size:11px; color:var(--text2); line-height:1.55; }
+.coach-recovery-grid strong { display:block; color:var(--text); font-size:11px; margin-bottom:4px; }
+.coach-recovery-grid span { display:block; }
 .coach-adaptive-rules { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:12px; }
 .coach-adaptive-rule { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:10px; font-size:11px; line-height:1.55; color:var(--text2); }
 .coach-adaptive-rule strong { display:block; color:var(--text); font-size:12px; margin-bottom:2px; }
@@ -1319,6 +1339,9 @@ img, video, iframe, canvas { max-width: 100%; }
   #coach-plan-view > .card:first-child > div:first-child { flex-direction:column !important; align-items:flex-start !important; gap:14px !important; }
   #coach-plan-view > .card:first-child > div:first-child > div:last-child { width:100%; justify-content:space-between; }
   #coach-plan-view > .card:first-child > div:first-child > div:last-child > div { flex:1; }
+  .training-insights { grid-template-columns:1fr; }
+  .training-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .intensity-row { grid-template-columns:72px 1fr 46px; }
   #coach-track-tab > .flex { flex-direction:column; align-items:stretch; gap:8px; }
   #coach-track-tab > .flex .btn { width:100%; justify-content:center; }
   .coach-plan-row { flex-direction:column; gap:10px; }
@@ -1332,6 +1355,7 @@ img, video, iframe, canvas { max-width: 100%; }
   .coach-adaptive-main { min-width:0; width:100%; }
   .coach-adaptive-buttons { width:100%; display:grid; grid-template-columns:1fr; }
   .coach-adaptive-buttons .btn { width:100%; justify-content:center; }
+  .coach-recovery-grid { grid-template-columns:1fr; }
   .coach-adaptive-rules { grid-template-columns:1fr; }
   .coach-detail-card { padding:16px; max-height:86vh; border-radius:18px; }
   .coach-detail-header { gap:10px; }
@@ -2081,6 +2105,7 @@ img, video, iframe, canvas { max-width: 100%; }
                 <option value="3">3 days</option>
                 <option value="4" selected>4 days</option>
                 <option value="5">5 days</option>
+                <option value="6">6 days</option>
               </select>
             </div>
             <div class="form-group"><label>Long Run Day</label>
@@ -2157,6 +2182,7 @@ img, video, iframe, canvas { max-width: 100%; }
             <button class="btn btn-ghost btn-sm" onclick="coachRescheduleWeek()">วันนี้ไม่ว่าง</button>
             <button class="btn btn-ghost btn-sm" onclick="coachDowngradeToday()">ลดโหลดวันนี้</button>
           </div>
+          <div id="coach-plan-insights" class="mb-16"></div>
           <div id="coach-daily-decision" class="card mb-16" style="display:none"></div>
           <div id="coach-review-output" class="ai-box mb-16"></div>
           <div id="coach-plan-days"></div>
@@ -4192,6 +4218,7 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
     <script src="js/domain/training/profiles.js"></script>
     <script src="js/domain/training/engine-v2.js"></script>
     <script src="js/services/coach-repository.js"></script>
+    <script src="js/training-dashboard-view-model.js"></script>
     <script src="js/coach.js"></script>
     <script src="js/races.js"></script>
     <script src="js/domain/review/matcher-v2.js"></script>

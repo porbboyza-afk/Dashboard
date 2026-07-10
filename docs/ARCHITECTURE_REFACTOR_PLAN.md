@@ -1,7 +1,7 @@
 # MyDash Architecture Refactor Plan
 
 Last updated: 2026-07-10 Asia/Bangkok
-Status: Coach/Review V2 implemented, verified, and pushed; broad web refactor not started.
+Status: Coach/Review V2 implemented and pushed; recovery model plus the first training dashboard view-model refactor slice implemented in the current working tree.
 
 ## Decision
 
@@ -61,6 +61,7 @@ Later web refactor target:
 domain/       Pure training, review, load, and activity rules
 services/     Firebase, AI, sync, and backup adapters
 state/        Single application state boundary
+view-models/  UI-ready summaries derived from domain/state
 ui/pages/     Page rendering and event handlers
 ```
 
@@ -139,6 +140,7 @@ Review facts must store `planId`, `revisionId`, `sessionId`, `matchType`, `facts
 - Replace `window._*` aliases after all consumers use the state boundary.
 - Replace inline `onclick` handlers after compatibility exports are no longer required.
 - Split page rendering from domain calculations.
+- Continue the view-model migration started by `js/training-dashboard-view-model.js`; next candidates are Today Dashboard, Activity Detail, Wellness, and Statistics.
 - Add Firebase rules and emulator tests to the repository.
 - Add authentication/rate limiting to the AI proxy and remove browser API-key storage.
 - Normalize Health Connect, manual, and Strava activities through source adapters.
@@ -155,4 +157,6 @@ Review facts must store `planId`, `revisionId`, `sessionId`, `matchType`, `facts
 - [x] Compatibility UI integrated.
 - [x] Full verification passed.
 - [x] V2 pushed to GitHub (`f26a39c`).
-- [ ] Broader web refactor started.
+- [x] Broader web refactor started with `js/training-dashboard-view-model.js`.
+- [x] Recovery/rest-day model added to Coach Engine V2.
+- [ ] Remaining pages migrated behind view models.

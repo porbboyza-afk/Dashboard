@@ -180,8 +180,14 @@ function coachSafetyDecision(session=null){
 function coachSessionForDate(plan,date){
   return (plan?.sessions||[]).find(s=>s.date===date&&s.type!=='Rest')||null;
 }
+function coachRecoveryCardForDate(plan,date){
+  return (plan?.recoveryCards||[]).find(card=>card.date===date)
+    || (plan?.sessions||[]).find(session=>session.date===date&&session.recoveryAdvice)?.recoveryAdvice
+    || null;
+}
 function coachDailyDecision(plan,date=toLocalDateStr()){
   const session=coachSessionForDate(plan,date);
+  const recoveryCard=coachRecoveryCardForDate(plan,date);
   const safety=coachSafetyDecision(session);
   const goalProfile=getCoachGoalProfile(plan,{preferPlan:true});
   const completedDates=plan?.completedDates||{};
@@ -193,7 +199,7 @@ function coachDailyDecision(plan,date=toLocalDateStr()){
   if(alreadyDone)reasons.unshift('Workout already completed today');
   let action='keep';
   let applyLabel='No change needed';
-  if(!session){action='no_session';applyLabel='Record daily check only';}
+  if(!session){action=recoveryCard?'recovery':'no_session';applyLabel='Record daily recovery check';}
   else if(alreadyDone){action='done';applyLabel='Record completed-day check';}
   else if(unavailable){action='move';applyLabel='Move today session to next safe day';}
   else if(safety.status==='red'){action='rest';applyLabel='Convert today to recovery/rest';}
@@ -201,7 +207,7 @@ function coachDailyDecision(plan,date=toLocalDateStr()){
   else if(safety.status==='yellow'){action='reduce';applyLabel='Reduce today volume';}
   const previous=plan?.dailyDecisions?.[date];
   return {
-    date,session,action,status:safety.status,applyLabel,
+    date,session,recoveryCard,action,status:safety.status,applyLabel,
     reasons:reasons.slice(0,6),readinessScore:safety.readiness?.score??null,
     safety,alreadyApplied:!!previous?.appliedAt,previous
   };
@@ -274,7 +280,7 @@ function coachApplyDailyDecisionToPlan(plan,dailyDecision){
   next.dailyDecisions={...(next.dailyDecisions||{}),[date]:{
     date,action:dailyDecision.action,status:dailyDecision.status,
     readinessScore:dailyDecision.readinessScore,reasons:dailyDecision.reasons||[],
-    appliedAt:Date.now(),changed:!['keep','done','no_session'].includes(dailyDecision.action),
+    appliedAt:Date.now(),changed:!['keep','done','no_session','recovery'].includes(dailyDecision.action),
     goalImpact
   }};
   return {plan:next,adjustment};
@@ -712,6 +718,41 @@ function switchCoachTab(tab,el){
   if(tab==='race')loadRaces();
 }
 
+function renderCoachPlanInsights(plan){
+  const el=document.getElementById('coach-plan-insights');
+  if(!el||!window.MyDashTrainingDashboard?.build){if(el)el.innerHTML='';return;}
+  const vm=window.MyDashTrainingDashboard.build(plan,{activities:getAllActivities(),wellness:window._wellness||[],today:toLocalDateStr()});
+  const summary=vm.summary;
+  const intensityTotal=Math.max(1,Object.values(vm.intensity).reduce((sum,row)=>sum+row.km,0));
+  const intensityLabels={easy:'Easy',quality:'Quality',long:'Long',recovery:'Recovery',rest:'Rest'};
+  const intensityColors={easy:'var(--green)',quality:'var(--orange)',long:'var(--accent)',recovery:'var(--accent)',rest:'var(--text3)'};
+  const intensityRows=['easy','quality','long','recovery'].map(key=>{
+    const row=vm.intensity[key];
+    const pct=Math.round(row.km/intensityTotal*100);
+    return `<div class="intensity-row"><div>${intensityLabels[key]}</div><div class="intensity-track"><div class="intensity-fill" style="width:${pct}%;background:${intensityColors[key]}"></div></div><div>${row.km} km</div></div>`;
+  }).join('');
+  const recoveryTotal=Object.values(vm.recoverySummary||{}).reduce((sum,value)=>sum+(parseInt(value)||0),0);
+  const currentWeek=vm.weekly.find(week=>plan.sessions?.some(session=>session.week===week.week&&session.date>=vm.today))||vm.weekly[vm.weekly.length-1]||null;
+  const weekCells=vm.weekly.slice(0,12).map(week=>`<div class="training-week-cell"><strong>W${week.week}</strong><span>${escapeHTML(week.phase)}</span><span>${week.plannedKm} / ${week.targetVolumeKm} km</span><span>Q ${week.qualitySessions} · R ${week.recoverySessions}</span></div>`).join('');
+  el.innerHTML=`<div class="training-insights">
+    <div class="training-insight-panel">
+      <div class="card-label">Training Load</div>
+      <div class="training-kpi-grid">
+        <div class="training-kpi"><div class="training-kpi-value">${summary.completionPct}%</div><div class="training-kpi-label">Completion</div></div>
+        <div class="training-kpi"><div class="training-kpi-value">${summary.completedKm}</div><div class="training-kpi-label">Done km</div></div>
+        <div class="training-kpi"><div class="training-kpi-value">${summary.plannedKm}</div><div class="training-kpi-label">Plan km</div></div>
+        <div class="training-kpi"><div class="training-kpi-value">${recoveryTotal}</div><div class="training-kpi-label">Recovery days</div></div>
+      </div>
+      <div class="training-week-strip">${weekCells}</div>
+    </div>
+    <div class="training-insight-panel">
+      <div class="card-label">Intensity Distribution</div>
+      ${intensityRows}
+      <div class="coach-recovery-summary" style="margin-top:12px">${currentWeek?`Current week: W${currentWeek.week} ${escapeHTML(currentWeek.phase)} · ${currentWeek.plannedKm} km planned · ${currentWeek.qualitySessions} quality`:'No weekly model available'}</div>
+    </div>
+  </div>`;
+}
+
 function renderCoachTracking(){
   const plan=window._coachPlan;
   const noplan=document.getElementById('coach-no-plan'),planView=document.getElementById('coach-plan-view');
@@ -731,10 +772,11 @@ function renderCoachTracking(){
   const pct=totalNonRest>0?Math.round(doneCount/totalNonRest*100):0;
   set('coach-progress-pct',pct+'%');
   const pb=document.getElementById('coach-progress-bar');if(pb)pb.style.width=pct+'%';
+  renderCoachPlanInsights(plan);
   renderCoachDailyDecision(plan);
   const daysEl=document.getElementById('coach-plan-days');if(!daysEl)return;
-  const typeEmoji={Easy:'🟢',Tempo:'🟡',Interval:'🔴',Long:'🔵',Rest:'⚪'};
-  const typeColor={Easy:'var(--green)',Tempo:'var(--orange)',Interval:'var(--red)',Long:'var(--accent)',Rest:'var(--text3)'};
+  const typeEmoji={Easy:'🟢',Recovery:'🟦',Tempo:'🟡',Interval:'🔴',Long:'🔵',Rest:'⚪'};
+  const typeColor={Easy:'var(--green)',Recovery:'var(--accent)',Tempo:'var(--orange)',Interval:'var(--red)',Long:'var(--accent)',Rest:'var(--text3)'};
   window._coachRenderedSessions=plan.sessions;
   daysEl.innerHTML=plan.sessions.map((s,index)=>{
     const isToday=s.date===today,isFuture=s.date>today,isRest=s.type==='Rest';
@@ -754,6 +796,7 @@ function renderCoachTracking(){
     const displayDetails=coachSessionDisplayDetails(s,index);
     const displayDescription=coachSessionDisplayDescription(s,index);
     const displayType=coachSessionTypeThai(s.type);
+    const recoveryLine=s.recoveryAdvice?.summary?`<div class="coach-session-note">Recovery: ${escapeHTML(s.recoveryAdvice.summary)}</div>`:'';
     let actualLine='';
     if(actualWks.length){const aw=actualWks[0];actualLine=`<div style="font-size:11px;color:var(--green);margin-top:5px;font-weight:600;font-family:var(--font-mono)">📊 ${aw.dist}km${aw.avgPace?' · '+formatPace(aw.avgPace)+'/km':''}${aw.hr?' · ♥'+aw.hr:''}</div>`;if(s.targetDist>0&&aw.dist>0){const diff=((parseFloat(aw.dist)-s.targetDist)/s.targetDist*100).toFixed(0);const c=Math.abs(diff)<=10?'var(--green)':(diff>0?'var(--accent)':'var(--orange)');actualLine+=`<div style="font-size:10px;color:${c};margin-top:2px;font-family:var(--font-mono)">${diff>0?'↑':'↓'} ${Math.abs(diff)}% from target</div>`;}}
     return `<div class="${cls}"><div class="plan-day-header"><div class="plan-day-date">${dateStr} · ${escapeHTML(phaseLabel)}</div>${badge}</div>
@@ -761,6 +804,7 @@ function renderCoachTracking(){
       <div class="coach-session-main"><div class="coach-session-title" style="color:${typeColor[s.type]||'var(--text)'}">${displayType}${s.targetDist>0?' · '+s.targetDist+' กม.':''}</div>
       <div class="coach-session-desc">${escapeHTML(displayDescription)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
       ${displayDetails.mainSet?`<div class="coach-session-preview"><strong>ชุดหลัก:</strong> ${escapeHTML(displayDetails.mainSet)}</div>`:''}
+      ${recoveryLine}
       ${s.notes?`<div class="coach-session-note">เหตุผล/หมายเหตุ: ${escapeHTML(hasThaiText(s.notes)?s.notes:'ทำตามรายละเอียดก่อนวิ่ง และปรับลดถ้าร่างกายไม่พร้อม')}</div>`:''}${actualLine}</div>
       <div class="coach-session-actions">
         <button onclick="showCoachSessionDetail(${index})" class="btn btn-primary btn-xs">รายละเอียด</button>
@@ -830,11 +874,21 @@ function renderCoachDailyDecision(plan){
   const today=toLocalDateStr();
   const daily=coachDailyDecision(plan,today);
   const todaySession=daily.session;
+  const recoveryCard=daily.recoveryCard;
   const color=coachDecisionColor(daily.status);
   const thai=coachDecisionThai(daily.status);
   const reasons=daily.reasons?.length?daily.reasons.map(escapeHTML).join(' · '):'ยังไม่มีสัญญาณเสี่ยงหลักจากข้อมูลวันนี้';
-  const actionText={keep:'ทำตามแผนเดิม',done:'บันทึกว่าเช็คแล้ว',no_session:'ไม่มี session วันนี้',move:'ย้าย session วันนี้',rest:'เปลี่ยนเป็นพัก/ฟื้นตัว',downgrade:'ลดจากงานหนักเป็น Easy',reduce:'ลดระยะ/ความหนัก'}[daily.action]||daily.action;
+  const actionText={keep:'ทำตามแผนเดิม',done:'บันทึกว่าเช็คแล้ว',no_session:'ไม่มี session วันนี้',recovery:'Recovery / rest day',move:'ย้าย session วันนี้',rest:'เปลี่ยนเป็นพัก/ฟื้นตัว',downgrade:'ลดจากงานหนักเป็น Easy',reduce:'ลดระยะ/ความหนัก'}[daily.action]||daily.action;
   const applyDisabled=daily.alreadyApplied?'disabled':'';
+  const recoveryHtml=recoveryCard?`
+        <div class="coach-recovery-card">
+          <div class="coach-recovery-title">${escapeHTML(recoveryCard.title||'Recovery')}</div>
+          <div class="coach-recovery-summary">${escapeHTML(recoveryCard.summary||'Keep today easy and protect the next session.')}</div>
+          <div class="coach-recovery-grid">
+            <div><strong>Do</strong>${(recoveryCard.actions||[]).slice(0,4).map(item=>`<span>${escapeHTML(item)}</span>`).join('')}</div>
+            <div><strong>Avoid</strong>${(recoveryCard.avoid||[]).slice(0,4).map(item=>`<span>${escapeHTML(item)}</span>`).join('')}</div>
+          </div>
+        </div>`:'';
   el.style.display='block';
   el.style.borderLeft=`4px solid ${color}`;
   el.innerHTML=`
@@ -845,6 +899,7 @@ function renderCoachDailyDecision(plan){
         <div class="text-sm c2">${todaySession?`แผนหลักวันนี้: ${escapeHTML(coachSessionTypeThai(todaySession.type))} ${todaySession.targetDist||''} กม. ${(todaySession.targetPaceRange||todaySession.targetPace)?`· pace ${escapeHTML(todaySession.targetPaceRange||todaySession.targetPace)}`:''}`:'วันนี้ไม่มี session หนักในแผน'}</div>
         <div class="coach-adaptive-explain"><strong>Daily decision:</strong> ${escapeHTML(actionText)}${daily.alreadyApplied?' · applied to cloud':''}</div>
         <div class="coach-adaptive-explain">${escapeHTML(coachAdaptiveGuidance(daily.safety,todaySession))}</div>
+        ${recoveryHtml}
         <div class="text-xs c3 mt-8">เหตุผลจากข้อมูลวันนี้: ${reasons}</div>
         <div class="coach-adaptive-rules">
           <div class="coach-adaptive-rule"><strong>แผนหลัก</strong>AI สร้างตารางตั้งต้นไว้ก่อนเพื่อให้มีโครงสร้างระยะยาว</div>

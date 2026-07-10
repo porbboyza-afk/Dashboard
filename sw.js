@@ -1,10 +1,10 @@
-const CACHE_NAME = 'mydash-v3-coach-v2-20260710-2';
+const CACHE_NAME = 'mydash-v3-coach-v2-20260710-3';
 const APP_SHELL = [
   './',
   './index.html',
-  './manifest.json?v=20260710-2',
-  './icon-192.png?v=20260710-2',
-  './icon-512.png?v=20260710-2',
+  './manifest.json?v=20260710-3',
+  './icon-192.png?v=20260710-3',
+  './icon-512.png?v=20260710-3',
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',
@@ -17,6 +17,7 @@ const APP_SHELL = [
   './js/domain/training/profiles.js',
   './js/domain/training/engine-v2.js',
   './js/services/coach-repository.js',
+  './js/training-dashboard-view-model.js',
   './js/coach.js',
   './js/races.js',
   './js/domain/review/matcher-v2.js',

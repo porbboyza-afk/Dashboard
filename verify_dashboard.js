@@ -16,6 +16,7 @@ const coachScriptPath = path.join(root, 'js', 'coach.js');
 const postRunReviewScriptPath = path.join(root, 'js', 'post-run-review.js');
 const trainingProfilesScriptPath = path.join(root, 'js', 'domain', 'training', 'profiles.js');
 const trainingEngineScriptPath = path.join(root, 'js', 'domain', 'training', 'engine-v2.js');
+const trainingDashboardVmScriptPath = path.join(root, 'js', 'training-dashboard-view-model.js');
 const reviewMatcherScriptPath = path.join(root, 'js', 'domain', 'review', 'matcher-v2.js');
 const coachRepositoryScriptPath = path.join(root, 'js', 'services', 'coach-repository.js');
 const settingsScriptPath = path.join(root, 'js', 'settings.js');
@@ -34,6 +35,7 @@ const extraScripts = [
   trainingProfilesScriptPath,
   trainingEngineScriptPath,
   coachRepositoryScriptPath,
+  trainingDashboardVmScriptPath,
   coachScriptPath,
   racesScriptPath,
   reviewMatcherScriptPath,
@@ -181,6 +183,8 @@ ensureContains(coachScriptPath, [
   'function coachPhaseForWeek',
   'function coachPhaseSchedule',
   'function coachDailyDecision',
+  'function coachRecoveryCardForDate',
+  'function renderCoachPlanInsights',
   'function coachApplyDailyDecisionToPlan',
   'function validateCoachPlan(plan',
   'function dedupeCoachSessionsByDate',
@@ -190,6 +194,8 @@ ensureContains(coachScriptPath, [
   'function coachSessionDetails',
   'function coachSessionDisplayDetails',
   'function coachAdaptiveGuidance',
+  'coach-recovery-card',
+  'MyDashTrainingDashboard.build',
   'function showCoachSessionDetail',
   'function assertCoachCloudSaved',
   'Cloud save failed. Please sign in again and retry.',
@@ -224,6 +230,9 @@ ensureContains(trainingEngineScriptPath, [
   'function allocatePhases',
   'function buildAthleteModel',
   'function easyPaceEvidence',
+  'function recoveryAdvice',
+  'function isRecoveryRunSlot',
+  'recoveryCards',
   'session_on_unavailable_date',
   'inputAudit',
   'function qualitySpec',
@@ -231,6 +240,13 @@ ensureContains(trainingEngineScriptPath, [
   'function validatePlan',
   'workoutSpec',
   'methodologyVersion',
+]);
+
+ensureContains(trainingDashboardVmScriptPath, [
+  'MyDashTrainingDashboard',
+  'function build',
+  'function sessionIntensity',
+  'recoverySummary',
 ]);
 
 ensureContains(reviewMatcherScriptPath, [
@@ -256,7 +272,8 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-coach-v2-20260710-2",
+  "mydash-v3-coach-v2-20260710-3",
+  './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',
   './js/share-card.js',

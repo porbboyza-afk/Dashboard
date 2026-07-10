@@ -12,7 +12,10 @@
     {id:'taper-meta-2023',title:'Effects of tapering on performance in endurance athletes',url:'https://pubmed.ncbi.nlm.nih.gov/37163550/'},
     {id:'10k-intervals-2023',title:'Intervals at maximal sustainable effort and 10-km performance',url:'https://pubmed.ncbi.nlm.nih.gov/36724870/'},
     {id:'intensity-distribution-2022',title:'Training intensity distribution in endurance athletes: systematic review',url:'https://pubmed.ncbi.nlm.nih.gov/34749417/'},
-    {id:'recreational-polarized-2014',title:'Polarized training in recreational runners',url:'https://pubmed.ncbi.nlm.nih.gov/23752040/'}
+    {id:'recreational-polarized-2014',title:'Polarized training in recreational runners',url:'https://pubmed.ncbi.nlm.nih.gov/23752040/'},
+    {id:'recovery-consensus-2018',title:'Recovery and performance in sport: consensus statement',url:'https://pubmed.ncbi.nlm.nih.gov/29345524/'},
+    {id:'active-recovery-review-2018',title:'Active recovery systematic review',url:'https://pubmed.ncbi.nlm.nih.gov/29742750/'},
+    {id:'sleep-athlete-consensus-2021',title:'Sleep and athletes consensus statement',url:'https://pubmed.ncbi.nlm.nih.gov/33144349/'}
   ];
 
   function clamp(value,min,max){return Math.min(max,Math.max(min,value));}
@@ -220,10 +223,77 @@
     });
   }
   function trainingWeekdays(daysPerWeek,longRunDay){
-    const days=clamp(parseInt(daysPerWeek)||4,3,5);
+    const days=clamp(parseInt(daysPerWeek)||4,3,6);
     const longDay=clamp(parseInt(longRunDay)||0,0,6);
-    const offsets=days===3?[-5,-3,0]:days===4?[-6,-4,-2,0]:[-6,-5,-3,-1,0];
+    const offsets=days===3?[-5,-3,0]:days===4?[-6,-4,-2,0]:days===5?[-6,-5,-4,-2,0]:[-6,-5,-4,-3,-1,0];
     return offsets.map(offset=>({weekday:(longDay+offset+7)%7,offset,isLong:offset===0,isQuality:offset===(days===3?-3:-4)}));
+  }
+  function isRecoveryRunSlot(slot,daysPerWeek){
+    const days=clamp(parseInt(daysPerWeek)||4,3,6);
+    return days>=5&&(slot.offset===-6||(days>=6&&slot.offset===-3));
+  }
+  function isQualityType(type){return ['Tempo','Interval'].includes(String(type||''));}
+  function recoveryAdvice(intent,context={}){
+    const table={
+      passive_rest:{
+        title:'Rest day',
+        summary:'No running load today. Keep the day easy so the next key session is not compromised.',
+        actions:['Sleep target first','Easy walking or mobility only','Normal meals and hydration'],
+        avoid:['Do not add catch-up mileage','Do not turn rest into tempo']
+      },
+      active_recovery:{
+        title:'Active recovery',
+        summary:'Very light movement is acceptable only if legs feel better after the first 10 minutes.',
+        actions:['Walk, mobility, or short easy spin','Keep RPE 1-2','Stop if soreness rises'],
+        avoid:['No strides','No pace target']
+      },
+      post_long_run:{
+        title:'Post long-run recovery',
+        summary:'Absorb the long run. The purpose is tissue recovery and energy replacement, not extra fitness.',
+        actions:['Prioritize sleep','Eat enough carbohydrate and protein','Walk or mobility if it feels good'],
+        avoid:['No hard running','No catch-up intervals']
+      },
+      post_quality:{
+        title:'Post quality recovery',
+        summary:'Protect adaptation after threshold, interval, hill, or race-specific work.',
+        actions:['Keep HR low if moving','Use soreness and resting HR as brakes','Delay hard work if legs stay heavy'],
+        avoid:['No second quality session','No gray-zone run']
+      },
+      pre_race:{
+        title:'Pre-race rest',
+        summary:'Arrive fresh. Do not add fitness work inside the final 24 hours.',
+        actions:['Short walk or mobility only','Prepare gear and sleep','Keep food familiar'],
+        avoid:['No tempo','No long run','No new exercises']
+      },
+      illness_or_pain:{
+        title:'Illness or pain recovery',
+        summary:'Training is blocked until symptoms settle. Fitness loss from one rest day is lower risk than forcing load.',
+        actions:['Rest','Monitor symptoms','Resume with easy running only'],
+        avoid:['No intensity','No testing fitness']
+      }
+    };
+    const base=table[intent]||table.passive_rest;
+    return {...base,intent,date:context.date||'',sourceSessionId:context.sourceSessionId||'',phase:context.phase||'',priority:['post_quality','post_long_run','pre_race','illness_or_pain'].includes(intent)?'high':'normal'};
+  }
+  function createRecoveryCards({startDate,endDate,sessions,profile,daysPerWeek}){
+    const byDate=new Map((sessions||[]).map(session=>[session.date,session]));
+    const cards=[];
+    for(let date=startDate;date&&date<endDate;date=addDays(date,1)){
+      const current=byDate.get(date);
+      const previous=byDate.get(addDays(date,-1));
+      const next=byDate.get(addDays(date,1));
+      let intent='';
+      let source=previous||next||current||null;
+      if(profile.race&&addDays(date,1)===endDate)intent='pre_race';
+      else if(current?.type==='Rest')intent='passive_rest';
+      else if(current)continue;
+      else if(previous?.type==='Long')intent='post_long_run';
+      else if(isQualityType(previous?.type))intent='post_quality';
+      else if(isQualityType(next?.type))intent=daysPerWeek>=5?'active_recovery':'passive_rest';
+      else intent='passive_rest';
+      cards.push(recoveryAdvice(intent,{date,sourceSessionId:source?.sessionId||'',phase:source?.phase||''}));
+    }
+    return cards;
   }
   function paceForIntensity(anchors,intensity){return anchors[intensity]||anchors.threshold;}
   function paceLabel(pace,range=null){
@@ -381,7 +451,7 @@
     const phases=allocatePhases(profile,totalWeeks);
     const weeklyTargets=buildWeeklyTargets(profile,athlete,phases);
     const longRunDay=clamp(parseInt(input.longRunDay ?? input.goalProfile?.longRunDay)||0,0,6);
-    const daysPerWeek=clamp(parseInt(input.daysPerWeek||input.days)||4,3,5);
+    const daysPerWeek=clamp(parseInt(input.daysPerWeek||input.days)||4,3,6);
     const weekdays=trainingWeekdays(daysPerWeek,longRunDay);
     const unavailable=unavailableSet(input.unavailable||input.goalProfile?.unavailable||input.unavailableRaw||input.goalProfile?.unavailableRaw);
     const now=Number.isFinite(input.now)?input.now:Date.now();
@@ -423,22 +493,26 @@
           session={type:'Long',intent:'long',targetDist:longDistance,targetPace:formatPace(athlete.anchors.easy),targetPaceRange:`${formatPace(effort.paceFast)}-${formatPace(effort.paceSlow)}`,targetHR:effort.hrMax||'',priority:'key',
             workoutSpec:{intent:'long',structure:'continuous',totalDistanceKm:longDistance,qualityDistanceKm:0,intensityTarget:{basis:effort.basis,paceMinPerKm:athlete.anchors.easy,paceFast:effort.paceFast,paceSlow:effort.paceSlow,hrMin:effort.hrMin,hrMax:effort.hrMax}},details,description:details.targetDescription};
         }else{
-          const recovery=slotIndex===0&&daysPerWeek===5;
+          const recovery=isRecoveryRunSlot(slot,daysPerWeek);
           const distance=phase==='RaceWeek'?Math.min(4,easyDistance):easyDistance;
           const effort=athlete.effortTargets.easy;
           const details=easyDetails(distance,athlete.anchors.easy,recovery?'recovery':'easy',effort);
+          const recoveryIntent=recovery?(slot.offset===-6?'post_long_run':'post_quality'):'';
+          const recoveryCard=recovery?recoveryAdvice(recoveryIntent,{date,phase}):null;
           session={type:recovery?'Recovery':'Easy',intent:recovery?'recovery':'easy',targetDist:distance,targetPace:formatPace(athlete.anchors.easy),targetPaceRange:`${formatPace(effort.paceFast)}-${formatPace(effort.paceSlow)}`,targetHR:effort.hrMax||'',priority:'normal',
-            workoutSpec:{intent:recovery?'recovery':'easy',structure:'continuous',totalDistanceKm:distance,qualityDistanceKm:0,intensityTarget:{basis:effort.basis,paceMinPerKm:athlete.anchors.easy,paceFast:effort.paceFast,paceSlow:effort.paceSlow,hrMin:effort.hrMin,hrMax:effort.hrMax}},details,description:details.targetDescription};
+            workoutSpec:{intent:recovery?'recovery':'easy',structure:'continuous',recoveryIntent,totalDistanceKm:distance,qualityDistanceKm:0,intensityTarget:{basis:effort.basis,paceMinPerKm:athlete.anchors.easy,paceFast:effort.paceFast,paceSlow:effort.paceSlow,hrMin:effort.hrMin,hrMax:effort.hrMax}},recoveryIntent,recoveryAdvice:recoveryCard,details,description:details.targetDescription};
         }
         if(profile.race&&addDays(date,1)===endDate){
           const details=easyDetails(0,athlete.anchors.easy,'recovery',athlete.effortTargets.easy);
-          session={type:'Rest',intent:'rest',targetDist:0,targetPace:'',targetHR:'',priority:'normal',workoutSpec:{intent:'rest',structure:'rest',totalDistanceKm:0,qualityDistanceKm:0},details:{...details,mainSet:'พักก่อนวันแข่ง ไม่เพิ่มการซ้อมชดเชย',targetDescription:'พักเพื่อให้ขาสดก่อนวันแข่ง'},description:'พักเพื่อให้ขาสดก่อนวันแข่ง'};
+          session={type:'Rest',intent:'rest',targetDist:0,targetPace:'',targetHR:'',priority:'normal',workoutSpec:{intent:'rest',structure:'rest',recoveryIntent:'pre_race',totalDistanceKm:0,qualityDistanceKm:0},recoveryIntent:'pre_race',recoveryAdvice:recoveryAdvice('pre_race',{date,phase}),details:{...details,mainSet:'พักก่อนวันแข่ง ไม่เพิ่มการซ้อมชดเชย',targetDescription:'พักเพื่อให้ขาสดก่อนวันแข่ง'},description:'พักเพื่อให้ขาสดก่อนวันแข่ง'};
         }
         sessions.push({...session,sessionId:`${planId}-w${weekIndex+1}-s${slotIndex+1}`,date,phase,phaseLabel:phaseDisplay(phase),week:weekIndex+1,methodologyVersion:T.METHODOLOGY_VERSION,notes:`Training Engine V2 · ${profile.label} · ${phaseDisplay(phase)}`});
       });
     });
 
     sessions.sort((a,b)=>a.date.localeCompare(b.date));
+    const recoveryCards=createRecoveryCards({startDate,endDate,sessions,profile,daysPerWeek});
+    const recoverySummary=recoveryCards.reduce((acc,card)=>{acc[card.intent]=(acc[card.intent]||0)+1;return acc;},{});
     const plan={
       planId,revisionId:'r1',engineVersion:ENGINE_VERSION,methodologyVersion:T.METHODOLOGY_VERSION,status:'active',
       goal:input.goal||`${profile.label} training plan`,startDate,endDate,totalWeeks,daysPerWeek,
@@ -455,7 +529,7 @@
         athleteSettings:athlete.athleteSettingsUsed,easyPaceEvidenceSessions:athlete.easyPaceEvidence.sessions,
         paceBasis:athlete.paceBasis,volumeBasis:athlete.volumeBasis
       },
-      phaseSchedule,sessions,references:REFERENCES,
+      phaseSchedule,sessions,recoveryCards,recoverySummary,references:REFERENCES,
       completedDates:{},adjustments:[],dailyDecisions:{},
       compatibility:{legacyMirror:true,previousEngineAvailable:true}
     };
@@ -497,6 +571,6 @@
   }
 
   T.EngineV2={
-    ENGINE_VERSION,REFERENCES,createPlan,validatePlan,allocatePhases,buildAthleteModel,parseBenchmark,projectedMinutes,formatPace,dateString,addDays,unavailableSet,isUnavailable
+    ENGINE_VERSION,REFERENCES,createPlan,validatePlan,allocatePhases,buildAthleteModel,parseBenchmark,projectedMinutes,formatPace,dateString,addDays,unavailableSet,isUnavailable,recoveryAdvice
   };
 })(window);
