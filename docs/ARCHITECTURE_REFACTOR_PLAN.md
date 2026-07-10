@@ -1,7 +1,7 @@
 # MyDash Architecture Refactor Plan
 
 Last updated: 2026-07-10 Asia/Bangkok
-Status: Coach/Review V2 implemented and locally verified; broad web refactor not started.
+Status: Coach/Review V2 implemented, verified, and pushed; broad web refactor not started.
 
 ## Decision
 
@@ -154,5 +154,5 @@ Review facts must store `planId`, `revisionId`, `sessionId`, `matchType`, `facts
 - [x] Review matching V2 implemented.
 - [x] Compatibility UI integrated.
 - [x] Full verification passed.
-- [ ] V2 pushed to GitHub.
+- [x] V2 pushed to GitHub (`f26a39c`).
 - [ ] Broader web refactor started.

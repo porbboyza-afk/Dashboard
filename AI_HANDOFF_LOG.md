@@ -6,7 +6,8 @@ Last updated: 2026-07-10 Asia/Bangkok
 
 Status:
 
-- Implemented and verified locally; pending commit/push at the time of this entry.
+- Implemented, verified, and pushed to `origin/main`.
+- Feature commit: `f26a39c Add multi-distance Coach V2 engine`.
 - The user explicitly wants the Coach/Review improvements delivered and verified before the broader web refactor.
 
 Implementation order:
