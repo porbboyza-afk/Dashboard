@@ -66,6 +66,27 @@
     if(!benchmark||!distance)return null;
     return benchmark.minutes*Math.pow(distance/benchmark.distanceKm,1.06);
   }
+  function vdotForPerformance(distanceKm,minutes){
+    const distance=Number(distanceKm),time=Number(minutes);
+    if(!Number.isFinite(distance)||!Number.isFinite(time)||distance<=0||time<=0)return null;
+    const velocity=distance*1000/time; // metres per minute
+    const oxygenCost=-4.60+.182258*velocity+.000104*Math.pow(velocity,2);
+    const fraction=.8+.1894393*Math.exp(-.012778*time)+.2989558*Math.exp(-.1932605*time);
+    const vdot=oxygenCost/fraction;
+    return Number.isFinite(vdot)&&vdot>0?round(vdot,2):null;
+  }
+  function paceForVdotAtDuration(vdot,durationMinutes=60){
+    const target=Number(vdot),duration=Number(durationMinutes);
+    if(!Number.isFinite(target)||target<=0||!Number.isFinite(duration)||duration<=0)return null;
+    let low=120,high=420;
+    for(let index=0;index<48;index++){
+      const velocity=(low+high)/2;
+      const oxygenCost=-4.60+.182258*velocity+.000104*Math.pow(velocity,2);
+      const fraction=.8+.1894393*Math.exp(-.012778*duration)+.2989558*Math.exp(-.1932605*duration);
+      if(oxygenCost/fraction<target)low=velocity;else high=velocity;
+    }
+    return round(1000/((low+high)/2),3);
+  }
   function levelDefault10kPace(level){
     return {beginner:6.5,intermediate:5.5,advanced:4.6}[level]||5.5;
   }
@@ -125,8 +146,8 @@
     const fallback10k=levelDefault10kPace(level);
     const paceFor=distance=>benchmark?projectedMinutes(benchmark,distance)/distance:null;
     const current10k=paceFor(10)||fallback10k;
-    const distanceAt60=benchmark?benchmark.distanceKm*Math.pow(60/benchmark.minutes,1/1.06):null;
-    const calculatedThreshold=distanceAt60?60/distanceAt60:current10k+.10;
+    const benchmarkVdot=benchmark?vdotForPerformance(benchmark.distanceKm,benchmark.minutes):null;
+    const calculatedThreshold=benchmarkVdot?paceForVdotAtDuration(benchmarkVdot,60):current10k+.10;
     const configuredTempo=paceRange(settings.tempoFast,settings.tempoSlow);
     const configuredThreshold=parseClock(settings.thresholdPace);
     const threshold=configuredTempo?(configuredTempo.fast+configuredTempo.slow)/2:(configuredThreshold||calculatedThreshold);
@@ -146,11 +167,12 @@
       easySlow,
       steady:round(threshold+.35,3),
       threshold:round(threshold,3),
+      interval:round(benchmarkVdot?paceForVdotAtDuration(benchmarkVdot,11):Math.max(3.1,current10k-.30),3),
       current_5k:round(paceFor(5)||Math.max(3.2,current10k-.24),3),
       current_10k:round(current10k,3),
       current_half:round(paceFor(21.0975)||current10k+.24,3),
       current_marathon:round(paceFor(42.195)||current10k+.55,3),
-      repetition:round(Math.max(3,current10k-.45),3),
+      repetition:round(benchmarkVdot?paceForVdotAtDuration(benchmarkVdot,4):Math.max(3,current10k-.45),3),
       strides:round(Math.max(3,current10k-.45),3),
       hill_controlled:null
     };
@@ -165,13 +187,13 @@
     const confidence=benchmark?'high':recent.activities>=4?'medium':'low';
     const goalRisk=improvementPct>12?'high':improvementPct>6?'medium':'low';
     return {
-      level,benchmark,recent,
+      level,benchmark,benchmarkVdot,recent,
       currentWeeklyKm:round(weeklyKm||0,1),
       longestRecentRunKm:round(longestRunKm||0,1),
       anchors,targetMinutes,targetPace,currentGoalMinutes:currentGoalMinutes?round(currentGoalMinutes,2):null,
       effortTargets:{
         easy:{paceFast:easyFast,paceSlow:easySlow,hrMin:easyHRMin,hrMax:easyHRMax,basis:easyEvidence.sessions>=2?'activity_pace_hr+settings':'settings+fitness_model'},
-        tempo:{paceFast:configuredTempo?.fast||round(threshold-.08,3),paceSlow:configuredTempo?.slow||round(threshold+.08,3),hrMin:tempoHRMin,hrMax:tempoHRMax,basis:configuredTempo?'athlete_settings':'fitness_model'}
+        tempo:{paceFast:configuredTempo?.fast||round(threshold-.08,3),paceSlow:configuredTempo?.slow||round(threshold+.08,3),hrMin:tempoHRMin,hrMax:tempoHRMax,basis:configuredTempo?'athlete_settings':configuredThreshold?'threshold_setting':benchmarkVdot?'recent_benchmark_vdot':'level_fallback'}
       },
       easyPaceEvidence:easyEvidence,
       athleteSettingsUsed:{maxHR,lthr,easyHRMin,easyHRMax,z1Max:numeric(settings.z1Max),z2Max:numeric(settings.z2Max),z3Max:numeric(settings.z3Max),z4Max:numeric(settings.z4Max),z5Max:numeric(settings.z5Max),thresholdPace:settings.thresholdPace||'',tempoFast:settings.tempoFast||'',tempoSlow:settings.tempoSlow||''},
@@ -510,6 +532,40 @@
     }
     return date;
   }
+  function appendRaceWeekGuardSessions({sessions,profile,athlete,startDate,endDate,totalWeeks,planId,unavailable}){
+    if(!profile.race||!endDate)return;
+    const used=new Set(sessions.map(session=>session.date));
+    const effort=athlete.effortTargets.easy;
+    const addEasy=(offset,distance)=>{
+      const date=addDays(endDate,offset);
+      if(!date||date<startDate||used.has(date)||isUnavailable(date,unavailable))return;
+      const details=easyDetails(distance,athlete.anchors.easy,'easy',effort);
+      sessions.push({
+        sessionId:`${planId}-race-guard-${Math.abs(offset)}`,date,phase:'RaceWeek',phaseLabel:phaseDisplay('RaceWeek'),week:totalWeeks,
+        type:'Easy',intent:'easy',targetDist:distance,targetPace:formatPace(athlete.anchors.easy),targetPaceRange:`${formatPace(effort.paceFast)}-${formatPace(effort.paceSlow)}`,targetHR:effort.hrMax||'',priority:'normal',
+        workoutSpec:{intent:'easy',structure:'continuous',raceWeekGuard:true,totalDistanceKm:distance,qualityDistanceKm:0,intensityTarget:{basis:effort.basis,paceMinPerKm:athlete.anchors.easy,paceFast:effort.paceFast,paceSlow:effort.paceSlow,hrMin:effort.hrMin,hrMax:effort.hrMax}},
+        details,description:details.targetDescription,methodologyVersion:T.METHODOLOGY_VERSION,
+        notes:`Training Engine V2 · ${profile.label} · Race week: easy only before race`
+      });
+      used.add(date);
+    };
+    // Race-week coverage must be relative to the athlete's actual race date,
+    // not their normal weekday pattern. This preserves 2 Easy days and rest
+    // on race eve even when the last scheduled workout would otherwise be earlier.
+    addEasy(-3,3);
+    addEasy(-2,2.5);
+    const raceEve=addDays(endDate,-1);
+    if(!raceEve||raceEve<startDate||used.has(raceEve))return;
+    const details=easyDetails(0,athlete.anchors.easy,'recovery',effort);
+    sessions.push({
+      sessionId:`${planId}-race-guard-1`,date:raceEve,phase:'RaceWeek',phaseLabel:phaseDisplay('RaceWeek'),week:totalWeeks,
+      type:'Rest',intent:'rest',targetDist:0,targetPace:'',targetPaceRange:'',targetHR:'',priority:'normal',
+      workoutSpec:{intent:'rest',structure:'rest',raceWeekGuard:true,recoveryIntent:'pre_race',totalDistanceKm:0,qualityDistanceKm:0},
+      recoveryIntent:'pre_race',recoveryAdvice:recoveryAdvice('pre_race',{date:raceEve,phase:'RaceWeek'}),
+      details:{...details,mainSet:'Rest before race. Do not add a catch-up workout.',targetDescription:'Rest before race day.'},description:'Rest before race day.',methodologyVersion:T.METHODOLOGY_VERSION,
+      notes:`Training Engine V2 · ${profile.label} · Race week: pre-race rest`
+    });
+  }
   function createPlan(input={}){
     const profile=T.getProfile(input.distance||input.goalProfile?.distance||'10K');
     const startDate=input.startDate||dateString(new Date());
@@ -579,6 +635,7 @@
       });
     });
 
+    appendRaceWeekGuardSessions({sessions,profile,athlete,startDate,endDate,totalWeeks,planId,unavailable});
     sessions.sort((a,b)=>a.date.localeCompare(b.date));
     const recoveryCards=createRecoveryCards({startDate,endDate,sessions,profile,daysPerWeek});
     const recoverySummary=recoveryCards.reduce((acc,card)=>{acc[card.intent]=(acc[card.intent]||0)+1;return acc;},{});
@@ -661,6 +718,14 @@
     if(profile.race&&plan.totalWeeks>=6&&!phases.has('Build'))errors.push('missing_build_phase');
     if(profile.race&&plan.totalWeeks>=4&&!phases.has('Specific'))errors.push('missing_specific_phase');
     if(profile.race&&!phases.has('RaceWeek'))errors.push('missing_race_week');
+    if(profile.race){
+      const raceEve=addDays(plan.endDate,-1);
+      const raceMinus2=addDays(plan.endDate,-2);
+      const raceMinus3=addDays(plan.endDate,-3);
+      if(!plan.sessions.some(session=>session.date===raceEve&&session.type==='Rest'))errors.push('race_eve_rest_missing');
+      if(raceMinus2>=plan.startDate&&!isUnavailable(raceMinus2,unavailable)&&!plan.sessions.some(session=>session.date===raceMinus2&&['Easy','Recovery','Rest'].includes(session.type)))errors.push('race_minus_2_coverage_missing');
+      if(raceMinus3>=plan.startDate&&!isUnavailable(raceMinus3,unavailable)&&!plan.sessions.some(session=>session.date===raceMinus3&&['Easy','Recovery','Rest'].includes(session.type)))errors.push('race_minus_3_coverage_missing');
+    }
     if(profile.race&&plan.athleteProfile.goalRisk==='high')warnings.push('target_requires_large_improvement');
     if(plan.athleteProfile.confidence==='low')warnings.push('pace_anchors_low_confidence');
     const plannedWeeks=(plan.phaseSchedule||[]).map((row,index)=>({phase:row.phase,target:weeklyTargets[index]||row.targetVolumeKm}));
@@ -677,6 +742,6 @@
   }
 
   T.EngineV2={
-    ENGINE_VERSION,REFERENCES,createPlan,validatePlan,allocatePhases,buildAthleteModel,parseBenchmark,projectedMinutes,formatPace,dateString,addDays,unavailableSet,isUnavailable,recoveryAdvice,phaseLongTarget,longRunDistance,danielsClassForSpec,danielsQualityCap
+    ENGINE_VERSION,REFERENCES,createPlan,validatePlan,allocatePhases,buildAthleteModel,parseBenchmark,projectedMinutes,vdotForPerformance,paceForVdotAtDuration,formatPace,dateString,addDays,unavailableSet,isUnavailable,recoveryAdvice,phaseLongTarget,longRunDistance,danielsClassForSpec,danielsQualityCap
   };
 })(window);

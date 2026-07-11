@@ -2,6 +2,40 @@
 
 Last updated: 2026-07-11 Asia/Bangkok
 
+## 2026-07-11 Local-Only Coach Pace Anchor + Race-Week Coverage Fix
+
+Status:
+
+- Implemented locally after the user found a plan that ended several days before its race date. Do not push until the user approves this additional local Coach patch.
+
+Coach changes:
+
+- Tempo/threshold pace now has an explicit input hierarchy:
+  1. Athlete-configured `tempoFast`/`tempoSlow` range.
+  2. Athlete-configured `thresholdPace`.
+  3. Recent benchmark converted to Daniels-style VDOT, then solved for a 60-minute pace anchor.
+  4. Conservative level fallback only when no usable athlete input or benchmark exists.
+- Plan data records `benchmarkVdot` and tempo basis (`athlete_settings`, `threshold_setting`, `recent_benchmark_vdot`, or `level_fallback`) so the source is inspectable.
+- I pace and R pace now derive from the same benchmark VDOT model when a benchmark exists:
+  - I anchor: VDOT-equivalent 11-minute pace.
+  - R anchor: VDOT-equivalent 4-minute pace.
+  - Existing 5K/10K profile sequence and Daniels R/I/T volume caps remain active.
+- Race Week no longer depends solely on the normal weekly weekday pattern. For every race date, the engine ensures relative pre-race coverage when those dates are inside the plan and available:
+  - race date minus 3: Easy;
+  - race date minus 2: Easy;
+  - race date minus 1: Rest.
+- These dates are calculated from the submitted race date, never hard-coded to an example date. Validation rejects a race plan that is missing the pre-race coverage.
+- PWA cache advanced to `mydash-v3-training-studio-ui-20260711-10`.
+
+Verification passed:
+
+- `node coach_v2_test.js` including VDOT anchor checks and dynamic race-minus-3/-2/-1 coverage checks.
+- `node verify_dashboard.js`
+- `python comprehensive_refactor_test.py`
+- `python smoke_test_dashboard.py`
+- `python mobile_layout_test.py`
+- `git diff --check`
+
 ## 2026-07-11 Active Local-Only Training Studio Migration
 
 Status:

@@ -70,6 +70,9 @@ async function main() {
   assert(Math.max(...tenLongRuns.map(session=>session.targetDist))===14, '10K: intermediate long run reaches 14 km from a 12 km baseline');
   assert(ten.sessions.filter(session=>session.phase==='Build').every(session=>session.type!=='Interval'||session.workoutSpec.danielsClass==='R'), '10K: Phase II introduces R work before I work');
   assert(ten.sessions.filter(session=>session.phase==='RaceWeek').every(session=>!['Tempo','Interval','Long'].includes(session.type)), '10K: light race week');
+  assert(ten.sessions.some(session=>session.date===engine.addDays(ten.endDate,-3)&&['Easy','Recovery','Rest'].includes(session.type)), 'Race week: race-minus-3 is explicitly covered');
+  assert(ten.sessions.some(session=>session.date===engine.addDays(ten.endDate,-2)&&['Easy','Recovery','Rest'].includes(session.type)), 'Race week: race-minus-2 is explicitly covered');
+  assert(ten.sessions.some(session=>session.date===engine.addDays(ten.endDate,-1)&&session.type==='Rest'), 'Race week: race eve is explicitly a rest session');
   const peakTarget = Math.max(...ten.phaseSchedule.filter(row=>!['Taper','RaceWeek'].includes(row.phase)).map(row=>row.targetVolumeKm));
   assert(ten.phaseSchedule.filter(row=>['Taper','RaceWeek'].includes(row.phase)).every(row=>row.targetVolumeKm<peakTarget*.8), '10K: taper volume reduction');
 
@@ -104,6 +107,11 @@ async function main() {
   assert.equal(Math.max(...longRunProfilePlans.Marathon.sessions.filter(session=>session.type==='Long').map(session=>session.targetDist)),32,'Marathon: intermediate long run cap is 32 km');
   Object.values(longRunProfilePlans).forEach(plan=>assert.equal(plan.validation.valid,true,`Long run profile valid: ${plan.goalProfile.distance}`));
   assert.equal(ten.athleteProfile.paceBasis, 'recent_benchmark', 'Benchmark drives training pace');
+  assert(ten.athleteProfile.benchmarkVdot>0,'Benchmark produces a VDOT anchor');
+  assert.equal(ten.athleteProfile.effortTargets.tempo.basis,'recent_benchmark_vdot','Tempo defaults to benchmark VDOT when no athlete tempo setting exists');
+  assert(engine.paceForVdotAtDuration(engine.vdotForPerformance(10,50),60)>5,'VDOT threshold anchor returns a plausible 60-minute pace');
+  assert(ten.athleteProfile.anchors.interval<ten.athleteProfile.anchors.threshold,'VDOT interval pace is faster than threshold pace');
+  assert(ten.sessions.filter(session=>session.workoutSpec?.danielsClass==='I').every(session=>session.workoutSpec.intensityTarget.basis==='interval'),'I sessions use the VDOT interval anchor');
   assert.equal(engine.parseBenchmark('Half 1:45').minutes,105,'Half benchmark accepts H:MM');
   assert.equal(engine.parseBenchmark('Marathon 4:05').minutes,245,'Marathon benchmark accepts H:MM');
   const sparseHistoryPlan=engine.createPlan({

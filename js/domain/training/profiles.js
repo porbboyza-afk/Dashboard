@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
 
-  const METHODOLOGY_VERSION = 'mydash-running-2026.07.11.1';
+  const METHODOLOGY_VERSION = 'mydash-running-2026.07.11.2';
 
   // Daniels, Running Formula 4e: quality distance is capped per session and
   // scaled to the athlete's actual weekly volume, not a fixed workout template.
@@ -35,9 +35,9 @@
       qualityBudgetKm:{Base:0,Build:4,Specific:5,Taper:2.5}, continuousTempoRatio:.60,
       thresholdWorkKm:{min:3,max:5}, specificWorkKm:{min:3.2,max:5},
       buildIntervals:[
-        {intent:'vo2',reps:8,repKm:.4,recoverySeconds:90,intensity:'current_5k'},
-        {intent:'vo2',reps:6,repKm:.6,recoverySeconds:105,intensity:'current_5k'},
-        {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_5k'}
+        {intent:'vo2',reps:8,repKm:.4,recoverySeconds:90,intensity:'interval'},
+        {intent:'vo2',reps:6,repKm:.6,recoverySeconds:105,intensity:'interval'},
+        {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'interval'}
       ],
       repetitionIntervals:[
         {intent:'repetition',reps:8,repKm:.2,recoverySeconds:100,intensity:'repetition'},
@@ -58,8 +58,8 @@
       qualityBudgetKm:{Base:0,Build:5,Specific:8,Taper:3}, continuousTempoRatio:.60,
       thresholdWorkKm:{min:3,max:6}, specificWorkKm:{min:4,max:8},
       buildIntervals:[
-        {intent:'vo2',reps:6,repKm:.4,recoverySeconds:90,intensity:'current_5k'},
-        {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_5k'},
+        {intent:'vo2',reps:6,repKm:.4,recoverySeconds:90,intensity:'interval'},
+        {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'interval'},
         {intent:'race_specific',reps:4,repKm:1,recoverySeconds:105,intensity:'current_10k'}
       ],
       repetitionIntervals:[
@@ -81,7 +81,7 @@
       qualityBudgetKm:{Base:0,Build:6,Specific:10,Taper:4}, continuousTempoRatio:.65,
       thresholdWorkKm:{min:4,max:8}, specificWorkKm:{min:6,max:10},
       buildIntervals:[
-        {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_10k'},
+        {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'interval'},
         {intent:'threshold',reps:4,repKm:1,recoverySeconds:90,intensity:'threshold'},
         {intent:'threshold',reps:3,repKm:2,recoverySeconds:120,intensity:'threshold'}
       ],

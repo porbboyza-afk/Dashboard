@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-training-studio-ui-20260711-9';
+const CACHE_NAME = 'mydash-v3-training-studio-ui-20260711-10';
 const APP_SHELL = [
   './',
   './index.html',
