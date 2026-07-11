@@ -14,7 +14,18 @@
       root.AppState.set('workouts', byDateDescending(data));
     });
     root._fb.listen('coach_plan', data => {
-      root.AppState.set('coachPlan', data || null);
+      if (data) {
+        root.AppState.set('coachPlan', data);
+        return;
+      }
+      // V2 plans are versioned under coach_plans. Keep Today and Coach on the same active plan.
+      if (root.MyDashCoachRepository?.loadActivePlan) {
+        root.MyDashCoachRepository.loadActivePlan()
+          .then(plan => root.AppState.set('coachPlan', plan || null))
+          .catch(error => console.warn('Active Coach plan:', error.message));
+      } else {
+        root.AppState.set('coachPlan', null);
+      }
     });
     root._fb.listen('post_run_reviews', data => {
       root.AppState.set('postRunReviews', byDateDescending(data));

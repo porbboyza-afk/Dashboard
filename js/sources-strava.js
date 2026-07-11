@@ -428,7 +428,8 @@ function setStravaDelta(id,current,previous,inverse=false,suffix='%'){
   element.style.color=good?'var(--green)':'var(--orange)';
 }
 
-function renderStravaOverview(acts){
+// Retained only for reference while the Sources surface is migrated; the later renderer is authoritative.
+function renderStravaOverviewLegacy(acts){
   if(!acts?.length)return;
   const currentStart=getThisWeekStart();
   const previousStart=new Date(currentStart);previousStart.setDate(previousStart.getDate()-7);

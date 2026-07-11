@@ -1,7 +1,16 @@
 (function(root){
   'use strict';
 
-  const METHODOLOGY_VERSION = 'mydash-running-2026.07.10.1';
+  const METHODOLOGY_VERSION = 'mydash-running-2026.07.11.1';
+
+  // Daniels, Running Formula 4e: quality distance is capped per session and
+  // scaled to the athlete's actual weekly volume, not a fixed workout template.
+  const DANIELS_QUALITY_CAPS = {
+    R:{label:'Repetition',percentOfWeekly:.05,maxKm:8},
+    I:{label:'Interval',percentOfWeekly:.08,maxKm:10},
+    T:{label:'Threshold',percentOfWeekly:.10,maxKm:null}
+  };
+  const DANIELS_RACE_RECOVERY = {easyDaysPer3Km:1};
 
   const PROFILES = {
     Base: {
@@ -15,7 +24,8 @@
         {intent:'hill_strength',reps:8,repSeconds:30,recoverySeconds:90,intensity:'hill_controlled'},
         {intent:'speed_skill',reps:8,repSeconds:20,recoverySeconds:70,intensity:'strides'}
       ],
-      specificIntervals:[]
+      specificIntervals:[],
+      daniels:{qualityCaps:DANIELS_QUALITY_CAPS,qualityEmphasis:['easy_aerobic','strides_or_hills']}
     },
     '5K': {
       key:'5K', label:'5K', race:true, distanceKm:5,
@@ -29,11 +39,16 @@
         {intent:'vo2',reps:6,repKm:.6,recoverySeconds:105,intensity:'current_5k'},
         {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_5k'}
       ],
+      repetitionIntervals:[
+        {intent:'repetition',reps:8,repKm:.2,recoverySeconds:100,intensity:'repetition'},
+        {intent:'repetition',reps:6,repKm:.3,recoverySeconds:120,intensity:'repetition'}
+      ],
       specificIntervals:[
         {intent:'race_specific',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_5k'},
         {intent:'race_specific',reps:4,repKm:1,recoverySeconds:150,intensity:'current_5k'},
         {intent:'race_specific',reps:5,repKm:1,recoverySeconds:150,intensity:'current_5k'}
-      ]
+      ],
+      daniels:{qualityCaps:DANIELS_QUALITY_CAPS,raceRecovery:DANIELS_RACE_RECOVERY,phaseRoles:{Base:'easy_plus_strides',Build:'repetition_first',Specific:['interval_primary','threshold_emphasis']},baseLongRunMaxWeeklyRatio:.25}
     },
     '10K': {
       key:'10K', label:'10K', race:true, distanceKm:10,
@@ -47,11 +62,16 @@
         {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_5k'},
         {intent:'race_specific',reps:4,repKm:1,recoverySeconds:105,intensity:'current_10k'}
       ],
+      repetitionIntervals:[
+        {intent:'repetition',reps:8,repKm:.2,recoverySeconds:100,intensity:'repetition'},
+        {intent:'repetition',reps:6,repKm:.3,recoverySeconds:120,intensity:'repetition'}
+      ],
       specificIntervals:[
         {intent:'race_specific',reps:5,repKm:1,recoverySeconds:105,intensity:'current_10k'},
         {intent:'race_specific',reps:6,repKm:1,recoverySeconds:120,intensity:'current_10k'},
         {intent:'race_specific',reps:5,repKm:1.2,recoverySeconds:150,intensity:'current_10k'}
-      ]
+      ],
+      daniels:{qualityCaps:DANIELS_QUALITY_CAPS,raceRecovery:DANIELS_RACE_RECOVERY,phaseRoles:{Base:'easy_plus_strides',Build:'repetition_first',Specific:['interval_primary','threshold_emphasis']},baseLongRunMaxWeeklyRatio:.25}
     },
     Half: {
       key:'Half', label:'Half Marathon', race:true, distanceKm:21.0975,
@@ -69,7 +89,13 @@
         {intent:'race_specific',reps:3,repKm:2,recoverySeconds:120,intensity:'current_half'},
         {intent:'race_specific',reps:3,repKm:3,recoverySeconds:180,intensity:'current_half'},
         {intent:'race_specific',reps:2,repKm:5,recoverySeconds:240,intensity:'current_half'}
-      ]
+      ],
+      daniels:{
+        qualityCaps:DANIELS_QUALITY_CAPS,
+        raceRecovery:DANIELS_RACE_RECOVERY,
+        qualityEmphasis:['long_endurance','threshold','repetition_or_interval'],
+        taper:{longRunFraction:.67,thresholdWorkout:'3 x 1 km T / 2 min recovery',daysBeforeRace:3}
+      }
     },
     Marathon: {
       key:'Marathon', label:'Marathon', race:true, distanceKm:42.195,
@@ -87,7 +113,8 @@
         {intent:'race_specific',reps:3,repKm:3,recoverySeconds:180,intensity:'current_marathon'},
         {intent:'race_specific',reps:2,repKm:5,recoverySeconds:240,intensity:'current_marathon'},
         {intent:'race_specific',reps:1,repKm:12,recoverySeconds:0,intensity:'current_marathon'}
-      ]
+      ],
+      daniels:{qualityCaps:DANIELS_QUALITY_CAPS,raceRecovery:DANIELS_RACE_RECOVERY,qualityEmphasis:['threshold','marathon_specific']}
     }
   };
 
@@ -106,6 +133,8 @@
 
   root.MyDashTraining=Object.assign(root.MyDashTraining||{}, {
     METHODOLOGY_VERSION,
+    DANIELS_QUALITY_CAPS,
+    DANIELS_RACE_RECOVERY,
     PROFILES,
     normalizeProfileKey,
     getProfile

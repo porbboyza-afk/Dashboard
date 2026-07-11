@@ -47,6 +47,10 @@ EXPECTED_SCRIPT_ORDER = [
     "js/races.js",
     "js/domain/review/matcher-v2.js",
     "js/post-run-review.js",
+    "js/studio-home.js",
+    "js/studio-coach.js",
+    "js/chart-semantics.js",
+    "js/chart-data.js",
 ]
 
 EXPECTED_GLOBALS = [
@@ -560,6 +564,8 @@ def main():
                     longRunDay:0, currentWeeklyKm:28, longestRecentRunKm:12, recentActivities:[], now:1783900000000
                   });
                   const v2Specific = v2Plan.sessions.filter(s => s.phase === 'Specific' && s.workoutSpec?.qualityDistanceKm > 0);
+                  const v2BuildQuality = v2Plan.sessions.filter(s => s.phase === 'Build' && ['Tempo','Interval'].includes(s.type));
+                  const v2DanielsCapped = v2Plan.sessions.filter(s => ['R','I','T'].includes(s.workoutSpec?.danielsClass));
                   const v2RaceWeek = v2Plan.sessions.filter(s => s.phase === 'RaceWeek');
                   const v2BuildWeeks = v2Plan.phaseSchedule.filter(row => row.phase === 'Build').length;
                   const v2SpecificWeeks = v2Plan.phaseSchedule.filter(row => row.phase === 'Specific').length;
@@ -609,6 +615,9 @@ def main():
                     v2BuildWeeks,
                     v2SpecificWeeks,
                     v2SpecificWork: v2Specific.map(s => s.workoutSpec.qualityDistanceKm),
+                    v2SpecificClasses: v2Specific.map(s => s.workoutSpec.danielsClass),
+                    v2BuildClasses: v2BuildQuality.map(s => s.workoutSpec.danielsClass),
+                    v2DanielsCapsOk: v2DanielsCapped.length > 0 && v2DanielsCapped.every(s => s.workoutSpec.qualityDistanceKm <= s.workoutSpec.danielsCapKm + .15),
                     v2RaceWeekLight: v2RaceWeek.every(s => !['Tempo','Interval','Long'].includes(s.type)),
                     v2Structured: v2Plan.sessions.filter(s => s.type !== 'Rest').every(s => !!s.workoutSpec && !!s.sessionId),
                     v2MultiDistance,
@@ -639,7 +648,7 @@ def main():
             assert_true(checks, "daily_downgrade_ok", coach_plan_rules["downgradeType"] == "Easy" and coach_plan_rules["downgradeReduced"] is True and coach_plan_rules["downgradeAdjustment"] == "auto_downgrade", "Hard day was not downgraded")
             assert_true(checks, "daily_goal_impact_ok", coach_plan_rules["downgradeGoalRisk"] == "medium" and coach_plan_rules["goalImpactSaved"] is True, "Goal impact was not saved")
             assert_true(checks, "coach_v2_structure_ok", coach_plan_rules["v2Valid"] is True and coach_plan_rules["v2EngineVersion"] == 2 and coach_plan_rules["v2Structured"] is True, "Coach V2 plan schema or validation failed")
-            assert_true(checks, "coach_v2_periodization_ok", coach_plan_rules["v2BuildWeeks"] >= 2 and coach_plan_rules["v2SpecificWeeks"] >= 2 and max(coach_plan_rules["v2SpecificWork"]) >= 5 and coach_plan_rules["v2RaceWeekLight"] is True, "Coach V2 does not provide progressive 10K-specific work and a light race week")
+            assert_true(checks, "coach_v2_periodization_ok", coach_plan_rules["v2BuildWeeks"] >= 2 and coach_plan_rules["v2SpecificWeeks"] >= 2 and all(kind == "R" for kind in coach_plan_rules["v2BuildClasses"]) and coach_plan_rules["v2SpecificClasses"] == ["I", "T"] and coach_plan_rules["v2DanielsCapsOk"] is True and coach_plan_rules["v2RaceWeekLight"] is True, "Coach V2 does not follow the Daniels R -> I -> T sequence, caps, or race-week guard")
             assert_true(checks, "coach_v2_multi_distance_ok", coach_plan_rules["v2MultiDistance"] is True, "Coach V2 profiles do not cover Base, 5K, 10K, Half, and Marathon")
             assert_true(checks, "coach_v2_recovery_model_ok", coach_plan_rules["v2RecoveryCards"] is True and coach_plan_rules["v2FiveDayHasQuality"] is True and coach_plan_rules["v2FiveDayHasRecovery"] is True, "Coach V2 recovery model or 5-day structure is missing")
             assert_true(checks, "training_dashboard_vm_ok", coach_plan_rules["v2DashboardSummary"] is True, "Training dashboard view model did not summarize the plan")
@@ -697,7 +706,7 @@ def main():
             )
             checks["coach_v2_save"] = coach_v2_save
             assert_true(checks, "coach_v2_persistence_ok", coach_v2_save["engineVersion"] == 2 and coach_v2_save["valid"] is True and coach_v2_save["versionedWrite"] is True and coach_v2_save["activePointer"] == coach_v2_save["planId"] and coach_v2_save["mirrorPlanId"] == coach_v2_save["planId"] and coach_v2_save["statePlanId"] == coach_v2_save["planId"] and "Training Engine V2" in coach_v2_save["outputText"], "Coach V2 UI did not generate and persist the versioned plan through the compatibility mirror")
-            assert_true(checks, "coach_v2_effort_settings_ok", coach_v2_save["easyHRMax"] == 142 and coach_v2_save["easyPaceFast"] > 5.35 and abs(coach_v2_save["tempoPaceFast"] - (4 + 55/60)) < 0.001 and coach_v2_save["inputAuditHRMax"] == 142 and coach_v2_save["continuousTempo"] >= 2, "Coach V2 UI did not use athlete HR/pace settings or continuous tempo progression")
+            assert_true(checks, "coach_v2_effort_settings_ok", coach_v2_save["easyHRMax"] == 142 and coach_v2_save["easyPaceFast"] > 5.35 and abs(coach_v2_save["tempoPaceFast"] - (4 + 55/60)) < 0.001 and coach_v2_save["inputAuditHRMax"] == 142 and coach_v2_save["continuousTempo"] >= 1, "Coach V2 UI did not use athlete HR/pace settings or the required T-pace progression")
 
             no_plan_training_text = page.evaluate(
                 """

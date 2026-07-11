@@ -2,11 +2,87 @@
 
 Last updated: 2026-07-11 Asia/Bangkok
 
+## 2026-07-11 Active Local-Only Training Studio Migration
+
+Status:
+
+- The user asked to complete the full UI migration today. Continue locally and do not push until every page is migrated and the final local review is accepted.
+- The previously pushed commit `f534f1d Redesign full MyDash workspace UI` is the baseline currently on `origin/main`.
+
+Completed in the current local-only migration:
+
+- Added `training-studio-ui.css` and `studio-shell.css`.
+- Desktop navigation is now a top Training Studio navigation shell; mobile keeps the existing menu behavior.
+- Replaced the visible Today dashboard with `#studio-home` rendered by `js/studio-home.js`.
+  - Uses existing `AppState`, `getAllActivities()`, `calculateReadiness()`, `coachDailyDecision()`, and Coach V2 plan data.
+  - Renders real daily session decision, wellness/readiness context, weekly volume, ACWR, sleep, a live week board, recent activities, and post-run review links.
+  - The old Today DOM remains hidden but intact for renderer/global-handler compatibility during migration.
+- Added `js/studio-coach.js` and a Studio plan board to the Coach Track tab.
+  - Uses real plan sessions, weekly phase, completed state, target distance/HR, and existing Details/Done handlers.
+  - The legacy generated session list remains in the DOM but is hidden after the Studio board renders.
+- Service worker cache is now `mydash-v3-training-studio-ui-20260711-3` and includes the new CSS/JS assets.
+
+Still required before release:
+
+1. User local review with their signed-in Firebase data, including desktop/tablet/mobile visual inspection.
+2. Commit and push only after the user approves the local build.
+
+Completed after the initial Studio slices:
+
+- Added `studio-surfaces.css` to migrate Activity Log, Post-Run Review, Wellness, Statistics, Sources, Settings, and AI Q&A into the shared dark Training Studio surface while retaining their existing DOM ids, forms, charts, and actions.
+- Existing Coach daily decision/recovery controls remain active and continue to render above the new weekly Studio board.
+- Fixed the stylesheet cascade: Studio CSS now loads after the legacy inline stylesheet; the previous local review showed a broken white sidebar because legacy CSS overrode the new shell.
+- Service worker cache advanced to `mydash-v3-training-studio-ui-20260711-9`.
+
+Verification passed for the current Studio slices:
+
+- `node verify_dashboard.js`
+- `node --check js\\studio-home.js`
+- `node --check js\\studio-coach.js`
+- `git diff --check`
+- `node coach_v2_test.js`
+- `python smoke_test_dashboard.py`
+- `python comprehensive_refactor_test.py`
+- `python mobile_layout_test.py` (390px: no overflow; dark menu and drawer; Studio Home visible)
+
+## 2026-07-11 Local-Only Daniels Coach Rules Upgrade
+
+Status:
+
+- Implemented locally from the user-provided `dokumen.pub_daniels-running-formula-4.epub`. Do not push until the user approves the accumulated local UI and Coach work.
+- The deterministic engine now records the training rule that formed each quality session, so AI text cannot override the volume safety limit.
+
+Coach changes:
+
+- Added shared per-session Daniels caps, scaled to planned weekly volume:
+  - `R`: no more than 5% of weekly volume, capped at 8 km.
+  - `I`: no more than 8% of weekly volume, capped at 10 km.
+  - `T`: no more than 10% of weekly volume.
+- Added these caps to Base, 5K, 10K, Half Marathon, and Marathon profiles. Each session records `danielsClass`, `danielsCapKm`, and the rule used; validation rejects a manually altered session above its cap.
+- 5K/10K progression now follows the Chapter 13 order within the compact plan model:
+  - Base: easy running plus strides/hills.
+  - Build: R work first.
+  - Specific: I-focused block first, then continuous T-focused block.
+  - Race week remains light/rest only.
+- 5K/10K Base phase will not increase a long run beyond the Chapter 13 25% weekly-volume guideline. Existing long-run tolerance is retained rather than abruptly cutting a runner's established long run.
+- Added race recovery metadata for all race profiles using the one Easy day per 3 km rule: 5K = 2 days, 10K = 3 days, Half = 7 days, Marathon = 14 days.
+- Half Marathon now records Chapter 15 emphasis and taper metadata: long endurance, threshold, R/I rotation, approximately two-thirds normal long run in pre-race week, and a short T workout three days before race. The existing generator is still conservative for athletes with only 3-4 run days per week; it does not fabricate three hard sessions where the schedule cannot recover.
+- Coach session detail shows its Daniels guard. Studio Coach board shows the plan's R/I/T caps and race recovery days.
+
+Verification passed:
+
+- `node coach_v2_test.js` including a mutation test that verifies the validator rejects a Half T session above its cap.
+- `node verify_dashboard.js`
+- `python smoke_test_dashboard.py`
+- `python comprehensive_refactor_test.py` including 10K `R -> I -> T`, cap, UI persistence, and compatibility assertions.
+- `python mobile_layout_test.py` (390px: no overflow; dark menu/drawer intact).
+- `git diff --check`
+
 ## 2026-07-11 Local-Only Full-App UI Redesign
 
 Status:
 
-- Implemented and verified locally. Do not push until the user has reviewed this full redesign as a whole.
+- This was pushed as `f534f1d Redesign full MyDash workspace UI` before the Training Studio migration began.
 - This replaces the short-lived `training-hub-ui.css` experiment, which caused desktop card/layout regressions. That file is removed and must not be restored.
 
 Design system changes:

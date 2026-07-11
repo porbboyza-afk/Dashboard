@@ -18,6 +18,10 @@ const wellnessScriptPath = path.join(root, 'js', 'wellness.js');
 const statsScriptPath = path.join(root, 'js', 'stats.js');
 const coachScriptPath = path.join(root, 'js', 'coach.js');
 const postRunReviewScriptPath = path.join(root, 'js', 'post-run-review.js');
+const studioHomeScriptPath = path.join(root, 'js', 'studio-home.js');
+const studioCoachScriptPath = path.join(root, 'js', 'studio-coach.js');
+const chartDataScriptPath = path.join(root, 'js', 'chart-data.js');
+const chartSemanticsScriptPath = path.join(root, 'js', 'chart-semantics.js');
 const trainingProfilesScriptPath = path.join(root, 'js', 'domain', 'training', 'profiles.js');
 const trainingEngineScriptPath = path.join(root, 'js', 'domain', 'training', 'engine-v2.js');
 const trainingDashboardVmScriptPath = path.join(root, 'js', 'training-dashboard-view-model.js');
@@ -48,6 +52,10 @@ const extraScripts = [
   racesScriptPath,
   reviewMatcherScriptPath,
   postRunReviewScriptPath,
+  studioHomeScriptPath,
+  studioCoachScriptPath,
+  chartDataScriptPath,
+  chartSemanticsScriptPath,
 ];
 
 function checkJsFile(filePath) {
@@ -97,6 +105,9 @@ checkJsFile(appsScriptPath);
 
 ensureContains(indexPath, [
   '<link rel="stylesheet" href="app-redesign.css?v=20260711-1">',
+  '<link rel="stylesheet" href="training-studio-ui.css?v=20260711-1">',
+  '<link rel="stylesheet" href="studio-shell.css?v=20260711-1">',
+  '<link rel="stylesheet" href="studio-surfaces.css?v=20260711-1">',
   'class="workspace-topbar"',
   '<script src="js/date-utils.js"></script>',
   '<script src="js/ui-core.js"></script>',
@@ -118,6 +129,10 @@ ensureContains(indexPath, [
   '<script src="js/races.js"></script>',
   '<script src="js/domain/review/matcher-v2.js"></script>',
   '<script src="js/post-run-review.js"></script>',
+  '<script src="js/studio-home.js"></script>',
+  '<script src="js/studio-coach.js"></script>',
+  '<script src="js/chart-data.js"></script>',
+  '<script src="js/chart-semantics.js"></script>',
   'id="page-post-run-review"',
   'function mdToHtml(text)',
   'out.innerHTML = mdToHtml(reply);',
@@ -126,8 +141,13 @@ ensureContains(indexPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-full-app-redesign-20260711-1',
+  'mydash-v3-training-studio-ui-20260711-9',
   './app-redesign.css?v=20260711-1',
+  './training-studio-ui.css?v=20260711-1',
+  './studio-shell.css?v=20260711-1',
+  './studio-surfaces.css?v=20260711-1',
+  './js/studio-home.js',
+  './js/studio-coach.js',
 ]);
 
 ensureContains(shareCardScriptPath, [
@@ -202,6 +222,7 @@ ensureContains(appBootstrapScriptPath, [
   'function appReady',
   'function registerUiSubscriptions',
   'root._appReady = appReady',
+  'MyDashCoachRepository?.loadActivePlan',
 ]);
 
 ensureContains(activityModelScriptPath, [
@@ -318,7 +339,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-full-app-redesign-20260711-1",
+  "mydash-v3-training-studio-ui-20260711-9",
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',

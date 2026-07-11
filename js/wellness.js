@@ -499,8 +499,8 @@ function renderWellnessAnalytics(sourceRecords) {
     ]},
     options:wellnessChartOptions({scales:{
       x:xScale,
-      y:{min:0,max:100,grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}}},
-      y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:colors.tick,font:{size:9}}}
+      y:{min:0,max:100,grid:{color:colors.grid},ticks:{color:colors.tick,font:{size:9}},title:{display:true,text:'RECOVERY / 100',color:colors.tick,font:{size:9}}},
+      y1:{position:'right',beginAtZero:true,grid:{display:false},ticks:{color:colors.tick,font:{size:9}},title:{display:true,text:'TRAINING LOAD / AU',color:colors.tick,font:{size:9}}}
     }})
   });
 }

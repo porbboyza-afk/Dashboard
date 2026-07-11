@@ -16,6 +16,9 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260708-4">
 <link rel="shortcut icon" type="image/png" href="icon-192.png?v=20260708-4">
 <link rel="stylesheet" href="app-redesign.css?v=20260711-1">
+<link rel="stylesheet" href="training-studio-ui.css?v=20260711-1">
+<link rel="stylesheet" href="studio-shell.css?v=20260711-1">
+<link rel="stylesheet" href="studio-surfaces.css?v=20260711-1">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -1398,6 +1401,11 @@ img, video, iframe, canvas { max-width: 100%; }
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="MyDash">
   <meta name="theme-color" content="#097968">
+  <!-- Studio layers load after the legacy inline stylesheet so this is the active UI. -->
+  <link rel="stylesheet" href="app-redesign.css?v=20260711-1">
+  <link rel="stylesheet" href="training-studio-ui.css?v=20260711-1">
+  <link rel="stylesheet" href="studio-shell.css?v=20260711-1">
+  <link rel="stylesheet" href="studio-surfaces.css?v=20260711-1">
 </head>
 <body>
 
@@ -1465,6 +1473,7 @@ img, video, iframe, canvas { max-width: 100%; }
 
     <!-- ════════════ DASHBOARD ════════════ -->
     <div class="page active" id="page-today">
+      <section id="studio-home" class="studio-home" aria-live="polite"></section>
       <!-- Login Banner (shown when not logged in) -->
       <div id="login-banner" style="display:none;background:linear-gradient(135deg,var(--accent),#5856D6);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:20px;color:#fff">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -3260,22 +3269,16 @@ function renderHRZoneChart(monthWks) {
     { label:'Z4 Threshold',min:159, max:173, color:'#FF6B00' },
     { label:'Z5 สูงสุด',   min:174, max:999, color:'#FF3B30' },
   ];
-  const counts = zones.map(() => 0);
-  let total = 0;
-  monthWks.forEach(w => {
-    const hr = parseInt(w.hr || 0);
-    if (!hr) return;
-    const zi = zones.findIndex(z => hr >= z.min && hr <= z.max);
-    if (zi >= 0) { counts[zi]++; total++; }
-  });
+  if (charts.hrzone) { charts.hrzone.destroy(); charts.hrzone = null; }
+  const zoneData=window.MyDashChartData?.averageHrZoneSessions(monthWks,zones)||{counts:zones.map(()=>0),coverage:0};
+  const counts=zoneData.counts,total=zoneData.coverage;
   if (total === 0) {
     const leg = document.getElementById('hr-zone-legend');
-    if (leg) leg.innerHTML = '<span style="color:var(--text3)">ไม่มีข้อมูล HR</span>';
+    if (leg) leg.innerHTML = '<span style="color:var(--text3)">No average-HR activity data for this month</span>';
     return;
   }
   const ctx = document.getElementById('chart-hr-zone')?.getContext('2d');
   if (!ctx) return;
-  if (charts.hrzone) charts.hrzone.destroy();
   charts.hrzone = new Chart(ctx, {
     type: 'doughnut',
     data: {
@@ -3285,7 +3288,7 @@ function renderHRZoneChart(monthWks) {
     options: {
       cutout: '65%', responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: {
-        callbacks: { label: i => `${i.label}: ${i.raw} ครั้ง (${(i.raw/total*100).toFixed(0)}%)` }
+        callbacks: { label: i => `${i.label}: ${i.raw} sessions by average HR (${(i.raw/total*100).toFixed(0)}%)` }
       }}
     }
   });
@@ -3940,6 +3943,10 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
     <script src="js/races.js"></script>
     <script src="js/domain/review/matcher-v2.js"></script>
     <script src="js/post-run-review.js"></script>
+    <script src="js/studio-home.js"></script>
+    <script src="js/studio-coach.js"></script>
+    <script src="js/chart-semantics.js"></script>
+    <script src="js/chart-data.js"></script>
 <div id="share-stats-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9000;backdrop-filter:blur(12px);overflow-y:auto;padding:24px 16px 40px">
   <div style="max-width:480px;margin:0 auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">

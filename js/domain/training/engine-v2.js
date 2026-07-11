@@ -18,6 +18,7 @@
     {id:'recovery-consensus-2018',title:'Recovery and performance in sport: consensus statement',url:'https://pubmed.ncbi.nlm.nih.gov/29345524/'},
     {id:'active-recovery-review-2018',title:'Active recovery systematic review',url:'https://pubmed.ncbi.nlm.nih.gov/29742750/'},
     {id:'sleep-athlete-consensus-2021',title:'Sleep and athletes consensus statement',url:'https://pubmed.ncbi.nlm.nih.gov/33144349/'}
+    ,{id:'daniels-running-formula-4',title:"Daniels' Running Formula, 4th edition (5K/10K, Half, Marathon)",source:'user_provided_epub',chapters:['13','15','16']}
   ];
 
   function clamp(value,min,max){return Math.min(max,Math.max(min,value));}
@@ -149,6 +150,7 @@
       current_10k:round(current10k,3),
       current_half:round(paceFor(21.0975)||current10k+.24,3),
       current_marathon:round(paceFor(42.195)||current10k+.55,3),
+      repetition:round(Math.max(3,current10k-.45),3),
       strides:round(Math.max(3,current10k-.45),3),
       hill_controlled:null
     };
@@ -220,6 +222,12 @@
     const progressionCap=round(baseline*(1+.08*Math.max(0,weekIndex)),1);
     const volumeCap=Math.max(profile.minLongKm,targetVolume*(profile.maxLongRatio||.50));
     let distance=Math.min(phaseTarget,profile.maxLongKm[level],progressionCap,volumeCap);
+    const baseRatio=profile.daniels?.baseLongRunMaxWeeklyRatio;
+    if(phase==='Base'&&baseRatio){
+      const phaseOneCap=targetVolume*baseRatio;
+      const established=Math.max(profile.minLongKm,athlete.longestRecentRunKm||0);
+      distance=Math.min(distance,Math.max(phaseOneCap,established));
+    }
     const stepBack=previousLongKm>0&&previousVolume>0&&targetVolume<previousVolume*.94;
     if(previousLongKm>0){
       const recoveryCeiling=Math.max(previousLongKm*1.10,highestLongKm*1.08);
@@ -358,16 +366,55 @@
     const workKm=source.repKm?round(source.reps*source.repKm,1):0;
     return {...source,structure:'repetitions',workKm};
   }
+  function danielsClassForSpec(profile,spec){
+    if(!spec)return '';
+    if(spec.intent==='threshold')return 'T';
+    if(spec.intent==='vo2')return 'I';
+    if(['speed_skill','hill_strength','repetition'].includes(spec.intent))return 'R';
+    // Goal-pace work is retained as its own class. It is not silently treated
+    // as I pace, whose Daniel's limit applies only to true I-pace repetitions.
+    if(spec.intent==='race_specific')return profile.key==='Half'?'HMP':'Race';
+    return '';
+  }
+  function danielsQualityCap(profile,spec,weeklyKm,phase){
+    const qualityClass=danielsClassForSpec(profile,spec);
+    const rule=profile.daniels?.qualityCaps?.[qualityClass];
+    const profileBudget=profile.qualityBudgetKm?.[phase];
+    const ruleCap=rule
+      ? Math.min(rule.maxKm||Infinity,Math.max(0,weeklyKm*(rule.percentOfWeekly||0)))
+      : Infinity;
+    const phaseCap=Number.isFinite(profileBudget)?profileBudget:Infinity;
+    return {qualityClass,capKm:round(Math.min(ruleCap,phaseCap),1),rule:rule||null};
+  }
+  function capQualitySpec(spec,capKm){
+    if(!Number.isFinite(capKm)||!spec.workKm||spec.workKm<=capKm+.05)return spec;
+    // Preserve repetitions only when at least two whole reps fit. Otherwise a
+    // controlled continuous block is a clearer and safer prescription.
+    if(spec.structure==='continuous')return {...spec,reps:1,repKm:round(capKm,1),workKm:round(capKm,1),recoverySeconds:0};
+    if(spec.repKm){
+      const reps=Math.floor(capKm/spec.repKm);
+      return reps>=2
+        ? {...spec,reps,workKm:round(reps*spec.repKm,1)}
+        : {...spec,structure:'continuous',reps:1,repKm:round(capKm,1),workKm:round(capKm,1),recoverySeconds:0};
+    }
+    return spec;
+  }
   function qualitySpec(profile,phase,progress,weekIndex,phasePosition=0){
     if(phase==='Base'){
       return weekIndex%2===0
         ? {intent:'speed_skill',structure:'repetitions',reps:6+Math.min(4,weekIndex),repSeconds:20,recoverySeconds:70,intensity:'strides',workKm:0}
         : {intent:'hill_strength',structure:'repetitions',reps:6+Math.min(4,weekIndex),repSeconds:30,recoverySeconds:90,intensity:'hill_controlled',workKm:0};
     }
+    const shortRoadGoal=['5K','10K'].includes(profile.key);
+    if(phase==='Build'&&shortRoadGoal)return intervalSpec(profile.repetitionIntervals||profile.buildIntervals,progress);
     if(phase==='Build'){
       if(phasePosition%3===0)return thresholdSpec(profile,progress,'continuous');
       if(phasePosition%3===1)return intervalSpec(profile.buildIntervals,progress);
       return thresholdSpec(profile,progress,'repetitions');
+    }
+    if(phase==='Specific'&&shortRoadGoal){
+      if(phasePosition===0)return intervalSpec(profile.buildIntervals,progress);
+      return thresholdSpec(profile,Math.max(.65,progress),'continuous');
     }
     if(phase==='Specific'){
       if(phasePosition%3===0)return thresholdSpec(profile,Math.max(.65,progress),'continuous');
@@ -386,24 +433,13 @@
   }
   function legacyTypeForIntent(intent){
     if(['threshold','race_specific','steady'].includes(intent))return 'Tempo';
-    if(['vo2','hill_strength'].includes(intent))return 'Interval';
+    if(['vo2','hill_strength','repetition'].includes(intent))return 'Interval';
     return 'Easy';
   }
   function createQualitySession(profile,phase,progress,weekIndex,athlete,weeklyKm,phasePosition=0){
     let spec=qualitySpec(profile,phase,progress,weekIndex,phasePosition);
-    if(spec.workKm){
-      const profileBudget=profile.qualityBudgetKm?.[phase];
-      const volumeBudget=weeklyKm*(phase==='Specific'?.24:.20);
-      const cap=Math.max(2.4,Math.min(profileBudget||volumeBudget,volumeBudget));
-      if(spec.workKm>cap&&spec.structure==='continuous'){
-        spec={...spec,reps:1,repKm:round(cap,1),workKm:round(cap,1),recoverySeconds:0};
-      }else if(spec.workKm>cap&&spec.repKm){
-        const reps=Math.floor(cap/spec.repKm);
-        spec=reps>=2
-          ? {...spec,reps,workKm:round(reps*spec.repKm,1)}
-          : {...spec,structure:'continuous',reps:1,repKm:round(cap,1),workKm:round(cap,1),recoverySeconds:0};
-      }
-    }
+    const danielsPolicy=danielsQualityCap(profile,spec,weeklyKm,phase);
+    spec=capQualitySpec(spec,danielsPolicy.capKm);
     const pace=paceForIntensity(athlete.anchors,spec.intensity);
     const effortTarget=spec.intent==='threshold'?athlete.effortTargets.tempo:null;
     const targetPaceRange=effortTarget?`${formatPace(effortTarget.paceFast)}-${formatPace(effortTarget.paceSlow)}`:'';
@@ -412,8 +448,8 @@
     const details=detailsFor(spec,totalKm,pace,effortTarget);
     return {
       type:legacyTypeForIntent(spec.intent),intent:spec.intent,targetDist:totalKm,targetPace:pace?formatPace(pace):'',targetPaceRange,targetHR,
-      priority:['threshold','vo2','race_specific'].includes(spec.intent)?'key':'normal',
-      workoutSpec:{...spec,qualityDistanceKm:spec.workKm||0,totalDistanceKm:totalKm,intensityTarget:{basis:effortTarget?.basis||spec.intensity,paceMinPerKm:pace?round(pace,3):null,paceFast:effortTarget?.paceFast||null,paceSlow:effortTarget?.paceSlow||null,hrMin:effortTarget?.hrMin||null,hrMax:effortTarget?.hrMax||null}},
+      priority:['threshold','vo2','repetition','race_specific'].includes(spec.intent)?'key':'normal',
+      workoutSpec:{...spec,qualityDistanceKm:spec.workKm||0,danielsClass:danielsPolicy.qualityClass,danielsCapKm:danielsPolicy.capKm,danielsRule:danielsPolicy.rule,totalDistanceKm:totalKm,intensityTarget:{basis:effortTarget?.basis||spec.intensity,paceMinPerKm:pace?round(pace,3):null,paceFast:effortTarget?.paceFast||null,paceSlow:effortTarget?.paceSlow||null,hrMin:effortTarget?.hrMin||null,hrMax:effortTarget?.hrMax||null}},
       details,
       description:details.targetDescription
     };
@@ -546,6 +582,14 @@
     sessions.sort((a,b)=>a.date.localeCompare(b.date));
     const recoveryCards=createRecoveryCards({startDate,endDate,sessions,profile,daysPerWeek});
     const recoverySummary=recoveryCards.reduce((acc,card)=>{acc[card.intent]=(acc[card.intent]||0)+1;return acc;},{});
+    const raceRecoveryPolicy=profile.race&&profile.daniels?.raceRecovery
+      ? {
+          type:'easy_running',
+          easyDays:Math.round((profile.distanceKm||0)/3*profile.daniels.raceRecovery.easyDaysPer3Km),
+          startsAfterRaceDate:addDays(endDate,1),
+          rule:'1 easy day per 3 km raced'
+        }
+      : null;
     const plan={
       planId,revisionId:'r1',engineVersion:ENGINE_VERSION,methodologyVersion:T.METHODOLOGY_VERSION,status:'active',
       goal:input.goal||`${profile.label} training plan`,startDate,endDate,totalWeeks,daysPerWeek,
@@ -562,9 +606,11 @@
         athleteSettings:athlete.athleteSettingsUsed,easyPaceEvidenceSessions:athlete.easyPaceEvidence.sessions,
         paceBasis:athlete.paceBasis,volumeBasis:athlete.volumeBasis,
         longRunPolicy:{targets:profile.longRunTargets||{},maxLongKm:profile.maxLongKm,progressionPerWeekPct:8},
-        qualityBudgetKm:profile.qualityBudgetKm||{},continuousTempoRatio:profile.continuousTempoRatio??.6
+        qualityBudgetKm:profile.qualityBudgetKm||{},continuousTempoRatio:profile.continuousTempoRatio??.6,
+        danielsQualityCaps:profile.daniels?.qualityCaps||null,
+        raceRecoveryPolicy
       },
-      phaseSchedule,sessions,recoveryCards,recoverySummary,references:REFERENCES,
+      phaseSchedule,sessions,recoveryCards,recoverySummary,raceRecoveryPolicy,references:REFERENCES,
       completedDates:{},adjustments:[],dailyDecisions:{},
       compatibility:{legacyMirror:true,previousEngineAvailable:true}
     };
@@ -585,6 +631,9 @@
       if(session.workoutSpec?.intent==='threshold')thresholdSessions.push(session);
       const qualityBudget=profile.qualityBudgetKm?.[session.phase];
       if(qualityBudget&&session.workoutSpec?.qualityDistanceKm>qualityBudget+.15)errors.push(`quality_budget_exceeded:${session.sessionId}`);
+      const weeklyKm=weeklyTargets[(session.week||1)-1]||0;
+      const danielsPolicy=danielsQualityCap(profile,session.workoutSpec,weeklyKm,session.phase);
+      if(danielsPolicy.rule&&session.workoutSpec?.qualityDistanceKm>danielsPolicy.capKm+.15)errors.push(`daniels_quality_cap_exceeded:${session.sessionId}`);
       if(session.type!=='Rest'&&!session.workoutSpec)errors.push(`missing_workout_spec:${session.sessionId}`);
       if(session.type!=='Rest'&&isUnavailable(session.date,unavailable))errors.push(`session_on_unavailable_date:${session.date}`);
     });
@@ -623,10 +672,11 @@
     });
     const taper=plannedWeeks.filter(row=>['Taper','RaceWeek'].includes(row.phase));
     if(profile.race&&taper.length&&taper.some(row=>row.target>=peakVolume*.9))warnings.push('taper_volume_not_reduced');
-    return {valid:errors.length===0,errors,warnings,checkedAt:plan.updatedAt,weeklyTargetsKm:weeklyTargets,weeklyActualKm,qualityBudgetKm:profile.qualityBudgetKm||{},continuousTempo:{continuous:continuousTempo,segmented:segmentedTempo},longRunPeakKm:round(Math.max(0,...longRuns.map(session=>session.targetDist||0)),1)};
+    if(profile.race&&profile.daniels?.raceRecovery&&plan.raceRecoveryPolicy?.easyDays!==Math.round((profile.distanceKm||0)/3))errors.push('race_recovery_policy_invalid');
+    return {valid:errors.length===0,errors,warnings,checkedAt:plan.updatedAt,weeklyTargetsKm:weeklyTargets,weeklyActualKm,qualityBudgetKm:profile.qualityBudgetKm||{},danielsQualityCaps:profile.daniels?.qualityCaps||null,continuousTempo:{continuous:continuousTempo,segmented:segmentedTempo},longRunPeakKm:round(Math.max(0,...longRuns.map(session=>session.targetDist||0)),1)};
   }
 
   T.EngineV2={
-    ENGINE_VERSION,REFERENCES,createPlan,validatePlan,allocatePhases,buildAthleteModel,parseBenchmark,projectedMinutes,formatPace,dateString,addDays,unavailableSet,isUnavailable,recoveryAdvice,phaseLongTarget,longRunDistance
+    ENGINE_VERSION,REFERENCES,createPlan,validatePlan,allocatePhases,buildAthleteModel,parseBenchmark,projectedMinutes,formatPace,dateString,addDays,unavailableSet,isUnavailable,recoveryAdvice,phaseLongTarget,longRunDistance,danielsClassForSpec,danielsQualityCap
   };
 })(window);

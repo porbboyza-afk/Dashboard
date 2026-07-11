@@ -814,6 +814,7 @@ function renderCoachTracking(){
         ${(!isDone&&!isRest)?`<button onclick="coachSkipSession('${s.date}')" class="btn btn-ghost btn-xs">ข้าม</button>`:''}
       </div></div></div>`;
   }).join('');
+  if (typeof window.renderStudioCoachBoard === 'function') window.renderStudioCoachBoard(plan);
 }
 
 function showCoachSessionDetail(index){
@@ -844,6 +845,7 @@ function showCoachSessionDetail(index){
     ${row('วิธีวิ่ง',d.execution)}
     ${row('เกณฑ์ว่าวิ่งถูกต้อง',d.successCriteria)}
     ${row('ความหนัก',d.intensity)}
+    ${s.workoutSpec?.danielsClass&&Number.isFinite(s.workoutSpec?.danielsCapKm)?row('Daniels guard',`${s.workoutSpec.danielsClass}-pace work <= ${s.workoutSpec.danielsCapKm} km`):''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">เลื่อนวัน</button>
       ${isHardSession(s.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">ลดเป็นวิ่งเบา</button>`:''}

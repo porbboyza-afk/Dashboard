@@ -22,10 +22,12 @@ const charts={hrzone:null, paceTrend:null, stravaDistance:null, stravaPerformanc
 const dayNamesTH=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 function getChartColors() {
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const style = getComputedStyle(document.documentElement);
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' || style.getPropertyValue('--bg').trim() === '#111817';
+  const css = name => style.getPropertyValue(name).trim();
   return {
-    grid: isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)',
-    tick: isDark ? '#636366' : '#AEAEB2',
+    grid: css('--border') || (isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)'),
+    tick: css('--text3') || (isDark ? '#9FB2A9' : '#AEAEB2'),
     tooltip: isDark ? 'rgba(28,28,30,.95)' : 'rgba(255,255,255,.98)',
     tooltipBorder: isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)',
     tooltipText: isDark ? '#FFFFFF' : '#1C1C1E',
@@ -39,7 +41,7 @@ function renderWeekStats(){
   const label=document.getElementById('week-nav-label');
   if(label){const s=days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'});const e=days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});label.textContent=_statsWeekOffset===0?`THIS WEEK · Mon ${s} – Sun ${e}`:`Mon ${s} – Sun ${e}`;}
   document.getElementById('btn-week-next').disabled=_statsWeekOffset>=0;
-  let labels=[],data=[],totalDist=0,totalTime=0,dayCount=0,hrSum=0,hrCnt=0,cadSum=0,cadCnt=0;
+  let labels=[],data=[],totalDist=0,totalTime=0,dayCount=0,hrWeighted=0,hrWeight=0,cadWeighted=0,cadWeight=0;
   days.forEach((d,i)=>{
     const ds=toLocalDateStr(d);
     labels.push(dayNamesTH[i]+'\n'+d.toLocaleDateString('en-GB',{day:'numeric'}));
@@ -48,12 +50,12 @@ function renderWeekStats(){
     const time=dayWks.reduce((s,w)=>s+parseFloat(w.time||0),0);
     data.push(+dist.toFixed(2));totalDist+=dist;totalTime+=time;
     if(dayWks.length)dayCount++;
-    dayWks.forEach(w=>{if(w.hr){hrSum+=w.hr;hrCnt++;}if(w.cad){cadSum+=w.cad;cadCnt++;}});
+    dayWks.forEach(w=>{const weight=Math.max(1,parseFloat(w.time||0));if(w.hr){hrWeighted+=w.hr*weight;hrWeight+=weight;}if(w.cad){cadWeighted+=w.cad*weight;cadWeight+=weight;}});
   });
   const pace=totalDist>0?totalTime/totalDist:0;
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('stat-wk-dist',totalDist.toFixed(2));set('stat-wk-count',dayCount);set('stat-wk-time',Math.round(totalTime));set('stat-wk-pace',pace>0?formatPace(pace):'—');
-  set('stat-wk-hr',hrCnt>0?Math.round(hrSum/hrCnt):'—');set('stat-wk-cad',cadCnt>0?Math.round(cadSum/cadCnt):'—');
+  set('stat-wk-hr',hrWeight>0?Math.round(hrWeighted/hrWeight):'—');set('stat-wk-cad',cadWeight>0?Math.round(cadWeighted/cadWeight):'—');
   const loadMetrics=calculateLoadMetrics(allWks),atl=Math.round(loadMetrics.acute);set('stat-atl',`${atl} AU`);
   const loadRatio=loadMetrics.acwr;
   const atlFill=document.getElementById('atl-bar-fill');

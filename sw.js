@@ -1,8 +1,11 @@
-const CACHE_NAME = 'mydash-v3-full-app-redesign-20260711-1';
+const CACHE_NAME = 'mydash-v3-training-studio-ui-20260711-9';
 const APP_SHELL = [
   './',
   './index.html',
   './app-redesign.css?v=20260711-1',
+  './training-studio-ui.css?v=20260711-1',
+  './studio-shell.css?v=20260711-1',
+  './studio-surfaces.css?v=20260711-1',
   './manifest.json?v=20260711-2',
   './icon-192.png?v=20260710-3',
   './icon-512.png?v=20260710-3',
@@ -27,6 +30,10 @@ const APP_SHELL = [
   './js/races.js',
   './js/domain/review/matcher-v2.js',
   './js/post-run-review.js'
+  ,'./js/studio-home.js'
+  ,'./js/studio-coach.js'
+  ,'./js/chart-semantics.js'
+  ,'./js/chart-data.js'
 ];
 
 self.addEventListener('install', event => {
