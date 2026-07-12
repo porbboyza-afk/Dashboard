@@ -31,13 +31,56 @@
       root.AppState.set('postRunReviews', byDateDescending(data));
     });
     root._fb.listen('wellness', data => {
-      root.AppState.set('wellness', byDateDescending(data));
+      root.AppState.set('manualWellness', byDateDescending(data));
+      mergeWellnessSources();
+    });
+    root._fb.listen('wellness_sources/garmin', data => {
+      root.AppState.set('garminWellness', data || {});
+      mergeWellnessSources();
     });
     root._fb.listen('strava_activities', data => {
       if (!data) return;
       const activities = Array.isArray(data) ? data : Object.values(data);
       root.renderStravaActivities(activities);
     });
+  }
+
+  function finite(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function garminWellnessByDate(data) {
+    return Object.entries(data || {}).map(([date, domains]) => {
+      const sleep = domains?.sleep || {}, hrv = domains?.hrv || {}, heart = domains?.heart_rates || {};
+      const stress = domains?.stress || {}, battery = domains?.body_battery || {};
+      const sleepMinutes = finite(sleep.sleepMinutes), sleepScore = finite(sleep.sleepScore), averageStress = finite(stress.averageStress);
+      return {
+        _key: `garmin_${date}`, date, source: 'garmin', garminDomains: Object.keys(domains || {}),
+        sleepHours: sleepMinutes === null ? null : +(sleepMinutes / 60).toFixed(2),
+        sleepQuality: sleepScore === null ? null : Math.max(1, Math.min(10, +(sleepScore / 10).toFixed(1))),
+        hrv: finite(hrv.lastNightAvgMs), restingHR: finite(heart.restingHr),
+        stress: averageStress === null ? null : Math.max(1, Math.min(10, +(averageStress / 10).toFixed(1))),
+        bodyBattery: finite(battery.endLevel), bodyBatteryCharged: finite(battery.charged), bodyBatteryDrained: finite(battery.drained),
+      };
+    });
+  }
+
+  function mergeWellnessSources() {
+    const manual = root.AppState.get('manualWellness') || [];
+    const garmin = garminWellnessByDate(root.AppState.get('garminWellness'));
+    const dates = new Set([...manual.map(row => row.date), ...garmin.map(row => row.date)].filter(Boolean));
+    const merged = [...dates].map(date => {
+      const auto = garmin.find(row => row.date === date) || {date};
+      const entered = manual.find(row => row.date === date);
+      if (!entered) return auto;
+      const result = {...auto, ...entered, sources: auto.source === 'garmin' ? ['garmin', entered.source || 'manual'] : [entered.source || 'manual']};
+      Object.entries(auto).forEach(([key, value]) => {
+        if (entered[key] === null || entered[key] === '' || entered[key] === undefined) result[key] = value;
+      });
+      return result;
+    }).sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+    root.AppState.set('wellness', merged);
   }
 
   async function appReady(user) {
@@ -131,6 +174,7 @@
     appReady,
     startRealtimeListeners,
     registerUiSubscriptions,
+    mergeWellnessSources,
   };
   root._appReady = appReady;
   registerUiSubscriptions();

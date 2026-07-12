@@ -33,7 +33,7 @@ window.addEventListener('unhandledrejection', function(e) {
 </script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut }
+import { getAuth, signInWithPopup, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getDatabase, ref, set, get, push, remove, onValue }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
@@ -54,6 +54,7 @@ try {
   auth = getAuth(app);
   db = getDatabase(app);
   provider = new GoogleAuthProvider();
+  provider.setCustomParameters({prompt:'select_account'});
 } catch(e) {
   console.error('Firebase init failed:', e);
   document.getElementById('login-screen').style.display = 'flex';
@@ -72,6 +73,28 @@ window._fb = {
   pushData: async (path, data) => { if (!currentUser) return null; const r = await push(ref(db, `users/${currentUser.uid}/${path}`), data); return r.key; },
   removeData: async (path) => { if (!currentUser) return; await remove(ref(db, `users/${currentUser.uid}/${path}`)); },
   listen: (path, cb) => { if (!currentUser) return () => {}; return onValue(ref(db, `users/${currentUser.uid}/${path}`), snap => { cb(snap.exists() ? snap.val() : null); }); }
+};
+
+window._fb.loginGoogle = async () => {
+  const status = document.getElementById('login-error');
+  if (status) { status.textContent = 'Opening Google sign-in...'; status.style.display = 'block'; }
+  try {
+    await signInWithPopup(auth, provider);
+    if (status) status.style.display = 'none';
+  } catch (error) {
+    const code = String(error?.code || 'auth/unknown');
+    console.error('Firebase Google sign-in failed:', code, error);
+    if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+      if (status) status.textContent = 'Popup unavailable. Redirecting to Google sign-in...';
+      await signInWithRedirect(auth, provider);
+      return;
+    }
+    const hint = code === 'auth/unauthorized-domain'
+      ? 'Use http://localhost:8132 and authorize localhost in Firebase Authentication settings.'
+      : (error?.message || 'Google sign-in failed.');
+    if (status) { status.textContent = `${code}: ${hint}`; status.style.display = 'block'; }
+    if (window.showToast) showToast(`Login failed: ${code}`, 'error');
+  }
 };
 
 if (auth) onAuthStateChanged(auth, user => {
@@ -1491,6 +1514,7 @@ img, video, iframe, canvas { max-width: 100%; }
             Sign in with Google
           </button>
         </div>
+        <div id="login-error" style="display:none;margin-top:10px;font-size:12px;line-height:1.5;color:#fff"></div>
       </div>
       <div class="dashboard-hero">
         <div class="dashboard-hero-copy">
@@ -2565,6 +2589,23 @@ img, video, iframe, canvas { max-width: 100%; }
       </div>
 
       <div class="card mt-16">
+        <div class="card-label">Garmin Direct Import</div>
+        <div class="text-sm c2 mb-12">Import a verified local dry-run manifest. MyDash checks the signed-in Firebase owner and deterministic Garmin paths before enabling the write.</div>
+        <div class="flex gap-8 flex-wrap">
+          <label class="btn btn-ghost" style="cursor:pointer">Open manifest<input id="garmin-manifest-file" type="file" accept=".json,application/json" style="display:none" onchange="previewGarminManifest(event)"></label>
+          <button class="btn btn-green" id="garmin-manifest-apply" disabled onclick="applyGarminManifest()">Import verified activities</button>
+        </div>
+        <div id="garmin-manifest-status" class="text-sm c2 mt-8">No manifest loaded.</div>
+        <div id="garmin-manifest-progress" class="mt-8" style="height:4px;background:var(--border);overflow:hidden"><div style="width:0;height:100%;background:var(--green);transition:width .2s"></div></div>
+        <div class="flex gap-8 flex-wrap mt-12">
+          <button class="btn btn-ghost" onclick="scanGarminDuplicates()">Scan imported duplicates</button>
+          <button class="btn btn-danger" id="garmin-remove-duplicates" disabled onclick="removeConfirmedGarminDuplicates()">Remove confirmed Garmin copies</button>
+        </div>
+        <div id="garmin-dedupe-status" class="text-sm c2 mt-8">Duplicate scan has not run.</div>
+        <div id="garmin-dedupe-list" class="mt-8"></div>
+      </div>
+
+      <div class="card mt-16">
         <div class="card-label">Google Sheets Backup (Apps Script)</div>
         <div style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px">
           ใส่ URL ที่ลงท้ายด้วย <code>/exec</code> จาก Apps Script Web App แล้ว MyDash จะส่งสำเนา Workout และ Wellness ไป Google Sheets หลังบันทึกแต่ละครั้ง
@@ -2591,6 +2632,109 @@ img, video, iframe, canvas { max-width: 100%; }
 <script src="js/today-dashboard-view-model.js"></script>
 <script>
 'use strict';
+
+let pendingGarminManifest = null;
+let confirmedGarminDuplicateKeys = [];
+function garminManifestStatus(message, error=false){
+  const el=document.getElementById('garmin-manifest-status');
+  if(el){el.textContent=message;el.style.color=error?'var(--red)':'var(--text2)';}
+}
+async function previewGarminManifest(event){
+  pendingGarminManifest=null;
+  const apply=document.getElementById('garmin-manifest-apply');if(apply)apply.disabled=true;
+  try{
+    const file=event?.target?.files?.[0];if(!file)throw new Error('No manifest selected');
+    const plan=JSON.parse(await file.text());
+    const uid=window._fb?.currentUid?.();if(!uid)throw new Error('Sign in to MyDash before importing');
+    if(plan?.mode!=='dry-run'||plan?.version!==1||plan?.uid!==uid)throw new Error('Manifest owner or version does not match this signed-in account');
+    if(!Array.isArray(plan.operations)||plan.operations.length<1||plan.operations.length>500||plan.operationCount!==plan.operations.length)throw new Error('Invalid operation count');
+    const kind=plan.kind||'activities';
+    if(!['activities','wellness'].includes(kind))throw new Error('Unsupported manifest kind');
+    const prefix=kind==='wellness'?`users/${uid}/wellness_sources/garmin/`:`users/${uid}/workouts/garmin_`,seen=new Set();
+    for(const op of plan.operations){
+      if(op?.op!=='set'||typeof op.path!=='string'||!op.path.startsWith(prefix)||!op.value||op.value.source!=='garmin')throw new Error('Manifest contains a non-Garmin or out-of-owner operation');
+      if(seen.has(op.path))throw new Error('Manifest contains duplicate paths');seen.add(op.path);
+    }
+    const existing=window._workouts||[],filtered=[];let skipped=0;
+    for(const op of plan.operations){
+      const candidate={...op.value,_key:op.path.split('/').pop()};
+      const duplicate=kind==='activities'&&existing.some(item=>item.source!=='garmin'&&garminDuplicateDecision(candidate,item)==='duplicate');
+      if(duplicate)skipped++;else filtered.push(op);
+    }
+    pendingGarminManifest={...plan,kind,operations:filtered,operationCount:filtered.length};if(apply)apply.disabled=!filtered.length;
+    garminManifestStatus(kind==='wellness'?`Verified ${filtered.length} Garmin wellness records. No data has been written yet.`:`Verified ${plan.operations.length} activities; ${skipped} existing cross-source duplicates will be skipped; ${filtered.length} are ready. No data has been written yet.`);
+  }catch(error){garminManifestStatus(error.message||String(error),true);}
+  finally{if(event?.target)event.target.value='';}
+}
+function garminActivityStartMs(item){
+  const direct=Date.parse(item?.startTimeUtc||item?.start_date||'');if(Number.isFinite(direct))return direct;
+  const date=String(item?.date||item?.start_date_local||'').slice(0,10);return date?Date.parse(`${date}T12:00:00`):NaN;
+}
+function garminType(item){const value=String(item?.type||item?.sport_type||'').toLowerCase();return value.includes('run')?'run':value.includes('walk')?'walk':value.includes('cycl')||value==='bike'?'bike':value.includes('swim')?'swim':value;}
+function garminNumber(value){const parsed=Number(value);return Number.isFinite(parsed)?parsed:0;}
+function garminDuplicateScore(left,right){
+  if(garminType(left)!==garminType(right))return 0;
+  const lt=garminActivityStartMs(left),rt=garminActivityStartMs(right),sameDate=String(left.date||'').slice(0,10)===String(right.date||'').slice(0,10);
+  const ld=garminNumber(left.dist),rd=garminNumber(right.dist),distanceScale=Math.max(ld,rd),distanceScore=distanceScale?Math.max(0,1-Math.abs(ld-rd)/(distanceScale*.05)):1;
+  const lm=garminNumber(left.time),rm=garminNumber(right.time),durationScale=Math.max(lm,rm),durationScore=durationScale?Math.max(0,1-Math.abs(lm-rm)/(durationScale*.08)):1;
+  const hasPreciseStart=Boolean(left?.startTimeUtc||left?.start_date)&&Boolean(right?.startTimeUtc||right?.start_date);
+  const metricNearMatch=distanceScore>=.8&&durationScore>=.8;
+  const timeScore=hasPreciseStart&&Number.isFinite(lt)&&Number.isFinite(rt)
+    ?Math.max(0,1-Math.abs(lt-rt)/300000)
+    :(sameDate&&metricNearMatch?.9:0);
+  return .5*timeScore+.25*distanceScore+.25*durationScore;
+}
+function garminDuplicateDecision(left,right){const score=garminDuplicateScore(left,right);return score>=.82?'duplicate':score>=.65?'review':'distinct';}
+function scanGarminDuplicates(){
+  const workouts=window._workouts||[],garmin=workouts.filter(w=>w.source==='garmin'),others=workouts.filter(w=>w.source!=='garmin');
+  const confirmed=[],review=[];
+  for(const item of garmin){
+    const matches=others.map(other=>({other,score:garminDuplicateScore(item,other)})).sort((a,b)=>b.score-a.score);
+    const best=matches[0];if(!best)continue;
+    const row={garmin:item,other:best.other,score:best.score};
+    if(best.score>=.82)confirmed.push(row);else if(best.score>=.65)review.push(row);
+  }
+  confirmedGarminDuplicateKeys=confirmed.map(row=>row.garmin._key).filter(key=>String(key).startsWith('garmin_'));
+  const button=document.getElementById('garmin-remove-duplicates');if(button)button.disabled=!confirmedGarminDuplicateKeys.length;
+  const status=document.getElementById('garmin-dedupe-status');if(status)status.textContent=`Found ${confirmed.length} confirmed duplicates and ${review.length} items needing review. Distinct Garmin activities are untouched.`;
+  const list=document.getElementById('garmin-dedupe-list');if(list)list.innerHTML=[...confirmed.map(row=>garminDedupeRow(row,'Duplicate')), ...review.map(row=>garminDedupeRow(row,'Review'))].join('')||'<div class="text-sm c2">No cross-source duplicates found.</div>';
+}
+function garminDedupeRow(row,label){return `<div class="workout-row"><div style="flex:1"><b>${label}</b> · ${escapeHTML(row.garmin.date||'')} · ${garminNumber(row.garmin.dist).toFixed(2)} km<div class="text-xs c2">Garmin ${escapeHTML(row.garmin.sourceId||row.garmin._key||'')} matches ${escapeHTML(row.other.source||'existing')} · score ${row.score.toFixed(2)}</div></div></div>`;}
+async function removeConfirmedGarminDuplicates(){
+  if(!confirmedGarminDuplicateKeys.length)return;
+  if(!confirm(`Remove ${confirmedGarminDuplicateKeys.length} confirmed Garmin copies? Existing Strava, Health Connect, and manual activities will remain.`))return;
+  const keys=[...confirmedGarminDuplicateKeys];
+  try{
+    for(let index=0;index<keys.length;index++){
+      const key=keys[index];if(!String(key).startsWith('garmin_'))throw new Error('Unsafe Garmin key');
+      await window._fb.removeData(`workouts/${key}`);
+      const status=document.getElementById('garmin-dedupe-status');if(status)status.textContent=`Removing ${index+1} of ${keys.length} confirmed Garmin copies...`;
+    }
+    confirmedGarminDuplicateKeys=[];document.getElementById('garmin-remove-duplicates').disabled=true;
+    document.getElementById('garmin-dedupe-status').textContent=`Removed ${keys.length} confirmed Garmin copies. Existing source activities were retained.`;
+    showToast('Garmin duplicates reconciled');
+  }catch(error){document.getElementById('garmin-dedupe-status').textContent=`Removal stopped: ${error.message||error}`;showToast('Duplicate removal stopped','error');}
+}
+async function applyGarminManifest(){
+  const plan=pendingGarminManifest,uid=window._fb?.currentUid?.();
+  if(!plan||!uid||plan.uid!==uid){garminManifestStatus('Manifest is no longer valid for the signed-in account.',true);return;}
+  if(!confirm(`Import ${plan.operations.length} verified Garmin ${plan.kind==='wellness'?'wellness records':'activities'} into this MyDash account?`))return;
+  const button=document.getElementById('garmin-manifest-apply'),bar=document.querySelector('#garmin-manifest-progress>div');
+  if(button)button.disabled=true;
+  try{
+    for(let index=0;index<plan.operations.length;index++){
+      const op=plan.operations[index],relative=op.path.slice(`users/${uid}/`.length);
+      const allowed=plan.kind==='wellness'?relative.startsWith('wellness_sources/garmin/'):relative.startsWith('workouts/garmin_');
+      if(!allowed)throw new Error('Owner boundary changed during import');
+      await window._fb.setData(relative,{...op.value,importedAt:Date.now()});
+      if(bar)bar.style.width=`${Math.round((index+1)/plan.operations.length*100)}%`;
+      garminManifestStatus(`Importing ${index+1} of ${plan.operations.length}...`);
+    }
+    const summary=plan.kind==='wellness'?{wellness_count:plan.operations.length}:{activity_count:plan.operations.length};
+    await window._fb.setData(`sync_sources/garmin_direct/${plan.kind}`,{last_sync:Date.now(),status:'success',...summary,schema_version:1});
+    pendingGarminManifest=null;garminManifestStatus(`Imported ${plan.operations.length} Garmin ${plan.kind==='wellness'?'wellness records':'activities'} successfully.`);showToast('Garmin import complete');
+  }catch(error){garminManifestStatus(`Import stopped: ${error.message||error}`,true);showToast('Garmin import stopped','error');if(button)button.disabled=false;}
+}
 
 /* moved to js/date-utils.js and js/ui-core.js
 

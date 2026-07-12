@@ -11,6 +11,8 @@
       coachPlan: null,
       postRunReviews: [],
       wellness: [],
+      manualWellness: [],
+      garminWellness: {},
 
       deepseekKey: '',
       aiProxyUrl: DEFAULT_AI_PROXY_URL,

@@ -15,6 +15,7 @@
     const source = typeof workoutOrSource === 'string' ? workoutOrSource : (workoutOrSource?.source || 'manual');
     const sourceApp = typeof workoutOrSource === 'object' ? String(workoutOrSource.sourceApp || '').toLowerCase() : '';
     if (source === 'health_connect') return { label: sourceApp.includes('garmin') ? 'GARMIN' : 'HC', title: 'Health Connect', color: 'var(--green)', bg: 'rgba(52,199,89,.14)' };
+    if (source === 'garmin') return { label: 'GARMIN DIRECT', title: 'Garmin Direct', color: 'var(--green)', bg: 'rgba(52,199,89,.14)' };
     if (source === 'strava_recovered') return { label: 'STRAVA LEGACY', title: 'Recovered Strava cache', color: 'var(--strava)', bg: 'rgba(252,76,2,.15)' };
     if (source === 'strava_archive') return { label: 'STRAVA ARCHIVE', title: 'Strava archive import', color: 'var(--strava)', bg: 'rgba(252,76,2,.15)' };
     if (source === 'strava') return { label: 'STRAVA API', title: 'Legacy Strava API', color: 'var(--strava)', bg: 'rgba(252,76,2,.15)' };
@@ -32,6 +33,7 @@
 
   function activitySourcePriority(workout) {
     const source = workout?.source || 'manual';
+    if (source === 'garmin') return 60;
     if (source === 'health_connect') return 50;
     if (source === 'manual' || !workout?.source) return 45;
     if (source === 'strava_recovered') return 30;
@@ -52,7 +54,9 @@
     if (!first || !second || first === second || (first.date || '') !== (second.date || '')) return false;
     const firstSource = first.source || 'manual';
     const secondSource = second.source || 'manual';
-    if (firstSource === secondSource || !(isStravaLike(first) || isStravaLike(second))) return false;
+    if (firstSource === secondSource) return false;
+    const supported = new Set(['garmin','health_connect','manual','strava','strava_recovered','strava_archive']);
+    if (!supported.has(firstSource) || !supported.has(secondSource)) return false;
 
     const firstDistance = parseFloat(first.dist || 0);
     const secondDistance = parseFloat(second.dist || 0);
@@ -64,8 +68,15 @@
     const timeDifference = Math.abs(firstTime - secondTime);
     return distanceDifference <= 0.25
       && distanceDifference / Math.max(firstDistance, secondDistance) <= 0.04
-      && timeDifference <= 180
+      && timeDifference <= 3
       && timeDifference / Math.max(firstTime, secondTime) <= 0.06;
+  }
+
+  function duplicateRoundingRegression() {
+    return isDuplicateCandidate(
+      { date: '2026-07-09', type: 'run', source: 'garmin', dist: 1.33, time: 9 },
+      { date: '2026-07-09', type: 'run', source: 'health_connect', dist: 1.32889, time: 8.9667 }
+    );
   }
 
   function duplicateCandidatePairs(activities = [...(root._workouts || []), ...(root._stravaWorkouts || [])]) {
@@ -103,8 +114,10 @@
     });
 
     const merged = [...seen.values()];
+    const suppressed = new Set();
     duplicateCandidatePairs().forEach(pair => {
       const primaryKey = activitySourceKey(pair.primary);
+      suppressed.add(activitySourceKey(pair.duplicate));
       const target = merged.find(workout => activitySourceKey(workout) === primaryKey || workoutFingerprint(workout) === workoutFingerprint(pair.primary));
       if (!target) return;
       target._possibleDuplicates = [...(target._possibleDuplicates || []), {
@@ -118,7 +131,7 @@
       }];
     });
 
-    return merged.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return merged.filter(workout => !suppressed.has(activitySourceKey(workout))).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   }
 
   Object.assign(root, {
@@ -130,6 +143,7 @@
     activitySourceKey,
     isStravaLike,
     isDuplicateCandidate,
+    duplicateRoundingRegression,
     duplicateCandidatePairs,
     getAllActivities,
   });

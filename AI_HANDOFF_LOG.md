@@ -1499,6 +1499,148 @@ Verification run after the change:
 - `python C:\Users\pucca\Dashboard-GitHub\smoke_test_dashboard.py`
 - Both passed with no page errors, console errors, or request failures.
 
+## 2026-07-12 - Garmin Direct Phase 0 read-only bridge foundation
+
+Scope implemented locally under `tools/garmin-direct-bridge`:
+
+- Added a Windows-only CLI isolated from the dashboard runtime.
+- Pinned `garminconnect==0.3.6` behind a strict read-only method allowlist.
+- Added interactive login and DPAPI Current User encrypted session storage under `%LOCALAPPDATA%\MyDash\garmin-direct`.
+- Added persisted SQLite request budgets: 30/hour, 200/day, two-second spacing.
+- Added auth/challenge/rate-limit circuit breaking with no automatic retries.
+- Added schema-only 7/30-day capability probes for activities, detail/splits, sleep, HRV, heart rate, stress, and Body Battery.
+- Added an explicit one-activity original FIT probe; it never runs without `--include-fit`.
+- Added privacy/status documentation and initial capability/endpoint notes.
+- Confirmed there are no Firebase writes, Coach mutations, scheduler, or Android direct integration in Phase 0.
+
+Verification completed:
+
+- Core unit tests pass for redaction, schema-only output, and persisted request budgeting.
+- CLI `privacy-status` runs and reports no local session, Firebase writes disabled, scheduler disabled.
+
+Still pending before Phase 0 can be called complete:
+
+- Run interactive Garmin login with the account owner present.
+- Run real 7-day and 30-day probes, plus one explicit FIT download.
+- Replace Pending cells in `docs/CAPABILITY_MATRIX.md` and add observed endpoint behavior to `docs/ENDPOINT_NOTES.md`.
+- Verify and document the effective Windows ACL on the LocalAppData bridge directory.
+
+Phase 0 completion update:
+
+- Interactive login completed; encrypted session restoration succeeded.
+- Real 7-day capability probe passed for activities, activity summary/detail/splits, sleep, HRV, heart rate, stress, and Body Battery.
+- One explicit original FIT download passed (15,341 bytes); only its byte count and SHA-256 metadata appear in the schema report.
+- Real 30-day activity probe passed. Wellness was not repeated because the same three-day capability had already passed and the bridge preserves its request budget.
+- Fixed the pinned library compatibility detail: download format is `Garmin.ActivityDownloadFormat.ORIGINAL`.
+- Unit tests pass 5/5, including DPAPI round-trip and pinned-library download enum coverage.
+- ACL inspection passed: current user, SYSTEM, and local Administrators have Full Control through inherited Windows permissions.
+- Phase 0 is complete locally. No Firebase write, Coach mutation, scheduler, or Android direct sync was introduced.
+- Detailed Garmin Direct continuation guide: `GARMIN_DIRECT_HANDOFF.md`. This is the canonical handoff for Phase 1 onward and explains why incremental sync, normalization, provenance, deduplication, and local verification must precede Firebase/UI integration.
+
+## 2026-07-12 - Garmin Direct Phase 1 activity incremental slice
+
+- Added `sync_store.py` with versioned SQLite schema for sync runs, cursors, and source activity metadata.
+- Added `activity_sync.py` with a bounded 30-day initial window and two-day overlap.
+- Activity identity uses Garmin `activityId`; payload changes use a deterministic SHA-256 hash.
+- Upserts and cursor advancement share one transaction. A failed fetch records failure without moving the cursor.
+- Raw Garmin payloads are not stored in the local database.
+- Added `python -m garmin_direct.cli sync-activities`.
+- Activity sync tests and existing security tests pass 9/9.
+- Real run 1: fetched 23, inserted 23, total 23.
+- Real immediate overlap run: fetched 0, inserted 0, total remained 23.
+- Next work is canonical activity normalization and cross-source deduplication fixtures. Firebase/UI remain blocked.
+
+Normalization follow-up:
+
+- Added `normalize.py` for canonical Garmin activity conversion with explicit units, UTC time, missing-value semantics, schema version, and provenance.
+- Added `dedupe.py` for deterministic identity and fuzzy cross-source decisions (`duplicate`, `review`, `distinct`).
+- Added Garmin/Strava/Health Connect-shaped fixtures covering near matches and distinct workouts.
+- Full Garmin Direct suite passes 14/14.
+- Next: persist canonical records/decisions, add wellness incremental collectors, then Firebase dry-run. Live writes remain blocked.
+
+Wellness follow-up:
+
+- Added independent incremental collectors for sleep, HRV, heart rate, stress, and Body Battery.
+- Added local schema-only/hash persistence keyed by domain/date; health values are not copied into the development database.
+- Full suite passes 19 tests after adding explicit `budget_exhausted` classification.
+- The first real wellness run was blocked before any endpoint call because the persisted 30/hour request budget was already exhausted. No wellness cursor advanced and no records were committed.
+- Resume the same CLI command after the rolling-hour budget opens; do not clear or raise the safety limit.
+
+Real wellness sync completion:
+
+- Three-day real sync completed for sleep, HRV, heart rate, stress, and Body Battery.
+- Repeat overlap inserted no duplicate records for the four daily endpoints.
+- Fixed Body Battery range aggregation by splitting the returned array using each item's explicit date.
+- Bounded Body Battery refresh completed; all five domains now have three local daily records.
+- Full bridge suite passes 24/24.
+
+Wellness UI/Coach integration while Garmin budget was closed:
+
+- Added canonical wellness normalizers and deterministic wellness Firebase planner.
+- Added activity/wellness manifest support to the authenticated Settings importer.
+- Added realtime `wellness_sources/garmin` listener and safe manual-over-Garmin merge.
+- Existing Wellness analytics/recovery graphs now receive normalized Garmin sleep, HRV, resting HR, stress, and Body Battery fields when imported.
+- Central `getAllActivities()` now suppresses high-confidence Garmin/Health Connect/Strava/manual duplicates before Coach, load, stats, and graphs consume them.
+- Corrected near-duplicate duration tolerance from 180 minutes to 3 minutes.
+- Bridge suite passes 29/29; activity dedupe behavior, syntax, and dashboard smoke regression pass.
+
+Timed wellness resume:
+
+- Added a Python resume worker that waits on persisted request-budget state without polling Garmin.
+- It starts only when seven hourly requests are available, backfills Heart rate/Stress/Body Battery, then creates the wellness dry-run manifest.
+- Metadata-only progress log: `%LOCALAPPDATA%\MyDash\garmin-direct\logs\resume-wellness.jsonl`.
+- Hidden worker PID at launch: 18468. It was confirmed running in `waiting` state.
+- Firebase writes remain user-confirmed through Settings.
+- Full bridge suite passes 30/30.
+
+First real wellness Firebase import:
+
+- Timed worker completed all three pending domains and generated 15 deterministic wellness operations across five domains/three dates.
+- Owner-path validation passed with zero invalid or duplicate paths.
+- User confirmed importing the manifest through authenticated MyDash Settings.
+- Final regression: bridge 30/30, activity dedupe behavior pass, syntax pass, dashboard smoke pass with no page/console/request failures.
+- Secret scan found no supplied Garmin credentials in changed Garmin Direct files.
+- Firebase readback remains user-confirmed rather than independently automated because the test browser lacked the authenticated session.
+
+Firebase dry-run foundation:
+
+- Added deterministic `set` planning under `users/<uid>/workouts/garmin_<activityId>`.
+- Planner requires a validated explicit Firebase UID and performs no network calls.
+- Added `status`, `verify`, `export-config`, and strict `import-config` commands.
+- Local verification passes with 23 source/canonical activities, valid SQLite integrity, encrypted session present, Firebase writes disabled, and scheduler disabled.
+- Full suite passes 23/23.
+- A real dry-run manifest still requires the authenticated MyDash Firebase UID; do not infer UID from email or enable live writes yet.
+
+Firebase ownership dry-run result:
+
+- Authenticated UID was supplied interactively but deliberately not written to the repository.
+- Generated 23 operations with 23 unique deterministic paths.
+- All operations are `set`; all paths stayed under the expected authenticated-user Garmin workout boundary.
+- Live writes remain disabled. Next implementation should use the browser's existing Firebase Auth session rather than storing an ID token in the local bridge.
+
+Authenticated Garmin import UI:
+
+- Added a Settings importer for the local Firebase dry-run manifest.
+- It verifies the current Firebase UID, owner prefix, deterministic Garmin paths, operation type/count, duplicate paths, and Garmin source before enabling the write action.
+- Import uses the existing authenticated browser Firebase adapter and never exposes an ID token to the local bridge.
+- Deterministic paths make interrupted imports safely repeatable without creating new workout keys.
+- Syntax and dashboard smoke tests pass with no page errors, console errors, or request failures.
+- The first real import has not been confirmed in the UI yet.
+
+Duplicate reconciliation follow-up:
+
+- The first real import revealed expected cross-source duplicates because Garmin deterministic identity alone does not merge existing Strava/Health Connect keys.
+- Added Settings scan using type, time/date, duration, and distance matching.
+- Only high-confidence `garmin_` copies are eligible for confirmed removal; review-range matches and all existing non-Garmin records remain untouched.
+- Future manifest preview filters high-confidence cross-source duplicates before import.
+- Syntax and smoke regression remain clean.
+
+Machine migration documentation:
+
+- Added `GARMIN_DIRECT_MACHINE_MIGRATION_HANDOFF.md` as the canonical computer-change runbook.
+- It explains why DPAPI session files cannot be reused on another Windows identity, what must/must not move, bounded re-sync, deduplication verification, cutover, rollback, and old-machine decommissioning.
+- The main `GARMIN_DIRECT_HANDOFF.md` links to the migration runbook.
+
 ## 2026-07-07 Adaptive AI Coach And Strava Archive Safety
 
 Context:
@@ -2287,3 +2429,27 @@ Verification run:
 - `node C:\Users\pucca\Dashboard-GitHub\verify_dashboard.js`
 - `python C:\Users\pucca\Dashboard-GitHub\smoke_test_dashboard.py`
 - Both passed with no page errors, console errors, or request failures.
+## 2026-07-12 Garmin Rounded Duplicate Regression
+
+Issue reported with a confirmed duplicate pair:
+
+- `1.33 km / 9 min / HR 112` on `2026-07-09`
+- `1.32889 km / 8.9667 min / HR 113` on `2026-07-09`
+
+Root cause:
+
+- The Settings scanner gave only `0.45` time confidence when one source lacked a precise start timestamp.
+- Even nearly identical distance and duration could therefore remain below the confirmed-duplicate threshold.
+
+Fix:
+
+- When both records are on the same date, lack comparable precise timestamps, and distance plus duration each score at least `0.8`, the scanner assigns `0.9` date/time confidence.
+- Precise timestamps still use the existing five-minute decay rule.
+- Cross-source rendering already accepts this pair through the distance/duration tolerance guard.
+- Added `duplicateRoundingRegression()` using the exact reported values.
+
+Verification:
+
+- `node verify_dashboard.js` passed.
+- `python smoke_test_dashboard.py` passed with no page, console, or request errors.
+- Garmin bridge test suite passed `30/30`.

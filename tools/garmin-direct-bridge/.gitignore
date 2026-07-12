@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.runtime/
+.runtime-session.enc
+.activity-runtime/
+.wellness-runtime/
+.firebase-runtime/
+.resume-worker.jsonl
