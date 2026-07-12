@@ -3295,18 +3295,21 @@ async function renderDashboardSyncStatus() {
   const element=document.getElementById('today-status');if(!element)return;
   const queue=JSON.parse(localStorage.getItem('mydash-sync-queue')||'[]');
   const lastSheets=+(localStorage.getItem('mydash-last-sheets-sync')||0);
-  let settings={},lastStrava=0,healthStatus={};
+  let settings={},lastStrava=0,healthStatus={},garminStatus={};
   try {
     settings=await window._fb.getData('settings')||{};
     lastStrava=+(await window._fb.getData('strava_last_sync')||0);
     healthStatus=await window._fb.getData('sync_sources/health_connect')||{};
+    garminStatus=await window._fb.getData('sync_sources/garmin_direct')||{};
   } catch(e) {}
   const stravaConnected=(AppState.get('stravaActs')||[]).length>0;
   const healthReady=!!healthStatus.last_sync;
+  const garminReady=garminStatus.status==='success'&&!!garminStatus.last_sync;
   const sheetsReady=!!(settings.gasUrl||DEFAULT_GAS_URL)&&!!settings.gasToken;
   const relative=time=>time?new Date(time).toLocaleString('th-TH'):'ยังไม่เคยซิงค์';
   element.innerHTML=`
     <div class="pill pill-green"><span class="dot"></span>Firebase: Realtime sync</div>
+    <div class="pill ${garminReady?'pill-green':garminStatus.status==='failed'?'pill-red':'pill-orange'}"><span class="dot"></span>Garmin Direct: ${garminReady?`ล่าสุด ${relative(garminStatus.last_sync)}`:garminStatus.status==='failed'?`ผิดพลาด: ${escapeHTML(garminStatus.error_kind||'unknown')}`:'รอ automatic sync'}</div>
     <div class="pill ${healthReady?'pill-green':'pill-orange'}"><span class="dot"></span>Health Connect: ${healthReady?`ล่าสุด ${relative(healthStatus.last_sync)}`:'รอ sync จากแอป Android'}</div>
     <div class="pill ${stravaConnected?'pill-orange':'pill-blue'}"><span class="dot"></span>Strava legacy: ${stravaConnected?`cache ล่าสุด ${relative(lastStrava)}`:'inactive/recovery only'}</div>
     <div class="pill ${sheetsReady&&!queue.length?'pill-green':'pill-orange'}"><span class="dot"></span>Google Sheets: ${!sheetsReady?'ยังไม่พร้อม':queue.length?`รอส่ง ${queue.length} รายการ`:`ล่าสุด ${relative(lastSheets)}`}</div>`;

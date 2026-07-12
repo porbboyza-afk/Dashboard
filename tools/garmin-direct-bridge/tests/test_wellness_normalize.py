@@ -25,5 +25,11 @@ class WellnessNormalizeTests(unittest.TestCase):
         value = normalize_wellness("sleep", DAY, {})
         self.assertFalse(value["available"]); self.assertIsNone(value["sleepMinutes"])
 
+    def test_spo2_uses_sleep_average_and_zero_is_unavailable(self):
+        value = normalize_wellness("spo2", DAY, {"avgSleepSpO2": 96.4, "latestSpO2": 97, "lowestSpO2": 89})
+        self.assertTrue(value["available"]); self.assertEqual(value["averagePct"], 96.4)
+        missing = normalize_wellness("spo2", DAY, {"avgSleepSpO2": 0, "latestSpO2": 0})
+        self.assertFalse(missing["available"]); self.assertIsNone(missing["averagePct"])
+
 
 if __name__ == "__main__": unittest.main()

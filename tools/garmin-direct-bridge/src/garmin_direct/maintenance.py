@@ -4,10 +4,12 @@ from pathlib import Path
 from .config import BridgePaths
 from .sync_store import SyncStore
 from .budget import RequestBudget
+from .scheduler import task_status
 
 
 def status(paths: BridgePaths) -> dict:
-    result = {"root": str(paths.root), "encryptedSessionPresent": paths.session.exists(), "databasePresent": paths.database.exists(), "firebaseWrites": False, "schedulerEnabled": False}
+    scheduler = task_status()
+    result = {"root": str(paths.root), "encryptedSessionPresent": paths.session.exists(), "databasePresent": paths.database.exists(), "firebaseWrites": True, "schedulerEnabled": scheduler["enabled"], "schedulerTasks": scheduler["tasks"]}
     if not paths.database.exists(): return result
     store = SyncStore(paths.database)
     result["requestBudget"] = RequestBudget(paths.database).status()
@@ -19,7 +21,8 @@ def status(paths: BridgePaths) -> dict:
 
 
 def verify(paths: BridgePaths) -> dict:
-    checks = {"runtimeExists": paths.root.exists(), "sessionEncryptedPresent": paths.session.exists(), "databaseIntegrity": False, "firebaseWritesDisabled": True, "schedulerDisabled": True}
+    scheduler = task_status()
+    checks = {"runtimeExists": paths.root.exists(), "sessionEncryptedPresent": paths.session.exists(), "databaseIntegrity": False, "firebaseWriterAvailable": True, "schedulerEnabled": scheduler["enabled"]}
     if paths.database.exists():
         with sqlite3.connect(paths.database) as db: checks["databaseIntegrity"] = db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
     checks["ok"] = all(checks.values())

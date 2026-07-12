@@ -3,7 +3,7 @@ from .errors import classify_error
 from .sync_store import SyncStore
 
 
-DAILY_DOMAINS = {"sleep": "get_sleep_data", "hrv": "get_hrv_data", "heart_rates": "get_heart_rates", "stress": "get_stress_data"}
+DAILY_DOMAINS = {"sleep": "get_sleep_data", "hrv": "get_hrv_data", "heart_rates": "get_heart_rates", "stress": "get_stress_data", "spo2": "get_spo2_data"}
 
 
 class WellnessSync:

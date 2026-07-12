@@ -8,6 +8,8 @@ from garmin_direct.auth import DpapiSecretStore
 from garmin_direct.safe_logging import redact
 from garmin_direct.errors import ErrorKind, classify_error
 from garminconnect import Garmin
+from unittest.mock import Mock
+from garmin_direct.client import ReadOnlyGarminClient
 
 
 class CoreTests(unittest.TestCase):
@@ -33,6 +35,11 @@ class CoreTests(unittest.TestCase):
     def test_schema_has_no_values(self):
         result = schema({"pace": 321, "name": "private"})
         self.assertNotIn("321", str(result)); self.assertNotIn("private", str(result))
+
+    def test_spo2_is_read_only_allowlisted(self):
+        api, budget = Mock(), Mock(); api.get_spo2_data.return_value = {"averageSpO2": 96}
+        self.assertEqual(ReadOnlyGarminClient(api, budget).call("get_spo2_data", "2026-07-12")["averageSpO2"], 96)
+        budget.acquire.assert_called_once()
 
     def test_budget_persists(self):
         temp = Path(__file__).parent / ".runtime"

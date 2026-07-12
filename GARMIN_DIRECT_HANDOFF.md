@@ -363,3 +363,36 @@ Do not begin with Firebase or UI changes.
 ## Git Status At Handoff
 
 The Garmin Direct work and this handoff are local changes. They have not been committed or pushed unless a later log entry explicitly records that action.
+# Production Automation Update - 2026-07-12
+
+This section supersedes earlier Phase 0 statements that say Firebase writing and scheduling are disabled.
+
+Implemented and verified:
+
+- `auto-sync` performs incremental activities plus sleep, HRV, heart rate, stress, SpO2, and Body Battery collection.
+- A filesystem process lock prevents overlapping runs.
+- Garmin cross-source duplicates are excluded before Firebase writing, including the reported rounded pair `1.33 km / 9 min` versus `1.32889 km / 8.9667 min`.
+- Firebase CLI performs a deterministic atomic update under the supplied MyDash UID and reads `sync_sources/garmin_direct` back before reporting success.
+- Temporary patch files are kept under LocalAppData and removed after use.
+- Metadata-only audit records are written to `%LOCALAPPDATA%\MyDash\garmin-direct\logs\auto-sync.jsonl`.
+- Failure state writes `status`, `last_attempt`, and `error_kind` without credential or health payload values.
+- Garmin session remains DPAPI-encrypted and is no longer deleted for an arbitrary restore exception.
+- SpO2 is collected through `get_spo2_data`; missing/zero readings normalize to `available:false`, not zero.
+- MyDash merges Garmin SpO2 into the existing wellness `spo2` field.
+- Scheduled tasks installed:
+  - `MyDash Garmin Direct 09` at 09:00 daily.
+  - `MyDash Garmin Direct 21` at 21:00 daily.
+- Both tasks use `StartWhenAvailable=True`, `MultipleInstances=IgnoreNew`, and a 30-minute execution limit.
+- Tasks use the current Windows interactive user because Garmin DPAPI and Firebase CLI auth belong to that profile.
+
+Live verification:
+
+- Real auto-sync completed successfully.
+- Firebase read-back returned `automatic:true`, `status:success`, `schema_version:2`.
+- SpO2 canonical count is three dates.
+- Scheduler status reports both tasks enabled and Ready.
+- Bridge tests pass `37/37`; dashboard syntax and Playwright smoke regression pass.
+
+Operational limitation:
+
+- A multi-day soak test cannot be completed in the implementation session. Confirm the 21:00 and following 09:00 scheduled runs from Task Scheduler, Firebase `sync_sources/garmin_direct`, and the metadata audit log before declaring the long-running environment fully proven.

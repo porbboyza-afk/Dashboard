@@ -65,6 +65,4 @@ class GarminAuthAdapter:
             self.store.save(api.client.dumps())
             return api
         except Exception:
-            self.store.clear()
             raise
-

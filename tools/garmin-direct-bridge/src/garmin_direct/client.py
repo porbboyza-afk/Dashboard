@@ -7,7 +7,7 @@ class ReadOnlyGarminClient:
         self.api, self.budget = api, budget
 
     def call(self, method: str, *args):
-        allowed = {"get_activities_by_date", "get_activity", "get_activity_details", "get_activity_splits", "get_sleep_data", "get_hrv_data", "get_heart_rates", "get_stress_data", "get_body_battery", "download_activity"}
+        allowed = {"get_activities_by_date", "get_activity", "get_activity_details", "get_activity_splits", "get_sleep_data", "get_hrv_data", "get_heart_rates", "get_stress_data", "get_body_battery", "get_spo2_data", "download_activity"}
         if method not in allowed: raise ValueError(f"method is not read-only allowlisted: {method}")
         self.budget.acquire()
         try:
@@ -17,4 +17,3 @@ class ReadOnlyGarminClient:
             if kind in (ErrorKind.AUTH, ErrorKind.CHALLENGED): self.budget.open_circuit(86400, kind.value)
             elif kind == ErrorKind.RATE_LIMITED: self.budget.open_circuit(900, kind.value)
             raise
-

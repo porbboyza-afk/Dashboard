@@ -2453,3 +2453,13 @@ Verification:
 - `node verify_dashboard.js` passed.
 - `python smoke_test_dashboard.py` passed with no page, console, or request errors.
 - Garmin bridge test suite passed `30/30`.
+## 2026-07-12 Garmin Direct Production Automation
+
+- Added locked incremental `auto-sync` for activities and all supported wellness domains.
+- Added automatic deterministic Firebase CLI writer with read-back verification and metadata-only audit/failure status.
+- Added pre-write cross-source dedupe so removed Garmin copies are not recreated.
+- Added Garmin SpO2 collection, normalization, Firebase storage, and existing wellness UI merge.
+- Installed Windows tasks at 09:00 and 21:00 with missed-run recovery and overlap prevention.
+- Live auto-sync succeeded and Firebase returned `automatic:true`, `status:success`, `schema_version:2`.
+- Scheduler reports both tasks enabled/Ready; bridge tests pass 37/37 and dashboard regression passes.
+- Remaining validation is operational only: observe the first unattended 21:00 and next 09:00 executions and continue a multi-day soak.

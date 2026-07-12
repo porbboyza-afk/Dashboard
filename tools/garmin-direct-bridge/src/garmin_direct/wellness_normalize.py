@@ -15,6 +15,12 @@ def normalize_wellness(domain: str, record_date: date, raw: Any) -> dict[str, An
         return {**base, "available": bool(raw), "restingHr": integer(first(raw, "restingHeartRate", "restingHR")), "minHr": integer(first(raw, "minHeartRate", "minHR")), "maxHr": integer(first(raw, "maxHeartRate", "maxHR"))}
     if domain == "stress":
         return {**base, "available": bool(raw), "averageStress": number(first(raw, "overallStressLevel", "averageStressLevel", "avgStressLevel")), "maxStress": number(first(raw, "maxStressLevel", "maxStress")), "restStressDurationMin": seconds_to_minutes(first(raw, "restStressDuration", "restStressDurationSeconds"))}
+    if domain == "spo2":
+        average = number(first(raw, "avgSleepSpO2", "averageSpO2"))
+        latest = number(raw.get("latestSpO2"))
+        lowest = number(raw.get("lowestSpO2"))
+        available = any(value is not None and value > 0 for value in (average, latest, lowest))
+        return {**base, "available": available, "averagePct": average if average and average > 0 else None, "latestPct": latest if latest and latest > 0 else None, "lowestPct": lowest if lowest and lowest > 0 else None}
     if domain == "body_battery":
         return {**base, "available": bool(raw), "charged": number(raw.get("charged")), "drained": number(raw.get("drained")), "startLevel": body_battery_level(raw, first_item=True), "endLevel": body_battery_level(raw, first_item=False)}
     raise ValueError(f"unsupported wellness domain: {domain}")
@@ -49,4 +55,3 @@ def body_battery_level(raw: dict[str, Any], first_item: bool) -> int | None:
     if not isinstance(row, list) or not row: return None
     candidates = [integer(value) for value in row[1:] if integer(value) is not None and 0 <= integer(value) <= 100]
     return candidates[-1] if candidates else None
-

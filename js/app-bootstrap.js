@@ -53,13 +53,14 @@
   function garminWellnessByDate(data) {
     return Object.entries(data || {}).map(([date, domains]) => {
       const sleep = domains?.sleep || {}, hrv = domains?.hrv || {}, heart = domains?.heart_rates || {};
-      const stress = domains?.stress || {}, battery = domains?.body_battery || {};
+      const stress = domains?.stress || {}, battery = domains?.body_battery || {}, spo2 = domains?.spo2 || {};
       const sleepMinutes = finite(sleep.sleepMinutes), sleepScore = finite(sleep.sleepScore), averageStress = finite(stress.averageStress);
       return {
         _key: `garmin_${date}`, date, source: 'garmin', garminDomains: Object.keys(domains || {}),
         sleepHours: sleepMinutes === null ? null : +(sleepMinutes / 60).toFixed(2),
         sleepQuality: sleepScore === null ? null : Math.max(1, Math.min(10, +(sleepScore / 10).toFixed(1))),
         hrv: finite(hrv.lastNightAvgMs), restingHR: finite(heart.restingHr),
+        spo2: finite(spo2.averagePct) ?? finite(spo2.latestPct),
         stress: averageStress === null ? null : Math.max(1, Math.min(10, +(averageStress / 10).toFixed(1))),
         bodyBattery: finite(battery.endLevel), bodyBatteryCharged: finite(battery.charged), bodyBatteryDrained: finite(battery.drained),
       };

@@ -230,3 +230,14 @@ python -m garmin_direct.cli status
 - [ ] MyDash totals and Coach inputs remain correct.
 - [ ] Old scheduler disabled before new scheduler enabled.
 - [ ] Old session removed after retention period.
+## Automation Reinstallation (2026-07-12)
+
+After installing dependencies, restoring the encrypted Garmin session through a fresh interactive login, and confirming Firebase CLI login on the new Windows profile, install automation with:
+
+```powershell
+cd C:\Users\pucca\Dashboard-GitHub\tools\garmin-direct-bridge
+python -m garmin_direct.cli scheduler-install --uid <firebase-uid> --project-root C:\Users\pucca\Dashboard-GitHub
+python -m garmin_direct.cli scheduler-status
+```
+
+Do not copy `session.enc` to another Windows user or machine; DPAPI Current User encryption will not decrypt there. Run `mydash-garmin login` on the new machine. Disable both scheduled tasks on the old machine before enabling them on the new machine.

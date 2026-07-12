@@ -13,6 +13,8 @@ from .sync_store import SyncStore
 from .wellness_sync import WellnessSync
 from .maintenance import export_config, import_config, status, verify
 from .firebase_plan import build_plan, build_wellness_plan, write_plan
+from .auto_sync import run_with_retry
+from .scheduler import install_tasks, task_status
 
 
 def main() -> int:
@@ -24,14 +26,17 @@ def main() -> int:
     dry = sub.add_parser("firebase-dry-run"); dry.add_argument("--uid", required=True)
     wellness_dry = sub.add_parser("firebase-wellness-dry-run"); wellness_dry.add_argument("--uid", required=True)
     sync_activities = sub.add_parser("sync-activities"); sync_activities.add_argument("--full", action="store_true", help="bounded 30-day refresh")
-    sync_wellness = sub.add_parser("sync-wellness"); sync_wellness.add_argument("--days", type=int, choices=(1, 3, 7), default=3); sync_wellness.add_argument("--domain", choices=("sleep", "hrv", "heart_rates", "stress", "body_battery")); sync_wellness.add_argument("--full", action="store_true")
+    sync_wellness = sub.add_parser("sync-wellness"); sync_wellness.add_argument("--days", type=int, choices=(1, 3, 7), default=3); sync_wellness.add_argument("--domain", choices=("sleep", "hrv", "heart_rates", "stress", "body_battery", "spo2")); sync_wellness.add_argument("--full", action="store_true")
+    auto = sub.add_parser("auto-sync"); auto.add_argument("--uid", required=True); auto.add_argument("--wellness-days", type=int, choices=(1, 3, 7), default=3)
+    scheduler_install = sub.add_parser("scheduler-install"); scheduler_install.add_argument("--uid", required=True); scheduler_install.add_argument("--project-root", type=Path, required=True)
+    sub.add_parser("scheduler-status")
     probe = sub.add_parser("probe"); probe.add_argument("--days", type=int, choices=(7, 30), default=7); probe.add_argument("--include-fit", action="store_true"); probe.add_argument("--activities-only", action="store_true")
     args, paths = parser.parse_args(), BridgePaths.default(); paths.ensure()
     auth = GarminAuthAdapter(DpapiSecretStore(paths.session))
     if args.command == "login": auth.login_interactive(); print("Encrypted Garmin session saved with Windows DPAPI."); return 0
     if args.command == "logout": auth.store.clear(); print("Local Garmin session removed."); return 0
     if args.command == "privacy-status":
-        print(json.dumps({"root": str(paths.root), "encryptedSessionPresent": paths.session.exists(), "firebaseWrites": False, "schedulerEnabled": False}, indent=2)); return 0
+        print(json.dumps(status(paths), indent=2, sort_keys=True)); return 0
     if args.command == "status": print(json.dumps(status(paths), indent=2, sort_keys=True)); return 0
     if args.command == "verify": print(json.dumps(verify(paths), indent=2, sort_keys=True)); return 0
     if args.command == "export-config": export_config(args.output); print(f"Non-secret config: {args.output}"); return 0
@@ -42,6 +47,10 @@ def main() -> int:
     if args.command == "firebase-wellness-dry-run":
         output = paths.reports / f"firebase-wellness-dry-run-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
         plan = build_wellness_plan(SyncStore(paths.database), args.uid); write_plan(plan, output); print(json.dumps({"mode": "dry-run", "operationCount": plan["operationCount"], "report": str(output)}, indent=2)); return 0
+    if args.command == "auto-sync":
+        print(json.dumps(run_with_retry(args.uid, args.wellness_days), indent=2, sort_keys=True)); return 0
+    if args.command == "scheduler-install": print(json.dumps(install_tasks(args.uid, args.project_root), indent=2, sort_keys=True)); return 0
+    if args.command == "scheduler-status": print(json.dumps(task_status(), indent=2, sort_keys=True)); return 0
     api = auth.restore()
     if api is None: parser.error("no session; run 'mydash-garmin login' first")
     client = ReadOnlyGarminClient(api, RequestBudget(paths.database))
