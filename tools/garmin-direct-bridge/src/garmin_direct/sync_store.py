@@ -65,6 +65,12 @@ class SyncStore:
                 );
                 CREATE INDEX IF NOT EXISTS idx_canonical_activity_date ON canonical_activities(activity_date);
                 CREATE INDEX IF NOT EXISTS idx_canonical_fingerprint ON canonical_activities(fingerprint);
+                CREATE TABLE IF NOT EXISTS canonical_activity_details (
+                    source TEXT NOT NULL, source_id TEXT NOT NULL,
+                    schema_version INTEGER NOT NULL, value_json TEXT NOT NULL,
+                    payload_hash TEXT NOT NULL, updated_at TEXT NOT NULL,
+                    PRIMARY KEY(source, source_id)
+                );
                 CREATE TABLE IF NOT EXISTS dedupe_decisions (
                     left_id TEXT NOT NULL, right_id TEXT NOT NULL,
                     score REAL NOT NULL, decision TEXT NOT NULL,
@@ -150,6 +156,28 @@ class SyncStore:
     def canonical_count(self) -> int:
         with self._connect() as db:
             return int(db.execute("SELECT COUNT(*) FROM canonical_activities").fetchone()[0])
+
+    def has_activity_detail(self, source_id: str) -> bool:
+        with self._connect() as db:
+            return db.execute("SELECT 1 FROM canonical_activity_details WHERE source='garmin' AND source_id=?", (str(source_id),)).fetchone() is not None
+
+    def activity_detail(self, source_id: str) -> dict[str, Any] | None:
+        with self._connect() as db:
+            row = db.execute("SELECT value_json FROM canonical_activity_details WHERE source='garmin' AND source_id=?", (str(source_id),)).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def upsert_activity_detail(self, detail: dict[str, Any]) -> None:
+        encoded = json.dumps(detail, sort_keys=True, separators=(",", ":"))
+        with self._connect() as db:
+            db.execute("""INSERT INTO canonical_activity_details VALUES('garmin', ?, ?, ?, ?, ?)
+                ON CONFLICT(source, source_id) DO UPDATE SET schema_version=excluded.schema_version,
+                value_json=excluded.value_json, payload_hash=excluded.payload_hash, updated_at=excluded.updated_at""", (
+                str(detail["sourceId"]), detail["schemaVersion"], encoded, payload_hash(detail), utc_now(),
+            ))
+
+    def activity_details(self) -> list[sqlite3.Row]:
+        with self._connect() as db:
+            return db.execute("SELECT * FROM canonical_activity_details ORDER BY source_id").fetchall()
 
     def commit_wellness(self, run_id: int, domain: str, records: list[tuple[date, Any]], cursor_date: date) -> dict[str, int]:
         from .wellness_normalize import normalize_wellness

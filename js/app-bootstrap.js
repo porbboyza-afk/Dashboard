@@ -13,6 +13,9 @@
     root._fb.listen('workouts', data => {
       root.AppState.set('workouts', byDateDescending(data));
     });
+    root._fb.listen('activity_details', data => {
+      root.AppState.set('activityDetails', data || {});
+    });
     root._fb.listen('coach_plan', data => {
       if (data) {
         root.AppState.set('coachPlan', data);

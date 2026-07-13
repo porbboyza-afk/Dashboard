@@ -170,6 +170,8 @@ async function getClassifiedActivitiesForInsights(){
     try{details=await window._fb.getData('strava_activity_details')||{};window._stravaDetailCache=details;}catch(error){}
   }
   return activities.map(activity=>{
+    const garminAnalysis=window.MyDashActivityAnalysis?.analyze?.(activity);
+    if(garminAnalysis?.laps?.length)return {...activity,sessionType:garminAnalysis.type,classificationConfidence:garminAnalysis.confidence,classificationConfirmed:true,hasDetail:true,activityAnalysis:garminAnalysis};
     if(activity.source==='strava'&&activity.stravaId){
       const payload=details[activity.stravaId];
       const analysis=payload?.analysis;

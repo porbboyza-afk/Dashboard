@@ -138,7 +138,7 @@ def append_audit(paths: BridgePaths, event: dict[str, Any]) -> None:
         handle.write(json.dumps(safe, sort_keys=True) + "\n")
 
 
-def run_auto_sync(uid: str, wellness_days: int = 3) -> dict[str, Any]:
+def run_auto_sync(uid: str, wellness_days: int = 1) -> dict[str, Any]:
     validate_uid(uid)
     paths = BridgePaths.default(); paths.ensure()
     started = datetime.now(timezone.utc).isoformat()
@@ -165,7 +165,7 @@ def run_auto_sync(uid: str, wellness_days: int = 3) -> dict[str, Any]:
             raise
 
 
-def run_with_retry(uid: str, wellness_days: int = 3, attempts: int = 3) -> dict[str, Any]:
+def run_with_retry(uid: str, wellness_days: int = 1, attempts: int = 3) -> dict[str, Any]:
     for attempt in range(1, attempts + 1):
         try:
             return run_auto_sync(uid, wellness_days)

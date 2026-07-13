@@ -81,6 +81,7 @@ function postRunReadinessAsOf(workout,wellness){
 }
 
 function buildPostRunFacts(workout){
+  const activityAnalysis=window.MyDashActivityAnalysis?.analyze?.(workout)||null;
   const match=postRunPlanMatch(workout);
   const activePlan=window._coachPlan;
   const session=match.compareTargets===false?null:match.session;
@@ -138,6 +139,7 @@ function buildPostRunFacts(workout){
       }
     },
     riskFlags,
+    activityAnalysis:activityAnalysis?{type:activityAnalysis.type,confidence:activityAnalysis.confidence,workMinutes:activityAnalysis.workMinutes,recoveryMinutes:activityAnalysis.recoveryMinutes,averagePace:activityAnalysis.averagePace,averageHr:activityAnalysis.averageHr,hrDrift:activityAnalysis.hrDrift,lapCount:activityAnalysis.laps.length,coverage:activityAnalysis.coverage}:null,
     intervalAnalysis:workout?.interval?{
       reps:workout.interval.reps||0,repDist:workout.interval.repDist||0,repPace:workout.interval.repPace||'',restTime:workout.interval.restTime||0,
       plannedMainSet:session?.details?.mainSet||''
@@ -231,6 +233,7 @@ function renderPostRunReview(){
       </div>
     </div>
     ${facts.intervalAnalysis?`<div class="card mt-16"><div class="card-label">Interval Analysis</div><div class="coach-session-preview mt-8">Actual: ${facts.intervalAnalysis.reps} x ${facts.intervalAnalysis.repDist} km @ ${escapeHTML(facts.intervalAnalysis.repPace||'--')} · Rest ${facts.intervalAnalysis.restTime||0} min${facts.intervalAnalysis.plannedMainSet?`<br>Plan: ${escapeHTML(facts.intervalAnalysis.plannedMainSet)}`:''}</div></div>`:''}
+    ${facts.activityAnalysis?`<div class="card mt-16"><div class="card-label">Activity Evidence</div><div class="text-sm mt-8">${escapeHTML(facts.activityAnalysis.type)} · ${facts.activityAnalysis.confidence}% · Work ${facts.activityAnalysis.workMinutes} min · Recovery ${facts.activityAnalysis.recoveryMinutes} min · HR drift ${facts.activityAnalysis.hrDrift===null?'--':facts.activityAnalysis.hrDrift+'%'}</div><div class="text-xs c3 mt-4">${facts.activityAnalysis.lapCount?`${facts.activityAnalysis.lapCount} laps analyzed from source data.`:'Summary-only source; no lap-level conclusion.'}</div></div>`:''}
     <div class="card mt-16">
       <div class="flex justify-between items-center gap-12 flex-wrap">
         <div>

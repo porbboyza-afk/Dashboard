@@ -3086,13 +3086,18 @@ function renderRecentWorkouts(){
   const c=document.getElementById('recent-workouts-list');if(!c)return;
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
   if(!window._workouts.length){c.innerHTML='<p class="text-sm c2">No data</p>';return;}
-  c.innerHTML=window._workouts.slice(0,10).map(w=>{
+  c.innerHTML=window._workouts.slice(0,10).map((w,index)=>{
     let main='',sub='';
     if(w.type==='interval'&&w.interval){const iv=w.interval;main=`⚡ ${iv.reps}×${iv.repDist}km @ ${iv.repPace||'—'} · Total ${w.dist}km`;sub=`${w.date} · Rest ${iv.restTime}min`;}
     else{main=`${w.dist}km · ${w.time}min${w.hr?' · ♥'+w.hr:''}`;sub=`${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}`;}
     const reviewKey=typeof postRunWorkoutKey==='function'?postRunWorkoutKey(w):(w._key||'');
     return `<div class="workout-row"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1;min-width:0"><div class="workout-title">${escapeHTML(main)}</div><div class="workout-meta">${escapeHTML(sub)}${w.rpe?' · RPE '+w.rpe:''}${w.shoe?' · '+escapeHTML(w.shoe):''}</div></div><button onclick="openPostRunReview('${escapeHTML(reviewKey)}')" class="btn btn-ghost btn-sm" title="สรุปหลังซ้อม">🧾</button><button onclick="editWorkout('${w._key}')" class="btn btn-ghost btn-sm" title="แก้ไข">✎</button><button onclick="deleteWorkout('${w._key}')" class="btn btn-ghost btn-sm" title="ลบ">✕</button></div>`;
   }).join('');
+  c.querySelectorAll('.workout-row').forEach((row,index)=>{
+    row.style.cursor='pointer';
+    row.title='Open activity detail';
+    row.addEventListener('click',event=>{if(!event.target.closest('button'))showActivityDetail(window._workouts[index]);});
+  });
 }
 
 async function deleteWorkout(key){if(!confirm('Delete this entry?'))return;try{await window._fb.removeData(`workouts/${key}`);showToast('Deleted');}catch(e){showToast('Delete failed','error');}}
@@ -4090,6 +4095,7 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
     <script src="js/races.js"></script>
     <script src="js/domain/review/matcher-v2.js"></script>
     <script src="js/post-run-review.js"></script>
+    <script src="js/activity-detail-model.js"></script>
     <script src="js/studio-home.js"></script>
     <script src="js/studio-coach.js"></script>
     <script src="js/chart-semantics.js"></script>

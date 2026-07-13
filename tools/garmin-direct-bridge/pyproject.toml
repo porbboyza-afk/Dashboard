@@ -6,11 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "mydash-garmin-direct"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["garminconnect==0.3.6", "pywin32>=311; platform_system == 'Windows'"]
+dependencies = ["garminconnect==0.3.6", "fitdecode==0.11.0", "pywin32>=311; platform_system == 'Windows'"]
 
 [project.scripts]
 mydash-garmin = "garmin_direct.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-

@@ -13,6 +13,7 @@
       wellness: [],
       manualWellness: [],
       garminWellness: {},
+      activityDetails: {},
 
       deepseekKey: '',
       aiProxyUrl: DEFAULT_AI_PROXY_URL,

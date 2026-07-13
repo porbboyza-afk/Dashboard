@@ -13,7 +13,8 @@ class WellnessSync:
     def run_domain(self, domain: str, days: int = 3, full: bool = False) -> dict:
         if domain not in {*DAILY_DOMAINS, "body_battery"}: raise ValueError(f"unsupported wellness domain: {domain}")
         end = date.today(); cursor = self.store.cursor(domain)
-        start = end - timedelta(days=days - 1) if full or not cursor else max(end - timedelta(days=days - 1), cursor - timedelta(days=1))
+        # Automated daily sync uses one current-day request per domain; multi-day refresh keeps overlap protection.
+        start = end if days == 1 and not full else (end - timedelta(days=days - 1) if full or not cursor else max(end - timedelta(days=days - 1), cursor - timedelta(days=1)))
         run_id = self.store.begin_run(domain, start, end)
         try:
             if domain == "body_battery":

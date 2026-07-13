@@ -52,6 +52,10 @@ def task_xml(name: str, start_time: str, uid: str, bridge_root: Path) -> bytes:
     ET.SubElement(daily, f"{{{NS}}}Enabled").text = "true"
     schedule = ET.SubElement(daily, f"{{{NS}}}ScheduleByDay")
     ET.SubElement(schedule, f"{{{NS}}}DaysInterval").text = "1"
+    # A logon trigger catches up the missed morning run when the PC starts after 09:00.
+    logon = ET.SubElement(triggers, f"{{{NS}}}LogonTrigger")
+    ET.SubElement(logon, f"{{{NS}}}Enabled").text = "true"
+    ET.SubElement(logon, f"{{{NS}}}UserId").text = windows_identity()
     principals = ET.SubElement(task, f"{{{NS}}}Principals")
     principal = ET.SubElement(principals, f"{{{NS}}}Principal", {"id": "Author"})
     ET.SubElement(principal, f"{{{NS}}}UserId").text = windows_identity()
@@ -65,6 +69,6 @@ def task_xml(name: str, start_time: str, uid: str, bridge_root: Path) -> bytes:
     actions = ET.SubElement(task, f"{{{NS}}}Actions", {"Context": "Author"})
     execute = ET.SubElement(actions, f"{{{NS}}}Exec")
     ET.SubElement(execute, f"{{{NS}}}Command").text = sys.executable
-    ET.SubElement(execute, f"{{{NS}}}Arguments").text = f"-m garmin_direct.cli auto-sync --uid {uid} --wellness-days 3"
+    ET.SubElement(execute, f"{{{NS}}}Arguments").text = f"-m garmin_direct.cli auto-sync --uid {uid} --wellness-days 1"
     ET.SubElement(execute, f"{{{NS}}}WorkingDirectory").text = str(bridge_root)
     return ET.tostring(task, encoding="utf-16", xml_declaration=True)

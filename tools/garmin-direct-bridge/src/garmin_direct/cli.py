@@ -27,7 +27,7 @@ def main() -> int:
     wellness_dry = sub.add_parser("firebase-wellness-dry-run"); wellness_dry.add_argument("--uid", required=True)
     sync_activities = sub.add_parser("sync-activities"); sync_activities.add_argument("--full", action="store_true", help="bounded 30-day refresh")
     sync_wellness = sub.add_parser("sync-wellness"); sync_wellness.add_argument("--days", type=int, choices=(1, 3, 7), default=3); sync_wellness.add_argument("--domain", choices=("sleep", "hrv", "heart_rates", "stress", "body_battery", "spo2")); sync_wellness.add_argument("--full", action="store_true")
-    auto = sub.add_parser("auto-sync"); auto.add_argument("--uid", required=True); auto.add_argument("--wellness-days", type=int, choices=(1, 3, 7), default=3)
+    auto = sub.add_parser("auto-sync"); auto.add_argument("--uid", required=True); auto.add_argument("--wellness-days", type=int, choices=(1, 3, 7), default=1)
     scheduler_install = sub.add_parser("scheduler-install"); scheduler_install.add_argument("--uid", required=True); scheduler_install.add_argument("--project-root", type=Path, required=True)
     sub.add_parser("scheduler-status")
     probe = sub.add_parser("probe"); probe.add_argument("--days", type=int, choices=(7, 30), default=7); probe.add_argument("--include-fit", action="store_true"); probe.add_argument("--activities-only", action="store_true")

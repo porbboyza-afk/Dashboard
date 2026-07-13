@@ -32,6 +32,8 @@ def build_plan(store: SyncStore, uid: str) -> dict[str, Any]:
     with store._connect() as db:
         rows = db.execute("SELECT * FROM canonical_activities ORDER BY start_time_utc, canonical_id").fetchall()
     operations = [{"op": "set", "path": f"users/{uid}/workouts/{firebase_key(row['source'], row['source_id'])}", "value": workout_value(row)} for row in rows]
+    for row in store.activity_details():
+        operations.append({"op": "set", "path": f"users/{uid}/activity_details/{firebase_key(row['source'], row['source_id'])}", "value": json.loads(row["value_json"])})
     return {"version": 1, "mode": "dry-run", "kind": "activities", "uid": uid, "operationCount": len(operations), "operations": operations}
 
 

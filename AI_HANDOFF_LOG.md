@@ -1,5 +1,40 @@
 # AI Handoff Log
 
+## 2026-07-13 Garmin scheduler catch-up fix (local)
+
+- The user reported that opening the PC after 09:00 caused the Garmin sync to be missed.
+- Inspection showed that Windows Task Scheduler currently has neither `MyDash Garmin Direct 09` nor `MyDash Garmin Direct 21` installed (`scheduler-status` returned both false).
+- Updated `tools/garmin-direct-bridge/src/garmin_direct/scheduler.py` so each scheduled task also has a `LogonTrigger`, in addition to the 09:00/21:00 daily trigger and `StartWhenAvailable`. This lets a late PC login catch up the missed morning run once the tasks are installed.
+- Updated `tools/garmin-direct-bridge/tests/test_scheduler.py` to assert the logon trigger is present.
+- The attempted live sync was blocked by a local permission failure while creating `%LOCALAPPDATA%\\MyDash\\garmin-direct\\bridge.lock`; no successful catch-up sync was confirmed in this session.
+- Task installation also failed with Windows `schtasks.exe` reporting `The system cannot find the path specified`; verify/install the tasks from an elevated local PowerShell session before claiming automation is active.
+
+Completion update (2026-07-13):
+
+- Tasks were installed successfully through an elevated Windows session. `scheduler-status` now reports both `MyDash Garmin Direct 09` and `MyDash Garmin Direct 21` enabled.
+- The installed 09:00 XML was read back and confirmed to contain `StartWhenAvailable`, its daily `CalendarTrigger`, and the new `LogonTrigger`; opening the PC after the scheduled time will therefore queue a catch-up run after login.
+- A live catch-up `auto-sync` completed successfully: activity overlap fetched 2 Garmin records with no duplicate writes, all six wellness domains refreshed, Firebase wrote 30 deterministic operations, and the Firebase read-back verified the new `last_sync` timestamp.
+- The 21:00 task is Ready with its next run scheduled for 21:00 on 2026-07-13. Garmin automatic sync is now operational. Do not work on Activity Detail V2 until this completed scheduler item is separately acknowledged.
+
+## 2026-07-13 Local-Only Activity Detail / Post-Run / Statistics Foundation
+
+Status: implemented locally; do not push yet. The next scheduled Garmin sync is the live integration verification.
+
+- Added Garmin `canonical_activity_details` local storage and an `activity_details/{source}_{sourceId}` Firebase write path. Activity summary remains unchanged under `workouts`, preserving existing Coach, load, and legacy UI behavior.
+- New Garmin activities fetch `get_activity_details` and `get_activity_splits` once, normalize only lap metrics and an optional encoded polyline, and never persist the raw Garmin response.
+- Added `js/activity-detail-model.js`. It uses a single analysis contract for Garmin detail, the existing Strava detail cache, and summary-only fallback sources. The model computes laps, work/recovery classification, detected session type, work/recovery minutes, and HR drift without AI invention.
+- Replaced the generic activity popup at runtime with Activity Detail V2: summary, lap/split table, detected workout analysis, HR drift, coverage state, and a direct Post-Run Review action.
+- Post-Run facts now persist the same activity evidence and render it before AI review. Statistics classification now prefers detailed lap evidence over name/summary heuristics.
+- The first live detail sync attempt correctly stopped at the Garmin request budget while wellness was running; it did not write a partial Firebase update. Automatic wellness was then reduced from a multi-day overlap to one current-day fetch per scheduled run, preserving manual 3/7-day backfill. Both installed tasks were reinstalled and confirmed to use `--wellness-days 1`.
+- Verification passed: activity-detail normalizer deterministic fixture, scheduler unit test, JavaScript syntax checks for the new/changed modules, `node verify_dashboard.js`, and `git diff --check`.
+- Remaining validation: let the next 21:00 task run after budget capacity returns, then open a Garmin activity in MyDash and confirm its `activity_details` payload, laps, and Post-Run evidence render. Map is surfaced only when Garmin returns an encoded polyline; time-series streams are explicitly marked as not imported rather than fabricated.
+
+Completion update (2026-07-13):
+
+- The interrupted live run had already stored normalized details for two Garmin activities locally. These were uploaded without making additional Garmin requests.
+- Firebase write completed with 32 deterministic operations and verified read-back. A read-only Firebase count confirmed `activity_details` now contains 2 records for the authenticated MyDash user.
+- The code path and the first live activity-detail data path are therefore complete locally. User-facing visual review remains: reload MyDash, open either recent Garmin activity, then verify its lap table and the Post-Run Activity Evidence card.
+
 Last updated: 2026-07-11 Asia/Bangkok
 
 ## 2026-07-11 Local-Only Coach Pace Anchor + Race-Week Coverage Fix
