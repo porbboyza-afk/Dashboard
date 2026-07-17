@@ -56,6 +56,10 @@ def task_xml(name: str, start_time: str, uid: str, bridge_root: Path) -> bytes:
     logon = ET.SubElement(triggers, f"{{{NS}}}LogonTrigger")
     ET.SubElement(logon, f"{{{NS}}}Enabled").text = "true"
     ET.SubElement(logon, f"{{{NS}}}UserId").text = windows_identity()
+    unlock = ET.SubElement(triggers, f"{{{NS}}}SessionStateChangeTrigger")
+    ET.SubElement(unlock, f"{{{NS}}}Enabled").text = "true"
+    ET.SubElement(unlock, f"{{{NS}}}UserId").text = windows_identity()
+    ET.SubElement(unlock, f"{{{NS}}}StateChange").text = "SessionUnlock"
     principals = ET.SubElement(task, f"{{{NS}}}Principals")
     principal = ET.SubElement(principals, f"{{{NS}}}Principal", {"id": "Author"})
     ET.SubElement(principal, f"{{{NS}}}UserId").text = windows_identity()
@@ -64,6 +68,9 @@ def task_xml(name: str, start_time: str, uid: str, bridge_root: Path) -> bytes:
     settings = ET.SubElement(task, f"{{{NS}}}Settings")
     ET.SubElement(settings, f"{{{NS}}}MultipleInstancesPolicy").text = "IgnoreNew"
     ET.SubElement(settings, f"{{{NS}}}StartWhenAvailable").text = "true"
+    ET.SubElement(settings, f"{{{NS}}}WakeToRun").text = "true"
+    ET.SubElement(settings, f"{{{NS}}}DisallowStartIfOnBatteries").text = "false"
+    ET.SubElement(settings, f"{{{NS}}}StopIfGoingOnBatteries").text = "false"
     ET.SubElement(settings, f"{{{NS}}}ExecutionTimeLimit").text = "PT30M"
     ET.SubElement(settings, f"{{{NS}}}Enabled").text = "true"
     actions = ET.SubElement(task, f"{{{NS}}}Actions", {"Context": "Author"})
