@@ -2,7 +2,7 @@
 
 ## 2026-07-18 Quality Workload And Tempo/Interval Correction
 
-Status: implemented and verified locally. This affects newly generated plans only. Commit and push are pending at the time of this entry.
+Status: committed and pushed in `51c17d3`. This affects newly generated plans only.
 
 Problem corrected:
 
