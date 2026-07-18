@@ -13,7 +13,7 @@ from .sync_store import SyncStore
 from .wellness_sync import WellnessSync
 from .maintenance import export_config, import_config, status, verify
 from .firebase_plan import build_plan, build_wellness_plan, write_plan
-from .auto_sync import run_with_retry
+from .auto_sync import refresh_status_dashboard, run_with_retry
 from .scheduler import install_tasks, task_status
 
 
@@ -28,6 +28,7 @@ def main() -> int:
     sync_activities = sub.add_parser("sync-activities"); sync_activities.add_argument("--full", action="store_true", help="bounded 30-day refresh")
     sync_wellness = sub.add_parser("sync-wellness"); sync_wellness.add_argument("--days", type=int, choices=(1, 3, 7), default=3); sync_wellness.add_argument("--domain", choices=("sleep", "hrv", "heart_rates", "stress", "body_battery", "spo2")); sync_wellness.add_argument("--full", action="store_true")
     auto = sub.add_parser("auto-sync"); auto.add_argument("--uid", required=True); auto.add_argument("--wellness-days", type=int, choices=(1, 3, 7), default=1)
+    sub.add_parser("status-html")
     scheduler_install = sub.add_parser("scheduler-install"); scheduler_install.add_argument("--uid", required=True); scheduler_install.add_argument("--project-root", type=Path, required=True)
     sub.add_parser("scheduler-status")
     probe = sub.add_parser("probe"); probe.add_argument("--days", type=int, choices=(7, 30), default=7); probe.add_argument("--include-fit", action="store_true"); probe.add_argument("--activities-only", action="store_true")
@@ -49,6 +50,8 @@ def main() -> int:
         plan = build_wellness_plan(SyncStore(paths.database), args.uid); write_plan(plan, output); print(json.dumps({"mode": "dry-run", "operationCount": plan["operationCount"], "report": str(output)}, indent=2)); return 0
     if args.command == "auto-sync":
         print(json.dumps(run_with_retry(args.uid, args.wellness_days), indent=2, sort_keys=True)); return 0
+    if args.command == "status-html":
+        print(refresh_status_dashboard(paths)); return 0
     if args.command == "scheduler-install": print(json.dumps(install_tasks(args.uid, args.project_root), indent=2, sort_keys=True)); return 0
     if args.command == "scheduler-status": print(json.dumps(task_status(), indent=2, sort_keys=True)); return 0
     api = auth.restore()
