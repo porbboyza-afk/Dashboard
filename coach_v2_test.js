@@ -82,12 +82,12 @@ async function main() {
   const tenSpecific = ten.sessions.filter(session=>session.phase==='Specific'&&session.workoutSpec.qualityDistanceKm>0);
   const tenLongRuns = ten.sessions.filter(session=>session.type==='Long');
   assert(tenSpecific.length>=2, '10K: multiple specific sessions');
-  assert(tenSpecific.some(session=>session.workoutSpec.danielsClass==='I'), '10K: Phase III starts with I-pace work');
-  assert(tenSpecific.some(session=>session.workoutSpec.danielsClass==='T'), '10K: Phase IV shifts to T-pace work');
-  assert(tenSpecific.filter(session=>session.workoutSpec.danielsClass==='I').every(session=>session.workoutSpec.qualityDistanceKm<=session.workoutSpec.danielsCapKm+.15), '10K: I work respects the 8% weekly cap');
-  assert(tenSpecific.filter(session=>session.workoutSpec.danielsClass==='T').every(session=>session.workoutSpec.qualityDistanceKm<=session.workoutSpec.danielsCapKm+.15), '10K: T work respects the 10% weekly cap');
+  assert(tenSpecific.some(session=>session.workoutSpec.danielsClass==='I'), '10K: Specific phase includes I-pace work');
+  assert(tenSpecific.some(session=>session.workoutSpec.danielsClass==='T'), '10K: Specific phase includes threshold endurance');
+  assert(ten.sessions.some(session=>session.workoutSpec.intent==='race_specific'), '10K: plan includes race-pace endurance');
+  assert(tenSpecific.every(session=>session.workoutSpec.qualityDistanceKm<=session.workoutSpec.workloadCapKm+.15), '10K: specific work respects the workload cap');
   assert(Math.max(...tenLongRuns.map(session=>session.targetDist))===14, '10K: intermediate long run reaches 14 km from a 12 km baseline');
-  assert(ten.sessions.filter(session=>session.phase==='Build').every(session=>session.type!=='Interval'||session.workoutSpec.danielsClass==='R'), '10K: Phase II introduces R work before I work');
+  assert(ten.sessions.filter(session=>session.phase==='Build').some(session=>session.workoutSpec.danielsClass==='T'), '10K: Build develops threshold before race-specific work');
   assert(ten.sessions.filter(session=>session.phase==='RaceWeek').every(session=>!['Tempo','Interval','Long'].includes(session.type)), '10K: light race week');
   assert(ten.sessions.some(session=>session.date===engine.addDays(ten.endDate,-3)&&['Easy','Recovery','Rest'].includes(session.type)), 'Race week: race-minus-3 is explicitly covered');
   assert(ten.sessions.some(session=>session.date===engine.addDays(ten.endDate,-2)&&['Easy','Recovery','Rest'].includes(session.type)), 'Race week: race-minus-2 is explicitly covered');
@@ -95,18 +95,27 @@ async function main() {
   const peakTarget = Math.max(...ten.phaseSchedule.filter(row=>!['Taper','RaceWeek'].includes(row.phase)).map(row=>row.targetVolumeKm));
   assert(ten.phaseSchedule.filter(row=>['Taper','RaceWeek'].includes(row.phase)).every(row=>row.targetVolumeKm<peakTarget*.8), '10K: taper volume reduction');
 
+  const tenWeekPlan=create('10K',10);
+  const tenWeekThreshold=tenWeekPlan.sessions.filter(session=>session.workoutSpec?.danielsClass==='T');
+  const tenWeekIntervals=tenWeekPlan.sessions.filter(session=>session.workoutSpec?.danielsClass==='I');
+  assert(Math.max(...tenWeekThreshold.map(session=>session.workoutSpec.qualityDistanceKm))>=5, '10K: standard plan builds threshold work beyond 5 km when volume permits');
+  assert(Math.max(...tenWeekIntervals.map(session=>session.workoutSpec.qualityDistanceKm))>=4, '10K: standard plan reaches at least 4 km of I-pace work when volume permits');
+  assert(tenWeekIntervals.every(session=>session.workoutSpec.workloadTargetMinutes>=16||session.phase==='Taper'), '10K: I sessions use a meaningful time-at-intensity dose outside taper');
+  assert(tenWeekIntervals.every(session=>session.phase==='Taper'||(session.workoutSpec.intervalMetrics.repDurationMinutes>=2&&session.workoutSpec.intervalMetrics.repDurationMinutes<=5&&session.workoutSpec.intervalMetrics.workDurationMinutes>=10)), '10K: I sessions use valid rep and total-work durations outside taper');
+
   assert(!plans.Base.phaseSchedule.some(row=>row.phase==='RaceWeek'), 'Base: no race week');
   assert.equal(plans.Base.goalProfile.raceGoal, false, 'Base: non-race goal');
   assert(plans['5K'].sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.danielsClass==='I'), '5K: Phase III includes I work');
-  assert(plans['5K'].sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.danielsClass==='T'), '5K: Phase IV includes T work');
+  assert(plans['5K'].sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.danielsClass==='T'), '5K: Specific phase includes threshold work');
+  assert(plans['5K'].sessions.some(session=>session.workoutSpec.intent==='race_specific'), '5K: plan includes race-pace work');
   assert(plans.Half.sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.repKm>=2), 'Half: longer specific reps');
   const marathonSpecific=plans.Marathon.sessions.filter(session=>session.phase==='Specific'&&session.workoutSpec.intent==='race_specific');
   assert(marathonSpecific.length>0, 'Marathon: marathon-specific work block');
   assert(marathonSpecific.every(session=>session.workoutSpec.qualityDistanceKm<=session.workoutSpec.enduranceAdjustedCapKm+.15), 'Marathon: specific work respects endurance evidence cap');
   const half=plans.Half;
   const cappedHalfQuality=half.sessions.filter(session=>['T','I','R'].includes(session.workoutSpec?.danielsClass));
-  assert(cappedHalfQuality.length>0,'Half: Daniels-capped quality sessions are present');
-  assert(cappedHalfQuality.every(session=>session.workoutSpec.qualityDistanceKm<=session.workoutSpec.danielsCapKm+.15),'Half: T/I/R quality respects weekly-volume caps');
+  assert(cappedHalfQuality.length>0,'Half: quality sessions are present');
+  assert(cappedHalfQuality.every(session=>session.workoutSpec.qualityDistanceKm<=session.workoutSpec.workloadCapKm+.15),'Half: T/I/R quality respects the goal-specific workload cap');
   assert.equal(half.raceRecoveryPolicy.easyDays,7,'Half: race recovery prescribes seven Easy days');
   assert.equal(half.raceRecoveryPolicy.rule,'1 easy day per 3 km raced','Half: recovery policy records its rule');
   assert(half.references.some(reference=>reference.id==='daniels-running-formula-4'),'Half: source methodology is attached to the plan');
@@ -114,9 +123,9 @@ async function main() {
   assert.equal(plans['10K'].raceRecoveryPolicy.easyDays,3,'10K: race recovery prescribes three Easy days');
   const invalidDanielsPlan=JSON.parse(JSON.stringify(half));
   const cappedSession=invalidDanielsPlan.sessions.find(session=>session.workoutSpec?.danielsClass==='T');
-  cappedSession.workoutSpec.qualityDistanceKm=cappedSession.workoutSpec.danielsCapKm+1;
+  cappedSession.workoutSpec.qualityDistanceKm=cappedSession.workoutSpec.workloadCapKm+1;
   invalidDanielsPlan.validation=engine.validatePlan(invalidDanielsPlan,training.getProfile('Half'),half.validation.weeklyTargetsKm,Math.max(...half.validation.weeklyTargetsKm));
-  assert(invalidDanielsPlan.validation.errors.some(error=>error.startsWith('daniels_quality_cap_exceeded:')),'Half: validator rejects quality above Daniels cap');
+  assert(invalidDanielsPlan.validation.errors.some(error=>error.startsWith('quality_workload_cap_exceeded:')),'Half: validator rejects quality above the workload cap');
 
   const longRunProfilePlans={
     '5K':engine.createPlan({goal:'5K long run profile',distance:'5K',level:'intermediate',daysPerWeek:4,startDate:'2026-07-13',endDate:'2026-09-07',totalWeeks:8,longRunDay:0,currentWeeklyKm:28,longestRecentRunKm:10,recentActivities:[],now:1783900000005}),

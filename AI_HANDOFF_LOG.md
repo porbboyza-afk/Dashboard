@@ -1,5 +1,52 @@
 # AI Handoff Log
 
+## 2026-07-18 Quality Workload And Tempo/Interval Correction
+
+Status: implemented and verified locally. This affects newly generated plans only. Commit and push are pending at the time of this entry.
+
+Problem corrected:
+
+- The previous engine enforced Daniels percentage-derived distance ceilings as hard caps. With an intermediate 10K weekly target near 28-32 km, that could cut a prescribed `5 x 800 m` I-pace session to three repetitions and a continuous T session to about 3.6 km.
+- A distance percentage alone is not sufficient to prescribe interval work. Rep duration, work duration, pace domain, recovery duration/type, phase, event, current volume, and readiness all change the training stimulus.
+- The short-road Specific rotation previously could omit a substantial continuous T session in a short plan, even though threshold development is central to 5K/10K readiness.
+
+Research review used for this revision:
+
+- World Athletics advises that 10,000 m runners use longer repetitions and sometimes higher repetition volume than shorter-event athletes; its advanced examples include `8 x 1000 m` at 10K goal pace and a long descending set. It also explicitly requires gradual build-up and recovery after speed work.
+- A World Athletics coaching review describes interval prescriptions by duration and recovery, including `6-10 x 2 min`, `5-8 x 3 min`, or `4-6 x 4 min`, and notes that total time at >=90% VO2max is important. These are reference examples, not automatic prescriptions for every MyDash athlete.
+- B.A.A. 10K plans progress both interval duration and threshold/race-pace work: examples include `5-6 x 800 m` at 10K pace, repeated 3-minute work, 20-25 minutes continuous at half-marathon pace, and split longer efforts. This supports varied, periodized work rather than a fixed 400/800/1000 ladder.
+- Coach guidance from TrainingPeaks similarly distinguishes continuous tempo (commonly 20-40 minutes around threshold) from threshold intervals; it treats rep length, recovery, and total time as different stimulus controls.
+
+Implementation:
+
+- `js/domain/training/profiles.js` now defines `qualityWorkMinutes` by goal, level, phase, and intensity domain. The new methodology version is `mydash-running-2026.07.18.1`.
+- T and I sessions are capped by a goal-specific time-at-intensity workload, converted using the athlete's pace anchor and scaled down to 60-110% from the profile's normal weekly volume. The existing phase kilometre budget remains a hard safety bound.
+- Daniels caps are retained as `danielsReferenceCapKm` metadata for transparency. They no longer silently truncate a viable T/I workload merely because an athlete's current weekly volume is lower than the formula's percentage-derived reference.
+- Every new T/I `workoutSpec` records `workloadCapKm`, `workloadTargetMinutes`, `workloadVolumeScale`, and `workloadRule`. Validation now rejects `quality_workload_cap_exceeded` rather than the obsolete Daniels hard-cap error.
+- Every interval also records `intervalMetrics`: work duration, per-rep duration, total recovery, and recovery/work ratio. Outside taper, validation requires true I-pace reps to last 2-5 minutes with at least 10 minutes of total I work; this is deliberately based on time, not a superficial 400/800/1000 label.
+- 5K/10K Build progression is now R economy -> continuous T -> I -> race-specific when enough Build weeks exist.
+- 5K/10K Specific progression is I first, race-specific in the middle of a longer Specific block, and continuous T as the final Specific session. A two-week Specific block uses I then T; the short race-pace sharpening session remains in taper.
+- Example test output for an 8-week intermediate 10K plan with 28 km current weekly volume is now I `5 x 800 m` (4.0 km main work) followed by continuous T `5.6 km` in Specific. A 10-week plan test requires >=4.0 km I work and >=5.0 km T work when volume permits.
+- Coach session detail now labels the active `Workload guard` and target time at intensity, instead of showing an obsolete Daniels hard cap.
+
+Safety retained:
+
+- Low volume still scales work down; phase kilometre budgets, cross-distance endurance scaling, no-adjacent-quality validation, taper, and recovery controls remain active.
+- The engine does not claim that everyone should run the advanced World Athletics examples. The chosen dose depends on goal, phase, benchmark pace, actual weekly volume, endurance readiness, HR/wellness context, and recovery.
+
+PWA:
+
+- Cache advanced to `mydash-v3-quality-workload-20260718-1`.
+
+Verification completed:
+
+```powershell
+node --check js\domain\training\profiles.js
+node --check js\domain\training\engine-v2.js
+node coach_v2_test.js
+node verify_dashboard.js
+```
+
 ## 2026-07-18 Release Record: Coach Planning Reliability
 
 Status: committed and pushed to `main`. The working tree was clean when this record was written.

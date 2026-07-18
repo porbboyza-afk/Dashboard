@@ -149,7 +149,7 @@ function coachPlanSuitabilityFacts(plan){
   const since90=activities.filter(activity=>new Date(`${activity.date||''}T12:00:00`)>=dateDaysAgo(89));
   const quality=(plan.sessions||[]).filter(session=>['Tempo','Interval'].includes(session.type)).map(session=>{
     const breakdown=coachSessionDistanceBreakdown(session);
-    return {date:session.date,phase:session.phase,type:session.type,mainKm:breakdown?.mainKm??session.workoutSpec?.qualityDistanceKm??null,totalKm:breakdown?.totalKm??session.targetDist??null,danielsClass:session.workoutSpec?.danielsClass||'',danielsCapKm:session.workoutSpec?.danielsCapKm??null};
+    return {date:session.date,phase:session.phase,type:session.type,mainKm:breakdown?.mainKm??session.workoutSpec?.qualityDistanceKm??null,totalKm:breakdown?.totalKm??session.targetDist??null,danielsClass:session.workoutSpec?.danielsClass||'',workloadCapKm:session.workoutSpec?.workloadCapKm??null,workloadTargetMinutes:session.workoutSpec?.workloadTargetMinutes??null,danielsReferenceCapKm:session.workoutSpec?.danielsReferenceCapKm??null};
   });
   const lapEvidence=since90.filter(activity=>window.MyDashActivityAnalysis?.analyze?.(activity)?.laps?.length).length;
   return {
@@ -906,7 +906,7 @@ function showCoachSessionDetail(index){
     ${row('วิธีวิ่ง',d.execution)}
     ${row('เกณฑ์ว่าวิ่งถูกต้อง',d.successCriteria)}
     ${row('ความหนัก',d.intensity)}
-    ${s.workoutSpec?.danielsClass&&Number.isFinite(s.workoutSpec?.danielsCapKm)?row('Daniels guard',`${s.workoutSpec.danielsClass}-pace work <= ${s.workoutSpec.danielsCapKm} km`):''}
+    ${s.workoutSpec?.danielsClass&&Number.isFinite(s.workoutSpec?.workloadCapKm)?row('Workload guard',`${s.workoutSpec.danielsClass}-pace work <= ${s.workoutSpec.workloadCapKm} km${Number.isFinite(s.workoutSpec.workloadTargetMinutes)?` (${s.workoutSpec.workloadTargetMinutes} min target)`:''}`):''}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button class="btn btn-ghost btn-sm" onclick="coachMoveSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">เลื่อนวัน</button>
       ${isHardSession(s.type)?`<button class="btn btn-ghost btn-sm" onclick="coachDowngradeSession('${s.date}');document.getElementById('coach-session-detail-overlay')?.remove()">ลดเป็นวิ่งเบา</button>`:''}

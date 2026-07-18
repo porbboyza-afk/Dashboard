@@ -1,10 +1,12 @@
 (function(root){
   'use strict';
 
-  const METHODOLOGY_VERSION = 'mydash-running-2026.07.11.2';
+  const METHODOLOGY_VERSION = 'mydash-running-2026.07.18.1';
 
-  // Daniels, Running Formula 4e: quality distance is capped per session and
-  // scaled to the athlete's actual weekly volume, not a fixed workout template.
+  // Daniels, Running Formula 4e: reference ceilings for individual quality
+  // sessions. The engine records these, but prescribes T/I work with a
+  // goal-specific time-at-intensity ladder rather than truncating every
+  // workout solely from a weekly-distance percentage.
   const DANIELS_QUALITY_CAPS = {
     R:{label:'Repetition',percentOfWeekly:.05,maxKm:8},
     I:{label:'Interval',percentOfWeekly:.08,maxKm:10},
@@ -33,6 +35,7 @@
       minLongKm:6, maxLongKm:{beginner:8,intermediate:11,advanced:13}, longRatio:.36, maxLongRatio:.50,
       longRunTargets:{Base:{beginner:7,intermediate:9,advanced:10},Build:{beginner:8,intermediate:10,advanced:12},Specific:{beginner:8,intermediate:11,advanced:13}},
       qualityBudgetKm:{Base:0,Build:4,Specific:5,Taper:2.5}, continuousTempoRatio:.60,
+      qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:16,advanced:20},Specific:{beginner:12,intermediate:20,advanced:24},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Build:{beginner:16,intermediate:20,advanced:24},Specific:{beginner:18,intermediate:25,advanced:30},Taper:{beginner:10,intermediate:12,advanced:15}}},
       thresholdWorkKm:{min:3,max:5}, specificWorkKm:{min:3.2,max:5},
       buildIntervals:[
         {intent:'vo2',reps:8,repKm:.4,recoverySeconds:90,intensity:'interval'},
@@ -56,6 +59,7 @@
       minLongKm:7, maxLongKm:{beginner:10,intermediate:14,advanced:16}, longRatio:.38, maxLongRatio:.52,
       longRunTargets:{Base:{beginner:8,intermediate:12,advanced:14},Build:{beginner:9,intermediate:13,advanced:15},Specific:{beginner:10,intermediate:14,advanced:16}},
       qualityBudgetKm:{Base:0,Build:5,Specific:8,Taper:3}, continuousTempoRatio:.60,
+      qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:18,advanced:22},Specific:{beginner:14,intermediate:22,advanced:26},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Build:{beginner:16,intermediate:24,advanced:28},Specific:{beginner:20,intermediate:30,advanced:35},Taper:{beginner:10,intermediate:12,advanced:15}}},
       thresholdWorkKm:{min:3,max:6}, specificWorkKm:{min:4,max:8},
       buildIntervals:[
         {intent:'vo2',reps:6,repKm:.4,recoverySeconds:90,intensity:'interval'},
@@ -79,6 +83,7 @@
       minLongKm:9, maxLongKm:{beginner:16,intermediate:20,advanced:23}, longRatio:.40, maxLongRatio:.52,
       longRunTargets:{Base:{beginner:12,intermediate:15,advanced:17},Build:{beginner:14,intermediate:18,advanced:20},Specific:{beginner:16,intermediate:20,advanced:23}},
       qualityBudgetKm:{Base:0,Build:6,Specific:10,Taper:4}, continuousTempoRatio:.65,
+      qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:16,advanced:20},Specific:{beginner:12,intermediate:18,advanced:22},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Build:{beginner:18,intermediate:26,advanced:32},Specific:{beginner:22,intermediate:35,advanced:40},Taper:{beginner:10,intermediate:14,advanced:16}}},
       thresholdWorkKm:{min:4,max:8}, specificWorkKm:{min:6,max:10},
       buildIntervals:[
         {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'interval'},
@@ -103,6 +108,7 @@
       minLongKm:12, maxLongKm:{beginner:26,intermediate:32,advanced:32}, longRatio:.42, maxLongRatio:.55,
       longRunTargets:{Base:{beginner:18,intermediate:22,advanced:24},Build:{beginner:22,intermediate:28,advanced:30},Specific:{beginner:26,intermediate:32,advanced:32}},
       qualityBudgetKm:{Base:0,Build:6,Specific:12,Taper:5}, continuousTempoRatio:.70,
+      qualityWorkMinutes:{T:{Build:{beginner:18,intermediate:28,advanced:34},Specific:{beginner:22,intermediate:35,advanced:40},Taper:{beginner:10,intermediate:14,advanced:16}}},
       thresholdWorkKm:{min:4,max:8}, specificWorkKm:{min:6,max:14},
       buildIntervals:[
         {intent:'threshold',reps:5,repKm:1,recoverySeconds:90,intensity:'threshold'},
