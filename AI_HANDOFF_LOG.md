@@ -1,8 +1,33 @@
 # AI Handoff Log
 
+## 2026-07-18 Release Record: Coach Planning Reliability
+
+Status: committed and pushed to `main`. The working tree was clean when this record was written.
+
+Delivered commits, in release order:
+
+- `36038fa Add contextual training analyst`: central training-analysis metadata, contextual Statistics/Post-Run AI facts, session-type override cards, and the Statistics AI timeout fix.
+- `cf542de Clarify coach quality distance`: explicit warm-up/main/recovery/cool-down/total distance breakdown for newly generated quality sessions.
+- `8021a43 Improve coach quality progression`: semantic R/I/T labels and safer, varied quality progression across 5K, 10K, Half, and Marathon plans.
+- `916b723 Assess cross-distance endurance readiness`: evaluates endurance evidence when the benchmark is shorter than the target race and limits only I/race-specific volume when evidence is missing.
+
+Current user workflow for a Half Marathon plan:
+
+- Set goal to `Half` and enter the desired target time separately.
+- Enter the most recent genuine full-effort 5K or 10K result as the benchmark. It produces VDOT and pace anchors; the target time does not overwrite those training paces.
+- Do not enter an aspirational half-marathon time as a benchmark.
+- If the benchmark is shorter than 21.1 km, the engine examines the last 90 days of run history. For a Half goal, roughly 12.7 km is the developing long-run threshold and 16.9 km with at least two sustained runs is the supported threshold.
+- A missing benchmark falls back to conservative anchors. A recent 5K time trial is preferable to inventing a result.
+
+Compatibility and safety:
+
+- All Coach changes affect newly generated plans only. Saved plans are never silently rewritten.
+- Garmin raw records and the Pordell sync job were not changed by these Coach releases.
+- Before modifying Garmin/FIT ingestion, run the planned read-only FIT field inventory on Pordell; richer running-dynamics data may exist in archived FIT files but is not currently persisted by MyDash.
+
 ## 2026-07-18 Cross-Distance VDOT And Endurance Readiness
 
-Status: implemented locally and verified. New plans only; existing saved plans are unchanged.
+Status: committed and pushed in `916b723`. New plans only; existing saved plans are unchanged.
 
 Problem addressed:
 
@@ -44,7 +69,7 @@ python smoke_test_dashboard.py
 
 ## 2026-07-18 All-Distance Quality Progression Correction
 
-Status: implemented locally and verified. This updates only newly generated plans. Existing saved plans are not regenerated or silently changed.
+Status: committed and pushed in `8021a43`. This updates only newly generated plans. Existing saved plans are not regenerated or silently changed.
 
 Why this was required:
 
@@ -100,7 +125,7 @@ node coach_v2_test.js
 
 ## 2026-07-18 Coach Distance Audit And Garmin Dynamics Discovery
 
-Status: implemented locally and verified. No existing plan, raw Garmin activity, or Pordell sync job was overwritten.
+Status: committed and pushed in `cf542de`. No existing plan, raw Garmin activity, or Pordell sync job was overwritten.
 
 Problem addressed:
 
@@ -149,7 +174,7 @@ Results:
 
 ## 2026-07-18 Central Training Analyst, Statistics Context, And Safe Cleanup
 
-Status: implemented locally and verified. This change has not changed raw Garmin, Health Connect, Strava, or manual workout records.
+Status: committed and pushed in `36038fa`. This change has not changed raw Garmin, Health Connect, Strava, or manual workout records.
 
 Problem addressed:
 
