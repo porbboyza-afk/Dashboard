@@ -2,7 +2,7 @@
 
 ## 2026-07-19 Workout Structure, Rep Recovery, And Distance-Specific Progression
 
-Status: implemented and verified locally. This affects newly generated plans only. Commit and push are pending at the time of this entry.
+Status: committed and pushed in `404b0ca`. This affects newly generated plans only.
 
 Why this revision was required:
 
