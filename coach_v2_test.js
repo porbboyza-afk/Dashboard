@@ -98,10 +98,23 @@ async function main() {
   const tenWeekPlan=create('10K',10);
   const tenWeekThreshold=tenWeekPlan.sessions.filter(session=>session.workoutSpec?.danielsClass==='T');
   const tenWeekIntervals=tenWeekPlan.sessions.filter(session=>session.workoutSpec?.danielsClass==='I');
+  const tenWeekSpecific=tenWeekPlan.sessions.filter(session=>session.phase==='Specific'&&session.workoutSpec?.qualityDistanceKm>0);
+  assert.equal(tenWeekPlan.phaseSchedule.filter(row=>row.phase==='Specific').length,3,'10K: ten-week plan reserves three specific weeks');
+  assert(tenWeekSpecific.some(session=>session.workoutSpec.intent==='vo2')&&tenWeekSpecific.some(session=>session.workoutSpec.intent==='race_specific')&&tenWeekSpecific.some(session=>session.workoutSpec.intent==='threshold'),'10K: specific block separates I, race pace, and T work');
   assert(Math.max(...tenWeekThreshold.map(session=>session.workoutSpec.qualityDistanceKm))>=5, '10K: standard plan builds threshold work beyond 5 km when volume permits');
   assert(Math.max(...tenWeekIntervals.map(session=>session.workoutSpec.qualityDistanceKm))>=4, '10K: standard plan reaches at least 4 km of I-pace work when volume permits');
   assert(tenWeekIntervals.every(session=>session.workoutSpec.workloadTargetMinutes>=16||session.phase==='Taper'), '10K: I sessions use a meaningful time-at-intensity dose outside taper');
   assert(tenWeekIntervals.every(session=>session.phase==='Taper'||(session.workoutSpec.intervalMetrics.repDurationMinutes>=2&&session.workoutSpec.intervalMetrics.repDurationMinutes<=5&&session.workoutSpec.intervalMetrics.workDurationMinutes>=10)), '10K: I sessions use valid rep and total-work durations outside taper');
+
+  const tenExtended=create('10K',12);
+  const extendedThreshold=tenExtended.sessions.filter(session=>session.workoutSpec?.danielsClass==='T');
+  const structuredRace=tenExtended.sessions.find(session=>session.workoutSpec?.sets===2&&session.workoutSpec?.repsPerSet===3);
+  assert(tenExtended.validation.valid,tenExtended.validation.errors.join(','));
+  assert(Math.max(...extendedThreshold.map(session=>session.workoutSpec.qualityDistanceKm))>=7,'10K: longer plan can progress T work beyond 6 km when volume permits');
+  assert(structuredRace,'10K: longer plan includes a deliberate multi-set race-pace session');
+  assert.equal(structuredRace.workoutSpec.intervalMetrics.totalReps,6,'10K: multi-set workout counts all reps');
+  assert(structuredRace.details.mainSet.includes('1:45')&&structuredRace.details.mainSet.includes('3:00'),'10K: recovery is rendered as m:ss for reps and sets');
+  assert(!structuredRace.details.mainSet.includes('1.8'),'10K: recovery never renders as decimal minutes');
 
   assert(!plans.Base.phaseSchedule.some(row=>row.phase==='RaceWeek'), 'Base: no race week');
   assert.equal(plans.Base.goalProfile.raceGoal, false, 'Base: non-race goal');

@@ -231,7 +231,7 @@
     }
     const raceWeek=1;
     const taper=total>=14?2:total>=6?1:0;
-    const specific=total>=12?3:total>=8?2:1;
+    const specific=total>=10?3:total>=8?2:1;
     const base=total>=12?Math.min(4,Math.floor(total*.25)):total>=7?2:total>=5?1:0;
     let build=total-raceWeek-taper-specific-base;
     let adjustedBase=base;
@@ -370,17 +370,43 @@
   function paceLabel(pace,range=null){
     return range?`${formatPace(range.fast)}-${formatPace(range.slow)}`:formatPace(pace);
   }
+  function formatDurationSeconds(seconds){
+    const total=Math.max(0,Math.round(Number(seconds)||0));
+    return `${Math.floor(total/60)}:${String(total%60).padStart(2,'0')}`;
+  }
+  function setShape(spec){
+    const sets=Math.max(1,parseInt(spec?.sets)||1);
+    const reps=Math.max(1,parseInt(spec?.reps)||1);
+    const repsPerSet=Math.max(1,parseInt(spec?.repsPerSet)||Math.ceil(reps/sets));
+    return {sets,reps,repsPerSet,totalReps:sets*repsPerSet};
+  }
+  function recoverySecondsTotal(spec){
+    const shape=setShape(spec);
+    const repRecovery=Math.max(0,Number(spec?.recoverySeconds)||0);
+    const setRecovery=Math.max(0,Number(spec?.setRecoverySeconds)||0);
+    return shape.sets*(shape.repsPerSet-1)*repRecovery+Math.max(0,shape.sets-1)*setRecovery;
+  }
+  function withReps(spec,reps){
+    const shape=setShape(spec);
+    if(shape.totalReps===reps)return {...spec,reps};
+    return {...spec,reps,sets:1,repsPerSet:reps,setRecoverySeconds:0};
+  }
   function segmentSummary(spec,pace,range=null){
     if(spec.structure==='continuous')return `${spec.workKm.toFixed(1)} กม. ต่อเนื่อง @ ${paceLabel(pace,range)}/กม.`;
-    if(spec.repKm)return `${spec.reps} x ${spec.repKm<1?Math.round(spec.repKm*1000)+' ม.':spec.repKm+' กม.'} @ ${paceLabel(pace,range)}/กม. พัก ${Math.round(spec.recoverySeconds/60*10)/10} นาที`;
-    return `${spec.reps} x ${spec.repSeconds} วินาที พัก ${Math.round(spec.recoverySeconds/60*10)/10} นาที`;
+    const shape=setShape(spec);
+    const repText=spec.repKm?(spec.repKm<1?Math.round(spec.repKm*1000)+' ม.':spec.repKm+' กม.'):`${spec.repSeconds} วินาที`;
+    const setText=shape.sets>1?`${shape.sets} sets x (${shape.repsPerSet} x ${repText})`:`${shape.totalReps} x ${repText}`;
+    const repRecovery=spec.recoverySeconds?` พัก jog ${formatDurationSeconds(spec.recoverySeconds)} ระหว่าง rep`:'';
+    const setRecovery=shape.sets>1&&spec.setRecoverySeconds?` · พัก ${formatDurationSeconds(spec.setRecoverySeconds)} ระหว่าง set`:'';
+    return `${setText} @ ${paceLabel(pace,range)}/กม.${repRecovery}${setRecovery}`;
   }
   function qualityDistanceBreakdown(spec,phase,easyPace){
     const warmupKm=phase==='Taper'?1.5:2;
     const cooldownKm=phase==='Taper'?0.8:1;
     const mainKm=round(spec.workKm||0,1);
-    const recoveryKm=spec.reps>1&&spec.recoverySeconds
-      ? round((spec.reps-1)*spec.recoverySeconds/(Math.max(3,easyPace||6)*60),1)
+    const recoverySeconds=recoverySecondsTotal(spec);
+    const recoveryKm=recoverySeconds
+      ? round(recoverySeconds/(Math.max(3,easyPace||6)*60),1)
       : 0;
     const minimumTotal=phase==='Taper'?3:3.5;
     const prescribedKm=round(warmupKm+mainKm+recoveryKm+cooldownKm,1);
@@ -390,8 +416,9 @@
   function intervalMetrics(spec,pace){
     const workDurationMinutes=spec.workKm&&pace?round(spec.workKm*pace,1):null;
     const repDurationMinutes=spec.repKm&&pace?round(spec.repKm*pace,2):null;
-    const recoveryMinutes=spec.reps>1&&spec.recoverySeconds?round((spec.reps-1)*spec.recoverySeconds/60,1):0;
-    return {workDurationMinutes,repDurationMinutes,recoveryMinutes,recoveryToWorkRatio:workDurationMinutes?round(recoveryMinutes/workDurationMinutes,2):null};
+    const recoveryMinutes=round(recoverySecondsTotal(spec)/60,1);
+    const shape=setShape(spec);
+    return {workDurationMinutes,repDurationMinutes,recoveryMinutes,recoveryToWorkRatio:workDurationMinutes?round(recoveryMinutes/workDurationMinutes,2):null,sets:shape.sets,repsPerSet:shape.repsPerSet,totalReps:shape.totalReps};
   }
   function detailsFor(spec,totalKm,pace,effortTarget=null,distanceBreakdown=null){
     const range=effortTarget?.paceFast&&effortTarget?.paceSlow?{fast:effortTarget.paceFast,slow:effortTarget.paceSlow}:null;
@@ -418,13 +445,14 @@
   }
   function thresholdSpec(profile,progress,structure='continuous'){
     const workKm=round(profile.thresholdWorkKm.min+(profile.thresholdWorkKm.max-profile.thresholdWorkKm.min)*progress,1);
+    if(structure==='repetitions'&&(profile.thresholdIntervals||[]).length)return intervalSpec(profile.thresholdIntervals,progress);
     const split=structure==='repetitions'&&workKm>=4;
-    return {intent:'threshold',structure:split?'repetitions':'continuous',reps:split?2:1,repKm:split?round(workKm/2,1):workKm,workKm,recoverySeconds:split?120:0,intensity:'threshold'};
+    return {intent:'threshold',structure:split?'repetitions':'continuous',reps:split?2:1,repKm:split?round(workKm/2,1):workKm,repsPerSet:split?2:1,workKm,recoverySeconds:split?120:0,intensity:'threshold'};
   }
   function intervalSpec(list,progress){
     const index=Math.min(list.length-1,Math.floor(progress*list.length));
     const source=list[Math.max(0,index)]||list[0];
-    const workKm=source.repKm?round(source.reps*source.repKm,1):0;
+    const workKm=source.repKm?round(setShape(source).totalReps*source.repKm,1):0;
     return {...source,structure:'repetitions',workKm};
   }
   function specsForIntent(profile,intent){
@@ -475,7 +503,7 @@
     if(spec.repKm){
       const reps=Math.floor(capKm/spec.repKm);
       return reps>=2
-        ? {...spec,reps,workKm:round(reps*spec.repKm,1)}
+        ? {...withReps(spec,reps),workKm:round(reps*spec.repKm,1)}
         : {...spec,structure:'continuous',reps:1,repKm:round(capKm,1),workKm:round(capKm,1),recoverySeconds:0};
     }
     return spec;
@@ -497,7 +525,7 @@
       if(cycle===0)return intervalSpec(repetition.length?repetition:profile.buildIntervals,0);
       if(cycle===1)return thresholdSpec(profile,progress,'continuous');
       if(cycle===2)return intervalSpec(vo2.length?vo2:profile.buildIntervals,nextProgress(progress,phasePosition));
-      return raceSpecific.length?intervalSpec(raceSpecific,progress):intervalSpec(repetition.length?repetition:profile.buildIntervals,1);
+      return raceSpecific.length?intervalSpec(raceSpecific,progress):thresholdSpec(profile,progress,'repetitions');
     }
     if(phase==='Build'){
       if(phasePosition%3===0)return thresholdSpec(profile,progress,'continuous');
@@ -520,7 +548,7 @@
       const source=profile.specificIntervals[0]||profile.buildIntervals[0];
       if(source?.repKm){
         const reps=Math.max(2,Math.min(3,source.reps));
-        return {...source,structure:'repetitions',reps,workKm:round(reps*source.repKm,1),recoverySeconds:Math.max(90,source.recoverySeconds||90)};
+        return {...withReps(source,reps),structure:'repetitions',workKm:round(reps*source.repKm,1),recoverySeconds:Math.max(90,source.recoverySeconds||90)};
       }
       return {intent:'speed_skill',structure:'repetitions',reps:6,repSeconds:20,recoverySeconds:80,intensity:'strides',workKm:0};
     }
@@ -550,7 +578,7 @@
     return {
       type:legacyTypeForIntent(spec.intent),intent:spec.intent,targetDist:totalKm,targetPace:pace?formatPace(pace):'',targetPaceRange,targetHR,
       priority:['threshold','vo2','repetition','race_specific'].includes(spec.intent)?'key':'normal',
-      workoutSpec:{...spec,qualityDistanceKm:spec.workKm||0,danielsClass:danielsPolicy.qualityClass,danielsReferenceCapKm:danielsPolicy.capKm,danielsRule:danielsPolicy.rule,workloadCapKm:workloadPolicy.capKm,workloadTargetMinutes:workloadPolicy.targetMinutes,workloadVolumeScale:workloadPolicy.volumeScale,workloadRule:workloadPolicy.rule,intervalMetrics:metrics,enduranceAdjustedCapKm,enduranceReadiness:athlete.enduranceReadiness?.status||'not_required',totalDistanceKm:totalKm,distanceBreakdown,intensityTarget:{basis:effortTarget?.basis||spec.intensity,paceMinPerKm:pace?round(pace,3):null,paceFast:effortTarget?.paceFast||null,paceSlow:effortTarget?.paceSlow||null,hrMin:effortTarget?.hrMin||null,hrMax:effortTarget?.hrMax||null}},
+      workoutSpec:{...spec,qualityDistanceKm:spec.workKm||0,danielsClass:danielsPolicy.qualityClass,danielsReferenceCapKm:danielsPolicy.capKm,danielsRule:danielsPolicy.rule,workloadCapKm:workloadPolicy.capKm,workloadTargetMinutes:workloadPolicy.targetMinutes,workloadVolumeScale:workloadPolicy.volumeScale,workloadRule:workloadPolicy.rule,recoveryMode:spec.recoverySeconds?'jog':'none',intervalMetrics:metrics,enduranceAdjustedCapKm,enduranceReadiness:athlete.enduranceReadiness?.status||'not_required',totalDistanceKm:totalKm,distanceBreakdown,intensityTarget:{basis:effortTarget?.basis||spec.intensity,paceMinPerKm:pace?round(pace,3):null,paceFast:effortTarget?.paceFast||null,paceSlow:effortTarget?.paceSlow||null,hrMin:effortTarget?.hrMin||null,hrMax:effortTarget?.hrMax||null}},
       details,
       description:details.targetDescription
     };
@@ -771,6 +799,11 @@
       const weeklyKm=weeklyTargets[(session.week||1)-1]||0;
       const workloadPolicy=physiologyQualityCap(profile,session.workoutSpec,plan.athleteProfile||{level:'intermediate',anchors:{}},weeklyKm,session.phase);
       if(Number.isFinite(workloadPolicy.capKm)&&session.workoutSpec?.qualityDistanceKm>workloadPolicy.capKm+.15)errors.push(`quality_workload_cap_exceeded:${session.sessionId}`);
+      if(session.workoutSpec?.repKm){
+        const shape=setShape(session.workoutSpec);
+        if(shape.totalReps!==shape.reps)errors.push(`interval_set_shape_invalid:${session.sessionId}`);
+        if(shape.sets===1&&session.workoutSpec.setRecoverySeconds)errors.push(`interval_set_recovery_without_sets:${session.sessionId}`);
+      }
       const metrics=session.workoutSpec?.intervalMetrics;
       if(session.workoutSpec?.intent==='vo2'&&session.phase!=='Taper'){
         if(!metrics||!Number.isFinite(metrics.repDurationMinutes)||!Number.isFinite(metrics.workDurationMinutes))errors.push(`interval_metrics_missing:${session.sessionId}`);

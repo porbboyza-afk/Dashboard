@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
 
-  const METHODOLOGY_VERSION = 'mydash-running-2026.07.18.1';
+  const METHODOLOGY_VERSION = 'mydash-running-2026.07.19.1';
 
   // Daniels, Running Formula 4e: reference ceilings for individual quality
   // sessions. The engine records these, but prescribes T/I work with a
@@ -37,6 +37,10 @@
       qualityBudgetKm:{Base:0,Build:4,Specific:5,Taper:2.5}, continuousTempoRatio:.60,
       qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:16,advanced:20},Specific:{beginner:12,intermediate:20,advanced:24},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Build:{beginner:16,intermediate:20,advanced:24},Specific:{beginner:18,intermediate:25,advanced:30},Taper:{beginner:10,intermediate:12,advanced:15}}},
       thresholdWorkKm:{min:3,max:5}, specificWorkKm:{min:3.2,max:5},
+      thresholdIntervals:[
+        {intent:'threshold',reps:3,repKm:1,recoverySeconds:75,intensity:'threshold'},
+        {intent:'threshold',reps:4,repKm:1,recoverySeconds:75,intensity:'threshold'}
+      ],
       buildIntervals:[
         {intent:'vo2',reps:8,repKm:.4,recoverySeconds:90,intensity:'interval'},
         {intent:'vo2',reps:6,repKm:.6,recoverySeconds:105,intensity:'interval'},
@@ -48,7 +52,7 @@
       ],
       specificIntervals:[
         {intent:'race_specific',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_5k'},
-        {intent:'race_specific',reps:4,repKm:1,recoverySeconds:150,intensity:'current_5k'},
+        {intent:'race_specific',reps:4,repKm:1,recoverySeconds:105,sets:2,repsPerSet:2,setRecoverySeconds:180,intensity:'current_5k'},
         {intent:'race_specific',reps:5,repKm:1,recoverySeconds:150,intensity:'current_5k'}
       ],
       daniels:{qualityCaps:DANIELS_QUALITY_CAPS,raceRecovery:DANIELS_RACE_RECOVERY,phaseRoles:{Base:'easy_plus_strides',Build:'repetition_first',Specific:['interval_primary','threshold_emphasis']},baseLongRunMaxWeeklyRatio:.25}
@@ -59,8 +63,12 @@
       minLongKm:7, maxLongKm:{beginner:10,intermediate:14,advanced:16}, longRatio:.38, maxLongRatio:.52,
       longRunTargets:{Base:{beginner:8,intermediate:12,advanced:14},Build:{beginner:9,intermediate:13,advanced:15},Specific:{beginner:10,intermediate:14,advanced:16}},
       qualityBudgetKm:{Base:0,Build:5,Specific:8,Taper:3}, continuousTempoRatio:.60,
-      qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:18,advanced:22},Specific:{beginner:14,intermediate:22,advanced:26},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Build:{beginner:16,intermediate:24,advanced:28},Specific:{beginner:20,intermediate:30,advanced:35},Taper:{beginner:10,intermediate:12,advanced:15}}},
-      thresholdWorkKm:{min:3,max:6}, specificWorkKm:{min:4,max:8},
+      qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:18,advanced:22},Specific:{beginner:14,intermediate:22,advanced:26},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Build:{beginner:18,intermediate:28,advanced:32},Specific:{beginner:28,intermediate:40,advanced:45},Taper:{beginner:10,intermediate:12,advanced:15}}},
+      thresholdWorkKm:{min:3,max:8}, specificWorkKm:{min:4,max:8},
+      thresholdIntervals:[
+        {intent:'threshold',reps:3,repKm:1.5,recoverySeconds:90,intensity:'threshold'},
+        {intent:'threshold',reps:3,repKm:2,recoverySeconds:120,intensity:'threshold'}
+      ],
       buildIntervals:[
         {intent:'vo2',reps:6,repKm:.4,recoverySeconds:90,intensity:'interval'},
         {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'interval'},
@@ -72,7 +80,7 @@
       ],
       specificIntervals:[
         {intent:'race_specific',reps:5,repKm:1,recoverySeconds:105,intensity:'current_10k'},
-        {intent:'race_specific',reps:6,repKm:1,recoverySeconds:120,intensity:'current_10k'},
+        {intent:'race_specific',reps:6,repKm:1,recoverySeconds:105,sets:2,repsPerSet:3,setRecoverySeconds:180,intensity:'current_10k'},
         {intent:'race_specific',reps:5,repKm:1.2,recoverySeconds:150,intensity:'current_10k'}
       ],
       daniels:{qualityCaps:DANIELS_QUALITY_CAPS,raceRecovery:DANIELS_RACE_RECOVERY,phaseRoles:{Base:'easy_plus_strides',Build:'repetition_first',Specific:['interval_primary','threshold_emphasis']},baseLongRunMaxWeeklyRatio:.25}
@@ -85,6 +93,10 @@
       qualityBudgetKm:{Base:0,Build:6,Specific:10,Taper:4}, continuousTempoRatio:.65,
       qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:16,advanced:20},Specific:{beginner:12,intermediate:18,advanced:22},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Build:{beginner:18,intermediate:26,advanced:32},Specific:{beginner:22,intermediate:35,advanced:40},Taper:{beginner:10,intermediate:14,advanced:16}}},
       thresholdWorkKm:{min:4,max:8}, specificWorkKm:{min:6,max:10},
+      thresholdIntervals:[
+        {intent:'threshold',reps:3,repKm:2,recoverySeconds:120,intensity:'threshold'},
+        {intent:'threshold',reps:4,repKm:2,recoverySeconds:120,intensity:'threshold'}
+      ],
       buildIntervals:[
         {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'interval'},
         {intent:'threshold',reps:4,repKm:1,recoverySeconds:90,intensity:'threshold'},
@@ -110,6 +122,10 @@
       qualityBudgetKm:{Base:0,Build:6,Specific:12,Taper:5}, continuousTempoRatio:.70,
       qualityWorkMinutes:{T:{Build:{beginner:18,intermediate:28,advanced:34},Specific:{beginner:22,intermediate:35,advanced:40},Taper:{beginner:10,intermediate:14,advanced:16}}},
       thresholdWorkKm:{min:4,max:8}, specificWorkKm:{min:6,max:14},
+      thresholdIntervals:[
+        {intent:'threshold',reps:3,repKm:2,recoverySeconds:120,intensity:'threshold'},
+        {intent:'threshold',reps:2,repKm:3,recoverySeconds:150,intensity:'threshold'}
+      ],
       buildIntervals:[
         {intent:'threshold',reps:5,repKm:1,recoverySeconds:90,intensity:'threshold'},
         {intent:'threshold',reps:3,repKm:2,recoverySeconds:120,intensity:'threshold'},

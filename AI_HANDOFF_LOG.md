@@ -1,5 +1,64 @@
 # AI Handoff Log
 
+## 2026-07-19 Workout Structure, Rep Recovery, And Distance-Specific Progression
+
+Status: implemented and verified locally. This affects newly generated plans only. Commit and push are pending at the time of this entry.
+
+Why this revision was required:
+
+- The user correctly identified that a training card showing `พัก 1.8 นาที` is not a usable prescription. It was a formatting conversion of 105 seconds to decimal minutes, not one minute and eighty seconds.
+- The old plan described a rep count but did not model a set structure. A workout such as `2 sets x (3 x 1K)` has different recovery, total workload, and intent from six uninterrupted 1K repetitions.
+- The earlier 10K T profile had a 6 km main-work ceiling. That was too conservative as a universal ceiling for an experienced athlete. The plan itself should progress workload; Garmin history can later refine it but is not required before a structured progression starts.
+
+Research reviewed:
+
+- World Athletics notes that 10,000 m training uses longer repetitions and sometimes more volume than shorter events, gives `8 x 1000 m` at 10K pace and a descending long-rep session as advanced examples, and warns that these sessions must be built over months with recovery.
+- World Athletics road-running guidance states that half-marathoners need interval work around 10K pace and that recovery may be walking or jogging.
+- B.A.A. Level Three plans provide examples of 10K `5-6 x 800 m`, multi-set 10K/5K pace work, Half `5-6 x 3/4 mile` or `4-5 x 1 mile` tempo intervals, and Marathon-specific tempo/race-pace blocks. These examples support changing rep length, total volume, rest, and set structure together with the event and phase.
+- No advanced public template is copied verbatim. MyDash retains volume/readiness/recovery guardrails and does not prescribe advanced examples to every athlete.
+
+New workout contract:
+
+- Repetition workouts can now store `sets`, `repsPerSet`, `setRecoverySeconds`, `recoverySeconds`, `recoveryMode`, and complete `intervalMetrics`.
+- `intervalMetrics` stores total work duration, per-rep duration, total recovery, recovery/work ratio, set count, reps per set, and total reps.
+- Recovery distance in total session mileage is now calculated from the true recovery structure: recovery between reps inside a set plus recovery between sets. It is no longer inferred as simply `reps - 1` recoveries.
+- Validation rejects an invalid set shape or a set-recovery value without multiple sets. Existing I-pace validation still requires 2-5 minute repetitions and at least 10 minutes of total I work outside taper.
+
+Card and detail UI:
+
+- Recovery displays `m:ss`, for example `1:45`, never decimal minutes.
+- New plan card/modal shows `Structure`, including number of sets/reps, total work time, and total recovery time.
+- Main-set wording distinguishes `พัก jog 1:45 ระหว่าง rep` from `พัก 3:00 ระหว่าง set`.
+
+Distance-specific progression:
+
+- 5K: R economy repetitions, I repetitions (400/600/800 m according to pace-duration), continuous or cruise T, then 5K race-pace work.
+- 10K: R -> continuous T -> I -> race-specific during Build when weeks allow; Specific uses I, race-specific work, and a final continuous T. A 10-week-or-longer race plan now reserves three Specific weeks so those three stimuli are not forced into one session. Cruise-T is available in the longer-distance profiles.
+- A 10K athlete at the profile weekly-volume reference can reach 40 minutes of T work. In the test fixture using `10K 52:30`, that produces 8.0 km continuous T. At 28 km current volume the same pace model produces 7.4 km, because the workload is scaled down rather than arbitrarily fixed to 6 km.
+- 10K race-specific work can use `2 sets x (3 x 1K)` with 1:45 jog between repetitions and 3:00 between sets. The profile also retains long 1K/1.2K race-pace repetitions for other points in a phase.
+- Half and Marathon profiles retain longer threshold and race-pace blocks, with explicit cruise-T options. They do not inherit the 5K/10K repetition ladder.
+- A short plan does not pretend to contain every stimulus. It exposes the most relevant bounded sessions; a longer plan has more room for R, I, cruise T, race pace, and continuous T.
+
+PWA:
+
+- Cache advanced to `mydash-v3-workout-structure-20260719-1`.
+
+Verification completed:
+
+```powershell
+node --check js\domain\training\profiles.js
+node --check js\domain\training\engine-v2.js
+node --check js\coach.js
+node coach_v2_test.js
+```
+
+Tests added:
+
+- 10K 12-week profile reaches >=7 km T when volume permits.
+- 10K 10-week profile reserves three Specific weeks and separates I, race-pace, and T sessions.
+- A multi-set 10K race-pace workout counts all six reps and renders `1:45` and `3:00` recovery text.
+- Decimal minute recovery text is rejected by regression assertion.
+
 ## 2026-07-18 Quality Workload And Tempo/Interval Correction
 
 Status: committed and pushed in `51c17d3`. This affects newly generated plans only.

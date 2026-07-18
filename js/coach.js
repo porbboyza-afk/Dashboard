@@ -440,6 +440,21 @@ function coachSessionDistanceBreakdownText(session){
   ].filter(Boolean);
   return rows.join(' · ');
 }
+function coachFormatDuration(seconds){
+  const total=Math.max(0,Math.round(Number(seconds)||0));
+  return `${Math.floor(total/60)}:${String(total%60).padStart(2,'0')}`;
+}
+function coachSessionStructureText(session){
+  const spec=session?.workoutSpec;
+  const metrics=spec?.intervalMetrics;
+  if(!spec?.repKm||!metrics)return '';
+  const sets=Math.max(1,parseInt(metrics.sets)||parseInt(spec.sets)||1);
+  const repsPerSet=Math.max(1,parseInt(metrics.repsPerSet)||parseInt(spec.repsPerSet)||parseInt(spec.reps)||1);
+  const work=Number.isFinite(metrics.workDurationMinutes)?coachFormatDuration(metrics.workDurationMinutes*60):'';
+  const recovery=Number.isFinite(metrics.recoveryMinutes)?coachFormatDuration(metrics.recoveryMinutes*60):'';
+  const shape=sets>1?`${sets} sets x ${repsPerSet} reps`:`${repsPerSet} reps`;
+  return [shape,work?`work ${work}`:'',recovery?`recovery ${recovery}`:''].filter(Boolean).join(' · ');
+}
 function coachSessionDetails(type,dist,goalProfile,week=0){
   const targetPace=goalProfile?.targetPace||4.8;
   const easyPace=formatPace(targetPace+1.0);
@@ -864,6 +879,7 @@ function renderCoachTracking(){
       <div class="coach-session-desc">${escapeHTML(displayDescription)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
       ${coachSessionDistanceBreakdownText(s)?`<div class="coach-session-preview"><strong>แบ่งระยะ:</strong> ${escapeHTML(coachSessionDistanceBreakdownText(s))}</div>`:''}
       ${displayDetails.mainSet?`<div class="coach-session-preview"><strong>ชุดหลัก:</strong> ${escapeHTML(displayDetails.mainSet)}</div>`:''}
+      ${coachSessionStructureText(s)?`<div class="coach-session-preview"><strong>โครงสร้าง:</strong> ${escapeHTML(coachSessionStructureText(s))}</div>`:''}
       ${recoveryLine}
       ${s.notes?`<div class="coach-session-note">เหตุผล/หมายเหตุ: ${escapeHTML(hasThaiText(s.notes)?s.notes:'ทำตามรายละเอียดก่อนวิ่ง และปรับลดถ้าร่างกายไม่พร้อม')}</div>`:''}${actualLine}</div>
       <div class="coach-session-actions">
@@ -903,6 +919,7 @@ function showCoachSessionDetail(index){
     ${row('ชุดหลัก',d.mainSet)}
     ${row('คูลดาวน์',d.cooldown)}
     ${row('แบ่งระยะ',coachSessionDistanceBreakdownText(s))}
+    ${coachSessionStructureText(s)?row('โครงสร้าง',coachSessionStructureText(s)):''}
     ${row('วิธีวิ่ง',d.execution)}
     ${row('เกณฑ์ว่าวิ่งถูกต้อง',d.successCriteria)}
     ${row('ความหนัก',d.intensity)}
