@@ -2,7 +2,11 @@
   'use strict';
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[char]));
   const typeClass = type => ['Tempo','Interval'].includes(type) ? 'quality' : type === 'Long' ? 'long' : type === 'Recovery' ? 'recovery' : type === 'Rest' ? 'rest' : 'easy';
-  const label = type => ({Easy:'Easy aerobic',Recovery:'Recovery run',Tempo:'Tempo',Interval:'Intervals',Long:'Long run',Rest:'Rest / recovery'}[type] || type || 'Session');
+  const label = session => {
+    const intent=session?.workoutSpec?.intent||session?.intent;
+    const quality={speed_skill:'Strides',hill_strength:'Hill strength',repetition:'R pace',vo2:'I pace',threshold:'T pace',race_specific:'Race-specific'}[intent];
+    return quality||({Easy:'Easy aerobic',Recovery:'Recovery run',Tempo:'Tempo',Interval:'Intervals',Long:'Long run',Rest:'Rest / recovery'}[session?.type] || session?.type || 'Session');
+  };
   const dateText = date => new Date(`${date}T12:00:00`).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
 
   function renderStudioCoachBoard(plan) {
@@ -24,7 +28,9 @@
         const done = !!plan.completedDates?.[session.date] || activities.some(activity => activity.date === session.date);
         const todayClass = session.date === today ? ' is-today' : '';
         const action = session.type === 'Rest' ? '' : `<div class="studio-coach-actions"><button onclick="showCoachSessionDetail(${plan.sessions.indexOf(session)})">Details</button>${!done ? `<button onclick="markDone('${session.date}')">Done</button>` : ''}</div>`;
-        return `<article class="studio-coach-session ${typeClass(session.type)}${todayClass}${done ? ' is-done' : ''}"><small>${dateText(session.date)}</small><b>${escapeHtml(label(session.type))}</b><p>${escapeHtml(session.targetDist > 0 ? `${session.targetDist} km` : session.recoveryAdvice?.summary || 'Recovery')}</p>${session.targetHR ? `<em>${escapeHtml(session.targetHR)}</em>` : ''}${action}</article>`;
+        const breakdown=session.workoutSpec?.distanceBreakdown;
+        const distance=breakdown?.mainKm>0?`Main ${breakdown.mainKm.toFixed(1)} km · Total ${breakdown.totalKm.toFixed(1)} km`:session.targetDist > 0 ? `Total ${session.targetDist} km` : session.recoveryAdvice?.summary || 'Recovery';
+        return `<article class="studio-coach-session ${typeClass(session.type)}${todayClass}${done ? ' is-done' : ''}"><small>${dateText(session.date)}</small><b>${escapeHtml(label(session))}</b><p>${escapeHtml(distance)}</p>${session.targetHR ? `<em>${escapeHtml(session.targetHR)}</em>` : ''}${action}</article>`;
       }).join('')}</div></section>`;
     }).join('');
     target.classList.add('studio-coach-legacy-list');

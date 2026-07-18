@@ -402,6 +402,12 @@
     const workKm=source.repKm?round(source.reps*source.repKm,1):0;
     return {...source,structure:'repetitions',workKm};
   }
+  function specsForIntent(profile,intent){
+    return [...(profile.buildIntervals||[]),...(profile.specificIntervals||[])].filter(spec=>spec.intent===intent);
+  }
+  function nextProgress(progress,position){
+    return Math.min(1,Math.max(0,progress+(position>1?.2:0)));
+  }
   function danielsClassForSpec(profile,spec){
     if(!spec)return '';
     if(spec.intent==='threshold')return 'T';
@@ -442,19 +448,31 @@
         : {intent:'hill_strength',structure:'repetitions',reps:6+Math.min(4,weekIndex),repSeconds:30,recoverySeconds:90,intensity:'hill_controlled',workKm:0};
     }
     const shortRoadGoal=['5K','10K'].includes(profile.key);
-    if(phase==='Build'&&shortRoadGoal)return intervalSpec(profile.repetitionIntervals||profile.buildIntervals,progress);
+    const repetition=profile.repetitionIntervals||[];
+    const vo2=specsForIntent(profile,'vo2');
+    const raceSpecific=specsForIntent(profile,'race_specific');
+    if(phase==='Build'&&shortRoadGoal){
+      // R work builds economy, but repeating it alone is not a 5K/10K
+      // progression. Alternate it with T and I stimuli as the phase develops.
+      const cycle=phasePosition%4;
+      if(cycle===0||cycle===2)return intervalSpec(repetition.length?repetition:profile.buildIntervals,phasePosition<2?0:1);
+      if(cycle===1)return thresholdSpec(profile,progress,'continuous');
+      return intervalSpec(vo2.length?vo2:profile.buildIntervals,nextProgress(progress,phasePosition));
+    }
     if(phase==='Build'){
       if(phasePosition%3===0)return thresholdSpec(profile,progress,'continuous');
       if(phasePosition%3===1)return intervalSpec(profile.buildIntervals,progress);
       return thresholdSpec(profile,progress,'repetitions');
     }
     if(phase==='Specific'&&shortRoadGoal){
-      if(phasePosition===0)return intervalSpec(profile.buildIntervals,progress);
+      // Specific work alternates I pace and continuous threshold work. This
+      // avoids a short-race plan becoming only a repetition workout sequence.
+      if(phasePosition%2===0)return intervalSpec(vo2.length?vo2:profile.buildIntervals,Math.max(.6,nextProgress(progress,phasePosition)));
       return thresholdSpec(profile,Math.max(.65,progress),'continuous');
     }
     if(phase==='Specific'){
       if(phasePosition%3===0)return thresholdSpec(profile,Math.max(.65,progress),'continuous');
-      return profile.specificIntervals.length?intervalSpec(profile.specificIntervals,progress):thresholdSpec(profile,progress,'continuous');
+      return raceSpecific.length?intervalSpec(raceSpecific,progress):thresholdSpec(profile,progress,'continuous');
     }
     if(phase==='Taper'){
       const source=profile.specificIntervals[0]||profile.buildIntervals[0];

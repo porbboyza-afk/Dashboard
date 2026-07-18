@@ -64,6 +64,15 @@ async function main() {
       assert.equal(breakdown.mainKm,session.workoutSpec.qualityDistanceKm,`${distance}: main distance is quality distance only`);
       assert(breakdown.warmupKm>0&&breakdown.cooldownKm>0,`${distance}: quality session has warm-up and cool-down`);
     });
+    const classes=new Set(qualitySessions.map(session=>session.workoutSpec.danielsClass));
+    if(['5K','10K'].includes(distance)){
+      assert(classes.has('R')&&classes.has('I')&&classes.has('T'),`${distance}: uses distinct R, I, and T stimuli`);
+      assert(plan.sessions.some(session=>session.phase==='Build'&&session.workoutSpec?.intent==='threshold'&&session.workoutSpec.structure==='continuous'),`${distance}: Build includes continuous threshold work`);
+    }
+    if(['Half','Marathon'].includes(distance)){
+      assert(plan.sessions.some(session=>session.workoutSpec?.intent==='threshold'&&session.workoutSpec.structure==='continuous'),`${distance}: contains continuous threshold work`);
+      assert(plan.sessions.some(session=>session.workoutSpec?.intent==='race_specific'),`${distance}: contains race-specific work`);
+    }
   }
 
   const ten = plans['10K'];

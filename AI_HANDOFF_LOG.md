@@ -1,5 +1,61 @@
 # AI Handoff Log
 
+## 2026-07-18 All-Distance Quality Progression Correction
+
+Status: implemented locally and verified. This updates only newly generated plans. Existing saved plans are not regenerated or silently changed.
+
+Why this was required:
+
+- The user correctly identified that the previous 5K/10K progression could appear as `30 sec -> 200 m -> 300 m -> 400 m` under one generic Interval label.
+- These are not one workout class: short strides/hills are economy work, R pace is repetition work, I pace is VO2-oriented interval work, T pace is threshold work, and race-specific work has its own pace purpose.
+- The former short-road Build logic repeated R sessions. With a 5% weekly-volume R cap, a prescribed `6 x 300 m` could be capped to `5 x 300 m` (1.5 km), less main work than the preceding `8 x 200 m` (1.6 km). This was an unhelpful progression signal, even though both individually respected the cap.
+
+Methodology source checked:
+
+- `C:\Users\pucca\Desktop\dokumen.pub_daniels-running-formula-4.epub`, Chapters 13, 15, and 16.
+- Engine safety ceilings remain: R <= 5% of weekly mileage, I <= 8% and <= 10 km, T <= 10%. These are ceilings for a session, not a reason to label an underdosed or unvaried plan as appropriate.
+- The source distinguishes continuous T work and cruise intervals. Both remain valid; continuous T is deliberately retained rather than treating all tempo as split repetitions.
+
+Engine changes:
+
+- `js/domain/training/engine-v2.js` now uses semantic quality rotation instead of a short-road R-only Build sequence:
+  - Base: strides/hill strength only.
+  - 5K/10K Build: R -> continuous T -> longer R -> I, bounded by the available phase length.
+  - 5K/10K Specific: I and continuous T alternate; specific I selects the later available I prescription rather than restarting at the shortest rep after Build.
+  - Half/Marathon retain continuous T, cruise-T/repetition, and race-specific rotation.
+- This is still scaled to selected plan length. A short plan cannot safely contain every possible workout progression; it will expose the most relevant bounded stimuli rather than inventing extra quality days.
+- Added `specsForIntent()` so I and race-specific choices are selected by their actual intent instead of relying on a mixed profile list.
+
+Profile changes:
+
+- 5K R sequence is now `6 x 200 m -> 4 x 300 m`; 10K R sequence is `8 x 200 m -> 4 x 400 m`.
+- These preserve the intended R-volume cap around the default intermediate weekly volume while increasing rep length. They avoid a nominally advanced prescription being cut into less work than the prior week.
+
+UI changes:
+
+- `js/coach.js` and `js/studio-coach.js` now show `Strides`, `Hill strength`, `R pace`, `I pace`, `T pace`, or `Race-specific` from `workoutSpec.intent` instead of calling every quality session Interval/Tempo.
+- Studio board also shows `Main X km · Total Y km` for quality sessions with a distance breakdown.
+
+Validation added:
+
+- `coach_v2_test.js` now requires standard 5K and 10K plans to contain distinct R, I, and T stimuli and at least one continuous T Build session.
+- Half and Marathon plans must contain continuous T plus race-specific work.
+- Existing assertions still cover quality caps, pace anchors, long-run progression, race week, and explicit distance-breakdown arithmetic across Base, 5K, 10K, Half, and Marathon.
+
+Important operational limitation:
+
+- Do not conclude from a test fixture that the athlete should run more quality distance. The engine must use the authenticated athlete's current 30/90-day volume, long-run history, HR settings, benchmark, readiness, and later verified Garmin dynamics availability.
+- The plan review AI may explain suitability and missing evidence, but it must not autonomously raise intensity or create extra quality days.
+
+Verification completed:
+
+```powershell
+node --check js\domain\training\engine-v2.js
+node --check js\coach.js
+node --check js\studio-coach.js
+node coach_v2_test.js
+```
+
 ## 2026-07-18 Coach Distance Audit And Garmin Dynamics Discovery
 
 Status: implemented locally and verified. No existing plan, raw Garmin activity, or Pordell sync job was overwritten.

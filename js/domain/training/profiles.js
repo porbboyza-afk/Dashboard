@@ -40,8 +40,8 @@
         {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'interval'}
       ],
       repetitionIntervals:[
-        {intent:'repetition',reps:8,repKm:.2,recoverySeconds:100,intensity:'repetition'},
-        {intent:'repetition',reps:6,repKm:.3,recoverySeconds:120,intensity:'repetition'}
+        {intent:'repetition',reps:6,repKm:.2,recoverySeconds:100,intensity:'repetition'},
+        {intent:'repetition',reps:4,repKm:.3,recoverySeconds:120,intensity:'repetition'}
       ],
       specificIntervals:[
         {intent:'race_specific',reps:5,repKm:.8,recoverySeconds:120,intensity:'current_5k'},
@@ -64,7 +64,7 @@
       ],
       repetitionIntervals:[
         {intent:'repetition',reps:8,repKm:.2,recoverySeconds:100,intensity:'repetition'},
-        {intent:'repetition',reps:6,repKm:.3,recoverySeconds:120,intensity:'repetition'}
+        {intent:'repetition',reps:4,repKm:.4,recoverySeconds:120,intensity:'repetition'}
       ],
       specificIntervals:[
         {intent:'race_specific',reps:5,repKm:1,recoverySeconds:105,intensity:'current_10k'},

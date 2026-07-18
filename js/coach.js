@@ -399,6 +399,14 @@ function hasThaiText(value){
 function coachSessionTypeThai(type){
   return {Easy:'วิ่งเบา',Tempo:'เทมโป',Interval:'อินเทอร์วัล',Long:'วิ่งยาว',Recovery:'ฟื้นตัว',Rest:'พัก'}[type]||'วิ่งเบา';
 }
+function coachSessionQualityLabel(session){
+  const intent=session?.workoutSpec?.intent||session?.intent;
+  return {
+    speed_skill:'Strides',hill_strength:'Hill strength',repetition:'R pace',
+    vo2:'I pace',threshold:'T pace',race_specific:`${window._coachPlan?.goalProfile?.distance||'Race'} pace`,
+    steady:'Steady'
+  }[intent]||'';
+}
 function coachSessionDistanceBreakdown(session){
   const raw=session?.workoutSpec?.distanceBreakdown;
   const value=key=>{const number=parseFloat(raw?.[key]);return Number.isFinite(number)&&number>=0?number:null;};
@@ -844,7 +852,7 @@ function renderCoachTracking(){
     const phaseLabel=coachPhaseThai(s.phase||coachPhaseForDate(s.date,plan.startDate,plan.totalWeeks));
     const displayDetails=coachSessionDisplayDetails(s,index);
     const displayDescription=coachSessionDisplayDescription(s,index);
-    const displayType=coachSessionTypeThai(s.type);
+    const displayType=coachSessionQualityLabel(s)||coachSessionTypeThai(s.type);
     const recoveryLine=s.recoveryAdvice?.summary?`<div class="coach-session-note">Recovery: ${escapeHTML(s.recoveryAdvice.summary)}</div>`:'';
     let actualLine='';
     if(actualWks.length){const aw=actualWks[0];actualLine=`<div style="font-size:11px;color:var(--green);margin-top:5px;font-weight:600;font-family:var(--font-mono)">📊 ${aw.dist}km${aw.avgPace?' · '+formatPace(aw.avgPace)+'/km':''}${aw.hr?' · ♥'+aw.hr:''}</div>`;if(s.targetDist>0&&aw.dist>0){const diff=((parseFloat(aw.dist)-s.targetDist)/s.targetDist*100).toFixed(0);const c=Math.abs(diff)<=10?'var(--green)':(diff>0?'var(--accent)':'var(--orange)');actualLine+=`<div style="font-size:10px;color:${c};margin-top:2px;font-family:var(--font-mono)">${diff>0?'↑':'↓'} ${Math.abs(diff)}% from target</div>`;}}
@@ -871,7 +879,7 @@ function showCoachSessionDetail(index){
   const s=window._coachRenderedSessions?.[index];if(!s)return;
   const d=coachSessionDisplayDetails(s,index);
   const title=coachSessionDisplayDescription(s,index);
-  const typeThai=coachSessionTypeThai(s.type);
+  const typeThai=coachSessionQualityLabel(s)||coachSessionTypeThai(s.type);
   const overlay=document.createElement('div');
   overlay.id='coach-session-detail-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:950;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';

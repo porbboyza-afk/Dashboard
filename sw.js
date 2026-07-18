@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-coach-distance-audit-20260718-1';
+const CACHE_NAME = 'mydash-v3-coach-quality-progression-20260718-1';
 const APP_SHELL = [
   './',
   './index.html',
