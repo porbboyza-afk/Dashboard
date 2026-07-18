@@ -1,5 +1,9 @@
 from .errors import classify_error
 from datetime import date, timedelta
+import tempfile
+import zipfile
+from pathlib import Path
+from fitdecode.exceptions import FitError
 from .sync_store import SyncStore, activity_window
 from .normalize import canonical_activity
 from .activity_detail import normalize_activity_detail
@@ -34,10 +38,16 @@ class ActivitySync:
                         fit_path = self.store.database.parent / "fit-archive" / f"{source_id}.fit"
                         try:
                             fit_path.parent.mkdir(parents=True, exist_ok=True)
-                            fit_path.write_bytes(self.client.call("download_activity", source_id, download_format))
-                            track = parse_fit_track(fit_path)
-                            detail["track"] = track
-                            detail["coverage"].update(track["coverage"])
+                            payload = self.client.call("download_activity", source_id, download_format)
+                            fit_path.write_bytes(payload)
+                            try:
+                                track = self._parse_original_track(fit_path)
+                            except (FitError, OSError, ValueError, zipfile.BadZipFile):
+                                # A map track is optional; Garmin occasionally returns a non-FIT export.
+                                track = None
+                            if track is not None:
+                                detail["track"] = track
+                                detail["coverage"].update(track["coverage"])
                         finally:
                             fit_path.unlink(missing_ok=True)
                 self.store.upsert_activity_detail(detail)
@@ -45,3 +55,19 @@ class ActivitySync:
         except Exception as exc:
             self.store.fail_run(run_id, classify_error(exc).value)
             raise
+
+    @staticmethod
+    def _parse_original_track(path: Path) -> dict:
+        if not zipfile.is_zipfile(path):
+            return parse_fit_track(path)
+        with zipfile.ZipFile(path) as archive:
+            fit_members = [member for member in archive.namelist() if member.lower().endswith(".fit")]
+            if not fit_members:
+                raise ValueError("downloaded activity archive did not contain a FIT file")
+            with archive.open(fit_members[0]) as source, tempfile.NamedTemporaryFile(suffix=".fit", delete=False) as target:
+                target.write(source.read())
+                temp_path = Path(target.name)
+        try:
+            return parse_fit_track(temp_path)
+        finally:
+            temp_path.unlink(missing_ok=True)
