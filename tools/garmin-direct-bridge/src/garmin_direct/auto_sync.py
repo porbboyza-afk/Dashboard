@@ -4,7 +4,7 @@ import shutil
 import subprocess
 import time
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from html import escape
 from pathlib import Path
 from typing import Any
@@ -149,8 +149,21 @@ def write_status_dashboard(paths: BridgePaths, event: dict[str, Any]) -> Path:
     succeeded = status == "success"
     title = "SYNCED" if succeeded else "SYNC FAILED" if status == "failed" else "SYNC STATUS"
     color = "#26a269" if succeeded else "#c01c28" if status == "failed" else "#b7791f"
+
+    def thailand_time(value: Any) -> str:
+        if not value:
+            return "Not recorded"
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            thailand = timezone(timedelta(hours=7), name="ICT")
+            return parsed.astimezone(thailand).strftime("%d %b %Y, %H:%M:%S ICT")
+        except ValueError:
+            return str(value)
+
     metrics = [
-        ("Last finished", event.get("finishedAt") or "Not recorded"),
+        ("Last finished", thailand_time(event.get("finishedAt"))),
         ("Activities fetched", event.get("activityFetched") or 0),
         ("Local activities", event.get("activityTotal") or 0),
         ("Wellness domains", event.get("wellnessDomains") or 0),

@@ -37,6 +37,7 @@ class AutoSyncTests(unittest.TestCase):
             html = target.read_text(encoding="utf-8")
             self.assertIn("SYNCED", html)
             self.assertIn("Firebase updates", html)
+            self.assertIn("17:12:22 ICT", html)
             self.assertNotIn("password", html.lower())
 
     def test_reported_rounded_pair_is_cross_source_duplicate(self):
