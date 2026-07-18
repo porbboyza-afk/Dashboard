@@ -356,7 +356,19 @@
     if(spec.repKm)return `${spec.reps} x ${spec.repKm<1?Math.round(spec.repKm*1000)+' ม.':spec.repKm+' กม.'} @ ${paceLabel(pace,range)}/กม. พัก ${Math.round(spec.recoverySeconds/60*10)/10} นาที`;
     return `${spec.reps} x ${spec.repSeconds} วินาที พัก ${Math.round(spec.recoverySeconds/60*10)/10} นาที`;
   }
-  function detailsFor(spec,totalKm,pace,effortTarget=null){
+  function qualityDistanceBreakdown(spec,phase,easyPace){
+    const warmupKm=phase==='Taper'?1.5:2;
+    const cooldownKm=phase==='Taper'?0.8:1;
+    const mainKm=round(spec.workKm||0,1);
+    const recoveryKm=spec.reps>1&&spec.recoverySeconds
+      ? round((spec.reps-1)*spec.recoverySeconds/(Math.max(3,easyPace||6)*60),1)
+      : 0;
+    const minimumTotal=phase==='Taper'?3:3.5;
+    const prescribedKm=round(warmupKm+mainKm+recoveryKm+cooldownKm,1);
+    const totalKm=round(Math.max(minimumTotal,prescribedKm),1);
+    return {warmupKm,mainKm,recoveryKm,cooldownKm,easyKm:round(Math.max(0,totalKm-prescribedKm),1),totalKm};
+  }
+  function detailsFor(spec,totalKm,pace,effortTarget=null,distanceBreakdown=null){
     const range=effortTarget?.paceFast&&effortTarget?.paceSlow?{fast:effortTarget.paceFast,slow:effortTarget.paceSlow}:null;
     const main=segmentSummary(spec,pace,range);
     const purpose={
@@ -368,13 +380,15 @@
       steady:'เพิ่มความทนทานแบบต่อเนื่องโดยไม่ขึ้นถึง threshold'
     }[spec.intent]||'สร้างความฟิตตามเป้าหมายของสัปดาห์';
     return {
-      warmup:'วิ่งเบา 1.5-2 กม. ตามด้วย mobility และ strides สั้นตามความพร้อม',
+      warmup:distanceBreakdown?`วิ่งเบา ${distanceBreakdown.warmupKm.toFixed(1)} กม. ตามด้วย mobility และ strides สั้นตามความพร้อม`:'วิ่งเบา 1.5-2 กม. ตามด้วย mobility และ strides สั้นตามความพร้อม',
       mainSet:main,
-      cooldown:'วิ่งเบา 1-1.5 กม. และจบโดยไม่เร่งท้าย',
+      cooldown:distanceBreakdown?`วิ่งเบา ${distanceBreakdown.cooldownKm.toFixed(1)} กม. และจบโดยไม่เร่งท้าย`:'วิ่งเบา 1-1.5 กม. และจบโดยไม่เร่งท้าย',
       execution:`${purpose}${effortTarget?.hrMax?` คุม HR ไม่เกินประมาณ ${effortTarget.hrMax} bpm`:''} ถ้า pace, HR หรือฟอร์มเริ่มควบคุมไม่ได้ ให้ลดความเร็วหรือจบชุด`,
       successCriteria:'ช่วงงานหลักสม่ำเสมอ จบแล้วยังควบคุมฟอร์มได้ และไม่มีอาการเจ็บเพิ่ม',
       intensity:spec.intent==='speed_skill'?'เบา + เร่งสั้น':'คุณภาพแบบควบคุม',
-      targetDescription:`${purpose} รวมระยะประมาณ ${totalKm.toFixed(1)} กม.`
+      targetDescription:distanceBreakdown
+        ? `${purpose} · งานหลัก ${distanceBreakdown.mainKm.toFixed(1)} กม. · ระยะรวม ${totalKm.toFixed(1)} กม. (รวมวอร์ม/พัก/คูลดาวน์)`
+        : `${purpose} รวมระยะประมาณ ${totalKm.toFixed(1)} กม.`
     };
   }
   function thresholdSpec(profile,progress,structure='continuous'){
@@ -466,12 +480,13 @@
     const effortTarget=spec.intent==='threshold'?athlete.effortTargets.tempo:null;
     const targetPaceRange=effortTarget?`${formatPace(effortTarget.paceFast)}-${formatPace(effortTarget.paceSlow)}`:'';
     const targetHR=spec.intent==='threshold'?(effortTarget?.hrMax||''):'';
-    const totalKm=round(Math.max(phase==='Taper'?3:3.5,(spec.workKm||1)+(phase==='Taper'?2:3)),1);
-    const details=detailsFor(spec,totalKm,pace,effortTarget);
+    const distanceBreakdown=qualityDistanceBreakdown(spec,phase,athlete.anchors.easy);
+    const totalKm=distanceBreakdown.totalKm;
+    const details=detailsFor(spec,totalKm,pace,effortTarget,distanceBreakdown);
     return {
       type:legacyTypeForIntent(spec.intent),intent:spec.intent,targetDist:totalKm,targetPace:pace?formatPace(pace):'',targetPaceRange,targetHR,
       priority:['threshold','vo2','repetition','race_specific'].includes(spec.intent)?'key':'normal',
-      workoutSpec:{...spec,qualityDistanceKm:spec.workKm||0,danielsClass:danielsPolicy.qualityClass,danielsCapKm:danielsPolicy.capKm,danielsRule:danielsPolicy.rule,totalDistanceKm:totalKm,intensityTarget:{basis:effortTarget?.basis||spec.intensity,paceMinPerKm:pace?round(pace,3):null,paceFast:effortTarget?.paceFast||null,paceSlow:effortTarget?.paceSlow||null,hrMin:effortTarget?.hrMin||null,hrMax:effortTarget?.hrMax||null}},
+      workoutSpec:{...spec,qualityDistanceKm:spec.workKm||0,danielsClass:danielsPolicy.qualityClass,danielsCapKm:danielsPolicy.capKm,danielsRule:danielsPolicy.rule,totalDistanceKm:totalKm,distanceBreakdown,intensityTarget:{basis:effortTarget?.basis||spec.intensity,paceMinPerKm:pace?round(pace,3):null,paceFast:effortTarget?.paceFast||null,paceSlow:effortTarget?.paceSlow||null,hrMin:effortTarget?.hrMin||null,hrMax:effortTarget?.hrMax||null}},
       details,
       description:details.targetDescription
     };
@@ -691,6 +706,16 @@
       const weeklyKm=weeklyTargets[(session.week||1)-1]||0;
       const danielsPolicy=danielsQualityCap(profile,session.workoutSpec,weeklyKm,session.phase);
       if(danielsPolicy.rule&&session.workoutSpec?.qualityDistanceKm>danielsPolicy.capKm+.15)errors.push(`daniels_quality_cap_exceeded:${session.sessionId}`);
+      if(['Tempo','Interval'].includes(session.type)){
+        const breakdown=session.workoutSpec?.distanceBreakdown;
+        if(!breakdown){warnings.push(`quality_distance_breakdown_missing:${session.sessionId}`);}
+        else{
+          const breakdownTotal=['warmupKm','mainKm','recoveryKm','cooldownKm','easyKm'].reduce((sum,key)=>sum+(parseFloat(breakdown[key])||0),0);
+          if(Math.abs(breakdownTotal-(parseFloat(session.targetDist)||0))>.15)errors.push(`quality_distance_breakdown_mismatch:${session.sessionId}`);
+          if(Math.abs((parseFloat(breakdown.mainKm)||0)-(parseFloat(session.workoutSpec?.qualityDistanceKm)||0))>.15)errors.push(`quality_main_distance_mismatch:${session.sessionId}`);
+          if((parseFloat(breakdown.warmupKm)||0)<=0||(parseFloat(breakdown.cooldownKm)||0)<=0)errors.push(`quality_warmup_cooldown_missing:${session.sessionId}`);
+        }
+      }
       if(session.type!=='Rest'&&!session.workoutSpec)errors.push(`missing_workout_spec:${session.sessionId}`);
       if(session.type!=='Rest'&&isUnavailable(session.date,unavailable))errors.push(`session_on_unavailable_date:${session.date}`);
     });

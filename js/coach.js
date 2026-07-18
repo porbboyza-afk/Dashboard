@@ -131,7 +131,7 @@ function buildCoachContext(plan=null){
   const today=toLocalDateStr();
   const since=days=>activities.filter(w=>new Date((w.date||'')+'T12:00:00')>=dateDaysAgo(days-1));
   const volume=rows=>rows.reduce((sum,w)=>sum+(parseFloat(w.dist)||0),0);
-  const latest=activities.slice(0,12).map(w=>`${w.date} ${w.type||'run'} ${w.dist||0}km ${Math.round(w.time||0)}min${w.avgPace?' pace '+formatPace(w.avgPace):''}${w.hr?' HR'+w.hr:''}${w.rpe?' RPE'+w.rpe:''} ${sourceMeta(w).label}`).join('\n');
+  const latest=activities.slice(0,12).map(w=>`${w.date} ${w.type||'run'} ${w.dist||0}km ${Math.round(w.time||0)}min${w.avgPace?' pace '+formatPace(w.avgPace):''}${w.hr?' HR'+w.hr:''}${w.cad?' Cad '+w.cad:''}${w.stride?' stride '+w.stride:''}${w.rpe?' RPE'+w.rpe:''} ${sourceMeta(w).label}`).join('\n');
   const wellnessRows=wellness.slice(0,14).map(r=>`${r.date}: sleep ${r.sleepHours??'-'}h, RHR ${r.restingHR??'-'}, HRV ${r.hrv??'-'}, SpO2 ${r.spo2??'-'}, fatigue ${r.fatigue??'-'}, pain ${r.soreness??'-'}, status ${r.healthStatus||'-'}`).join('\n');
   return {
     today,startDate,endDate,totalWeeks,goalProfile,readiness,
@@ -141,7 +141,23 @@ function buildCoachContext(plan=null){
     latestActivities:latest||'none',
     wellnessRows:wellnessRows||'none',
     phaseSchedule:coachPhaseSchedule(startDate,totalWeeks),
-    planSummary:plan?.sessions?.slice(0,18).map(s=>`${s.date} ${s.phase||coachPhaseForDate(s.date,startDate,totalWeeks)} ${s.type} ${s.targetDist||0}km ${s.targetPace||''} ${s.notes||''}`).join('\n')||'none'
+    planSummary:plan?.sessions?.slice(0,18).map(s=>`${s.date} ${s.phase||coachPhaseForDate(s.date,startDate,totalWeeks)} ${s.type} ${coachSessionDistanceSummary(s)||`${s.targetDist||0}km`} ${s.targetPace||''} ${s.notes||''}`).join('\n')||'none'
+  };
+}
+function coachPlanSuitabilityFacts(plan){
+  const activities=getAllActivities();
+  const since90=activities.filter(activity=>new Date(`${activity.date||''}T12:00:00`)>=dateDaysAgo(89));
+  const quality=(plan.sessions||[]).filter(session=>['Tempo','Interval'].includes(session.type)).map(session=>{
+    const breakdown=coachSessionDistanceBreakdown(session);
+    return {date:session.date,phase:session.phase,type:session.type,mainKm:breakdown?.mainKm??session.workoutSpec?.qualityDistanceKm??null,totalKm:breakdown?.totalKm??session.targetDist??null,danielsClass:session.workoutSpec?.danielsClass||'',danielsCapKm:session.workoutSpec?.danielsCapKm??null};
+  });
+  const lapEvidence=since90.filter(activity=>window.MyDashActivityAnalysis?.analyze?.(activity)?.laps?.length).length;
+  return {
+    goal:{distance:plan.goalProfile?.distance||'',targetTime:plan.goalProfile?.targetTime||'',benchmark:plan.goalProfile?.benchmark||'',goalRisk:plan.athleteProfile?.goalRisk||'unknown',improvementPct:plan.athleteProfile?.improvementPct??null},
+    history:{recentWeeklyKm:plan.athleteProfile?.currentWeeklyKm??null,longestRecentRunKm:plan.athleteProfile?.longestRecentRunKm??null,activities90d:since90.length,paceBasis:plan.athleteProfile?.paceBasis||'',volumeBasis:plan.athleteProfile?.volumeBasis||'',confidence:plan.athleteProfile?.confidence||''},
+    measurements:{averageHrSessions:since90.filter(activity=>Number.isFinite(+activity.hr)).length,cadenceSessions:since90.filter(activity=>Number.isFinite(+activity.cad)).length,strideSessions:since90.filter(activity=>Number.isFinite(+activity.stride)).length,lapEvidenceSessions:lapEvidence},
+    guardrails:{validation:plan.validation?.errors||[],warnings:plan.validation?.warnings||[],weeklyTargetsKm:plan.validation?.weeklyTargetsKm||[],weeklyActualKm:plan.validation?.weeklyActualKm||[]},
+    qualitySessions:quality
   };
 }
 function formatCoachContext(ctx){
@@ -382,6 +398,39 @@ function hasThaiText(value){
 }
 function coachSessionTypeThai(type){
   return {Easy:'วิ่งเบา',Tempo:'เทมโป',Interval:'อินเทอร์วัล',Long:'วิ่งยาว',Recovery:'ฟื้นตัว',Rest:'พัก'}[type]||'วิ่งเบา';
+}
+function coachSessionDistanceBreakdown(session){
+  const raw=session?.workoutSpec?.distanceBreakdown;
+  const value=key=>{const number=parseFloat(raw?.[key]);return Number.isFinite(number)&&number>=0?number:null;};
+  const total=parseFloat(session?.targetDist);
+  if(raw&&['warmupKm','mainKm','recoveryKm','cooldownKm','easyKm','totalKm'].every(key=>value(key)!==null)){
+    return {warmupKm:value('warmupKm'),mainKm:value('mainKm'),recoveryKm:value('recoveryKm'),cooldownKm:value('cooldownKm'),easyKm:value('easyKm'),totalKm:value('totalKm')};
+  }
+  const main=parseFloat(session?.workoutSpec?.qualityDistanceKm);
+  if(['Tempo','Interval'].includes(session?.type)&&Number.isFinite(main)&&main>=0&&Number.isFinite(total)){
+    return {mainKm:main,totalKm:total,legacy:true};
+  }
+  return null;
+}
+function coachSessionDistanceSummary(session){
+  const breakdown=coachSessionDistanceBreakdown(session);
+  if(!breakdown)return session?.targetDist>0?`รวม ${session.targetDist} กม.`:'';
+  const main=breakdown.mainKm>0?`งานหลัก ${breakdown.mainKm.toFixed(1)} กม.`:'';
+  return [`รวม ${breakdown.totalKm.toFixed(1)} กม.`,main].filter(Boolean).join(' · ');
+}
+function coachSessionDistanceBreakdownText(session){
+  const breakdown=coachSessionDistanceBreakdown(session);
+  if(!breakdown)return '';
+  if(breakdown.legacy)return `งานหลัก ${breakdown.mainKm.toFixed(1)} กม. · รวม ${breakdown.totalKm.toFixed(1)} กม. (รวมวอร์ม/คูลดาวน์; แผนเดิมไม่ได้บันทึกส่วนย่อย)`;
+  const rows=[
+    `วอร์ม ${breakdown.warmupKm.toFixed(1)} กม.`,
+    `งานหลัก ${breakdown.mainKm.toFixed(1)} กม.`,
+    breakdown.recoveryKm>0?`จ๊อกพัก ${breakdown.recoveryKm.toFixed(1)} กม.`:'',
+    breakdown.easyKm>0?`วิ่งเบาเพิ่ม ${breakdown.easyKm.toFixed(1)} กม.`:'',
+    `คูลดาวน์ ${breakdown.cooldownKm.toFixed(1)} กม.`,
+    `รวม ${breakdown.totalKm.toFixed(1)} กม.`
+  ].filter(Boolean);
+  return rows.join(' · ');
 }
 function coachSessionDetails(type,dist,goalProfile,week=0){
   const targetPace=goalProfile?.targetPace||4.8;
@@ -801,8 +850,9 @@ function renderCoachTracking(){
     if(actualWks.length){const aw=actualWks[0];actualLine=`<div style="font-size:11px;color:var(--green);margin-top:5px;font-weight:600;font-family:var(--font-mono)">📊 ${aw.dist}km${aw.avgPace?' · '+formatPace(aw.avgPace)+'/km':''}${aw.hr?' · ♥'+aw.hr:''}</div>`;if(s.targetDist>0&&aw.dist>0){const diff=((parseFloat(aw.dist)-s.targetDist)/s.targetDist*100).toFixed(0);const c=Math.abs(diff)<=10?'var(--green)':(diff>0?'var(--accent)':'var(--orange)');actualLine+=`<div style="font-size:10px;color:${c};margin-top:2px;font-family:var(--font-mono)">${diff>0?'↑':'↓'} ${Math.abs(diff)}% from target</div>`;}}
     return `<div class="${cls}"><div class="plan-day-header"><div class="plan-day-date">${dateStr} · ${escapeHTML(phaseLabel)}</div>${badge}</div>
       <div class="coach-plan-row"><span class="coach-session-icon">${typeEmoji[s.type]||'🏃'}</span>
-      <div class="coach-session-main"><div class="coach-session-title" style="color:${typeColor[s.type]||'var(--text)'}">${displayType}${s.targetDist>0?' · '+s.targetDist+' กม.':''}</div>
+      <div class="coach-session-main"><div class="coach-session-title" style="color:${typeColor[s.type]||'var(--text)'}">${displayType}${coachSessionDistanceSummary(s)?' · '+escapeHTML(coachSessionDistanceSummary(s)):''}</div>
       <div class="coach-session-desc">${escapeHTML(displayDescription)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
+      ${coachSessionDistanceBreakdownText(s)?`<div class="coach-session-preview"><strong>แบ่งระยะ:</strong> ${escapeHTML(coachSessionDistanceBreakdownText(s))}</div>`:''}
       ${displayDetails.mainSet?`<div class="coach-session-preview"><strong>ชุดหลัก:</strong> ${escapeHTML(displayDetails.mainSet)}</div>`:''}
       ${recoveryLine}
       ${s.notes?`<div class="coach-session-note">เหตุผล/หมายเหตุ: ${escapeHTML(hasThaiText(s.notes)?s.notes:'ทำตามรายละเอียดก่อนวิ่ง และปรับลดถ้าร่างกายไม่พร้อม')}</div>`:''}${actualLine}</div>
@@ -830,7 +880,7 @@ function showCoachSessionDetail(index){
     <div class="coach-detail-header">
       <div>
         <div class="card-label">รายละเอียดการซ้อม</div>
-        <div class="coach-detail-title" style="color:${coachDecisionColor(isHardSession(s.type)?'yellow':'green')}">${escapeHTML(typeThai)}${s.targetDist>0?' · '+s.targetDist+' กม.':''}</div>
+        <div class="coach-detail-title" style="color:${coachDecisionColor(isHardSession(s.type)?'yellow':'green')}">${escapeHTML(typeThai)}${coachSessionDistanceSummary(s)?' · '+escapeHTML(coachSessionDistanceSummary(s)):''}</div>
         <div class="text-sm c2 mt-4">${escapeHTML(s.date)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
       </div>
       <button class="coach-detail-close" onclick="document.getElementById('coach-session-detail-overlay').remove()">✕</button>
@@ -842,6 +892,7 @@ function showCoachSessionDetail(index){
     ${row('วอร์มอัพ',d.warmup)}
     ${row('ชุดหลัก',d.mainSet)}
     ${row('คูลดาวน์',d.cooldown)}
+    ${row('แบ่งระยะ',coachSessionDistanceBreakdownText(s))}
     ${row('วิธีวิ่ง',d.execution)}
     ${row('เกณฑ์ว่าวิ่งถูกต้อง',d.successCriteria)}
     ${row('ความหนัก',d.intensity)}
@@ -1028,6 +1079,7 @@ async function reviewPlanAI(){
   const context=buildCoachContext(plan);
   const compact=coachBuildCompactReview(plan);
   const safety=coachSafetyDecision((plan.sessions||[]).find(s=>s.date===today));
+  const suitability=coachPlanSuitabilityFacts(plan);
   const output=document.getElementById('coach-review-output');
   const reply=await askDeepSeek(
     `${formatCoachContext({
@@ -1035,8 +1087,8 @@ async function reviewPlanAI(){
       latestActivities:(context.latestActivities||'').split('\n').slice(0,8).join('\n'),
       wellnessRows:(context.wellnessRows||'').split('\n').slice(0,7).join('\n'),
       planSummary:(context.planSummary||'').split('\n').slice(0,10).join('\n')
-    })}\n\n${compact.summary}\n\nDaily safety decision: ${safety.status} - ${safety.action}\nReasons: ${safety.reasons.join(' | ')}\n\nReview progress and suggest safe adjustments. Do not recommend catch-up doubling. Separate facts from AI estimate. Keep the answer concise.`,
-    `คุณคือโค้ชวิ่งสาย conservative สำหรับเป้าหมายปัจจุบัน: ${plan.goal||context.goalProfile.distance} วิเคราะห์เป็นภาษาไทย ใช้ข้อมูลจริงเท่านั้น ถ้าเป็นการประเมินให้บอกว่า AI estimate`,
+    })}\n\n${compact.summary}\n\nPlan suitability facts (JSON):\n${JSON.stringify(suitability)}\n\nDaily safety decision: ${safety.status} - ${safety.action}\nReasons: ${safety.reasons.join(' | ')}\n\nReview whether this plan fits the stated goal and training history. For every quality session, explicitly separate main quality distance from total distance including warm-up, recovery jog, and cool-down. Explain when a short main set is a Daniels/weekly-volume guard rather than a beginner prescription. Use HR, cadence, lap evidence, wellness, and history only when present; state missing metrics instead of inventing them. Do not recommend catch-up doubling or mutate the plan. Separate facts from AI estimate. Keep the answer concise.`,
+    `คุณคือโค้ชวิ่งที่ตรวจแผนอย่างรอบคอบสำหรับเป้าหมาย: ${plan.goal||context.goalProfile.distance} วิเคราะห์เป็นภาษาไทย ใช้ข้อมูลจริงเท่านั้น ถ้าเป็นการประเมินให้บอกว่า AI estimate`,
     'btn-coach-review',
     'coach-review-output'
   );

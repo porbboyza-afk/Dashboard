@@ -54,6 +54,16 @@ async function main() {
     assert(plan.sessions.filter(session=>session.type!=='Rest').every(session=>session.workoutSpec), `${distance}: workout specs`);
     assert(!plan.sessions.some(session=>session.date===plan.endDate), `${distance}: no session on end/race day`);
     assert.equal(plan.validation.weeklyActualKm.length,plan.totalWeeks,`${distance}: weekly actual volume`);
+    const qualitySessions=plan.sessions.filter(session=>['Tempo','Interval'].includes(session.type));
+    assert(qualitySessions.length>0,`${distance}: quality sessions exist`);
+    qualitySessions.forEach(session=>{
+      const breakdown=session.workoutSpec.distanceBreakdown;
+      assert(breakdown,`${distance}: quality session has explicit distance breakdown`);
+      const total=['warmupKm','mainKm','recoveryKm','cooldownKm','easyKm'].reduce((sum,key)=>sum+breakdown[key],0);
+      assert(Math.abs(total-session.targetDist)<=.15,`${distance}: quality breakdown equals total distance`);
+      assert.equal(breakdown.mainKm,session.workoutSpec.qualityDistanceKm,`${distance}: main distance is quality distance only`);
+      assert(breakdown.warmupKm>0&&breakdown.cooldownKm>0,`${distance}: quality session has warm-up and cool-down`);
+    });
   }
 
   const ten = plans['10K'];

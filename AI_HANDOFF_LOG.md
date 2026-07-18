@@ -1,5 +1,54 @@
 # AI Handoff Log
 
+## 2026-07-18 Coach Distance Audit And Garmin Dynamics Discovery
+
+Status: implemented locally and verified. No existing plan, raw Garmin activity, or Pordell sync job was overwritten.
+
+Problem addressed:
+
+- The Coach card previously showed a single `targetDist` without stating that it was the full session distance. A 6.8 km Tempo day could therefore be mistaken for 6.8 km at Tempo pace even when the intended main quality work was only 3.8 km.
+- The plan engine already enforced Daniels quality caps, but did not persist a numeric warm-up/main/recovery/cool-down breakdown or validate that those components summed to the displayed distance.
+- The old AI plan review had activity and wellness context but did not receive the explicit quality-vs-total distinction or a compact measurement-availability audit.
+
+Coach changes:
+
+- `js/domain/training/engine-v2.js` now stores `workoutSpec.distanceBreakdown` for every newly generated Tempo/Interval session:
+  - `warmupKm`, `mainKm`, `recoveryKm`, `cooldownKm`, `easyKm`, `totalKm`.
+  - Interval recovery jog distance is calculated from the prescribed recovery time and the athlete easy-pace anchor; it is included in total distance instead of being silently omitted.
+  - `mainKm` equals `qualityDistanceKm` exactly. The existing Daniels / phase quality cap still applies only to main quality work, not warm-up/cool-down distance.
+- New validator failures protect all goal profiles (Base, 5K, 10K, Half, Marathon): missing warm-up/cool-down, main-work mismatch, or breakdown-total mismatch.
+- Existing saved V2 plans retain their data. Their Coach card now labels the legacy number as `total` and separately shows the stored main quality distance, while explaining that the old plan did not retain individual sub-distances.
+- New plans show an explicit card/modal breakdown, for example: `Warm-up 2.0 km | Main 3.8 km | Cool-down 1.0 km | Total 6.8 km`.
+- The card title now uses unambiguous ordering: `Tempo · Total 6.8 km · Main 3.8 km`.
+- The AI button is now labelled `ให้ AI ตรวจความเหมาะสมแผน`. Its prompt receives goal/benchmark, history volume and long-run anchor, plan validation results, each quality session's main and total distance, HR/cadence/stride/lap-data availability, recent activity, wellness, and safety/load data. It is instructed to distinguish a Daniels guard from a beginner prescription, never invent missing measurements, and never mutate the plan or prescribe catch-up doubling.
+
+Important plan interpretation:
+
+- A 3.8 km Tempo main set is not automatically a beginner plan. The engine derives the maximum main T/I/R work from the planned weekly volume and the Daniels class cap, then displays the full session separately.
+- Whether that cap is appropriate for this athlete still depends on the actual plan's target, race date, benchmark, last 30/90-day volume, longest run, HR settings, and completed sessions. Use the new AI review on the signed-in plan before changing level, volume, or intensity. Do not automatically increase main-set distance merely because the total session looked short.
+
+Garmin dynamics discovery:
+
+- Earlier statements about Garmin data referred only to what MyDash currently persists. Garmin/FIT can contain substantially richer optional per-record data, depending on device and sensors, including running-dynamics fields such as stride length, vertical oscillation, ground contact time, vertical ratio, running power, and richer HR/cadence streams.
+- The current bridge downloads original FIT files but `fit_track.py` only persists GPS, speed, HR, cadence, and altitude into the web-facing track. `activity_detail.py` also persists only lap pace/HR/cadence/elevation. The additional FIT fields are not proofed absent; they are currently discarded.
+- Next safe step: add a read-only FIT field-inventory command on Pordell that reports field names and non-null counts for already archived FIT files, without uploading raw time-series or changing the scheduled sync. Only after that inventory should MyDash add selected dynamics metrics to a versioned `activity_details` schema. Do not assume every watch/activity contains GCT or vertical oscillation.
+
+Verification completed:
+
+```powershell
+node --check js\domain\training\engine-v2.js
+node --check js\coach.js
+node coach_v2_test.js
+node verify_dashboard.js
+python smoke_test_dashboard.py
+```
+
+Results:
+
+- Coach V2 tests passed, including Base, 5K, 10K, Half, and Marathon plus explicit quality distance-breakdown assertions.
+- Dashboard verifier passed: `Syntax OK: 2 inline scripts, 26 external scripts, manifest, service worker, Apps Script`.
+- Browser smoke passed with no page errors, console errors, or request failures.
+
 ## 2026-07-18 Central Training Analyst, Statistics Context, And Safe Cleanup
 
 Status: implemented locally and verified. This change has not changed raw Garmin, Health Connect, Strava, or manual workout records.
