@@ -100,7 +100,9 @@ async function main() {
   assert(plans['5K'].sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.danielsClass==='I'), '5K: Phase III includes I work');
   assert(plans['5K'].sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.danielsClass==='T'), '5K: Phase IV includes T work');
   assert(plans.Half.sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.repKm>=2), 'Half: longer specific reps');
-  assert(plans.Marathon.sessions.some(session=>session.phase==='Specific'&&session.workoutSpec.qualityDistanceKm>=9), 'Marathon: marathon-specific work block');
+  const marathonSpecific=plans.Marathon.sessions.filter(session=>session.phase==='Specific'&&session.workoutSpec.intent==='race_specific');
+  assert(marathonSpecific.length>0, 'Marathon: marathon-specific work block');
+  assert(marathonSpecific.every(session=>session.workoutSpec.qualityDistanceKm<=session.workoutSpec.enduranceAdjustedCapKm+.15), 'Marathon: specific work respects endurance evidence cap');
   const half=plans.Half;
   const cappedHalfQuality=half.sessions.filter(session=>['T','I','R'].includes(session.workoutSpec?.danielsClass));
   assert(cappedHalfQuality.length>0,'Half: Daniels-capped quality sessions are present');
@@ -140,6 +142,24 @@ async function main() {
   });
   assert.equal(sparseHistoryPlan.validation.valid,true,'Sparse history uses a conservative viable baseline');
   assert.equal(sparseHistoryPlan.athleteProfile.volumeBasis,'insufficient_history_conservative_fallback','Sparse history is not treated as a reliable baseline');
+
+  const fiveKToTenK=engine.createPlan({
+    goal:'5K benchmark to 10K',distance:'10K',targetTime:'49:30',benchmark:'5K 23:30',level:'intermediate',daysPerWeek:4,
+    startDate:'2026-07-13',endDate:'2026-09-07',totalWeeks:8,longRunDay:0,currentWeeklyKm:28,currentWeeklyKmSource:'activity_history',
+    longestRecentRunKm:5,recentActivities:[{date:'2026-07-09',type:'run',purpose:'easy',dist:5,avgPace:6.1,hr:138}],asOfDate:'2026-07-10',now:1783900000005
+  });
+  assert.equal(fiveKToTenK.athleteProfile.benchmark.distanceKm,5,'5K benchmark is parsed as a valid VDOT source');
+  assert.equal(fiveKToTenK.athleteProfile.enduranceReadiness.status,'insufficient','Short history is not treated as 10K endurance evidence');
+  assert.equal(fiveKToTenK.athleteProfile.confidence,'low','Cross-distance gap lowers plan confidence');
+  assert(fiveKToTenK.validation.warnings.includes('cross_distance_endurance_evidence_insufficient'),'Cross-distance evidence warning is surfaced');
+  assert(fiveKToTenK.sessions.filter(session=>['vo2','race_specific'].includes(session.intent)).every(session=>session.workoutSpec.qualityDistanceKm<=session.workoutSpec.enduranceAdjustedCapKm+.15),'I/race-specific work respects cross-distance endurance cap');
+  const supportedFiveKToTenK=engine.createPlan({
+    goal:'Supported 5K benchmark to 10K',distance:'10K',targetTime:'49:30',benchmark:'5K 23:30',level:'intermediate',daysPerWeek:4,
+    startDate:'2026-07-13',endDate:'2026-09-07',totalWeeks:8,longRunDay:0,currentWeeklyKm:38,currentWeeklyKmSource:'activity_history',longestRecentRunKm:10,
+    recentActivities:[{date:'2026-06-20',type:'run',purpose:'long',dist:9,avgPace:6.15,hr:140},{date:'2026-06-29',type:'run',purpose:'long',dist:10,avgPace:6.1,hr:141},{date:'2026-07-07',type:'run',purpose:'easy',dist:8,avgPace:6.05,hr:138}],asOfDate:'2026-07-10',now:1783900000006
+  });
+  assert.equal(supportedFiveKToTenK.athleteProfile.enduranceReadiness.status,'supported','Repeated long runs support using a 5K VDOT for a 10K plan');
+  assert.equal(supportedFiveKToTenK.athleteProfile.enduranceReadiness.qualityScale,1,'Supported endurance does not reduce specific work');
 
   const evidencePlan=engine.createPlan({
     goal:'10K HR grounded plan',distance:'10K',targetTime:'45:00',benchmark:'10K 46:00',

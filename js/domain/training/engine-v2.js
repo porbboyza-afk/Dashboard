@@ -100,6 +100,20 @@
     const longest=rows.reduce((max,activity)=>Math.max(max,parseFloat(activity.dist)||0),0);
     return {weeklyKm:round(total/4,1),longestRunKm:round(longest,1),activities:rows.length};
   }
+  function enduranceReadiness(activities=[],targetDistanceKm,benchmark,asOf=dateString(new Date())){
+    if(!targetDistanceKm||!benchmark||benchmark.distanceKm>=targetDistanceKm)return {status:'not_required',qualityScale:1,longestRunKm:0,sustainedRuns:0,targetRatio:null};
+    const end=parseDate(asOf)||new Date(); const start=new Date(end); start.setDate(start.getDate()-89);
+    const runs=(activities||[]).filter(activity=>{
+      const date=parseDate(activity.date),distance=numeric(activity.dist);
+      return date&&date>=start&&date<=end&&distance&&distance>0&&/run|interval|race|tempo|long/.test(`${activity.type||''} ${activity.purpose||''} ${activity.name||''}`.toLowerCase());
+    });
+    const longestRunKm=round(Math.max(0,...runs.map(activity=>numeric(activity.dist)||0)),1);
+    const sustainedRuns=runs.filter(activity=>(numeric(activity.dist)||0)>=targetDistanceKm*.6).length;
+    const targetRatio=round(longestRunKm/targetDistanceKm,2);
+    if(targetRatio>=.8&&sustainedRuns>=2)return {status:'supported',qualityScale:1,longestRunKm,sustainedRuns,targetRatio};
+    if(targetRatio>=.6&&sustainedRuns>=1)return {status:'developing',qualityScale:.85,longestRunKm,sustainedRuns,targetRatio};
+    return {status:'insufficient',qualityScale:.7,longestRunKm,sustainedRuns,targetRatio};
+  }
   function numeric(value){const number=parseFloat(value);return Number.isFinite(number)?number:null;}
   function paceRange(first,second){
     const left=parseClock(first),right=parseClock(second);
@@ -133,6 +147,7 @@
     const settings=input.athleteSettings||{};
     const benchmark=parseBenchmark(input.benchmark);
     const recent=recentVolume(input.recentActivities,input.asOfDate||dateString(new Date()));
+    const endurance=enduranceReadiness(input.recentActivities,profile.distanceKm,benchmark,input.asOfDate||dateString(new Date()));
     const easyEvidence=easyPaceEvidence(input.recentActivities,settings,input.asOfDate||dateString(new Date()));
     const suppliedWeekly=parseFloat(input.currentWeeklyKm);
     const suppliedLong=parseFloat(input.longestRecentRunKm);
@@ -184,10 +199,12 @@
     const currentGoalMinutes=profile.distanceKm&&currentGoalPace?currentGoalPace*profile.distanceKm:null;
     const improvementPct=targetMinutes&&currentGoalMinutes&&targetMinutes<currentGoalMinutes
       ? round((currentGoalMinutes-targetMinutes)/currentGoalMinutes*100,1):0;
-    const confidence=benchmark?'high':recent.activities>=4?'medium':'low';
-    const goalRisk=improvementPct>12?'high':improvementPct>6?'medium':'low';
+    let confidence=benchmark?'high':recent.activities>=4?'medium':'low';
+    if(endurance.status==='developing')confidence='medium';
+    if(endurance.status==='insufficient')confidence='low';
+    const goalRisk=endurance.status==='insufficient'||improvementPct>12?'high':improvementPct>6||endurance.status==='developing'?'medium':'low';
     return {
-      level,benchmark,benchmarkVdot,recent,
+      level,benchmark,benchmarkVdot,recent,enduranceReadiness:endurance,
       currentWeeklyKm:round(weeklyKm||0,1),
       longestRecentRunKm:round(longestRunKm||0,1),
       anchors,targetMinutes,targetPace,currentGoalMinutes:currentGoalMinutes?round(currentGoalMinutes,2):null,
@@ -493,7 +510,9 @@
   function createQualitySession(profile,phase,progress,weekIndex,athlete,weeklyKm,phasePosition=0){
     let spec=qualitySpec(profile,phase,progress,weekIndex,phasePosition);
     const danielsPolicy=danielsQualityCap(profile,spec,weeklyKm,phase);
-    spec=capQualitySpec(spec,danielsPolicy.capKm);
+    const enduranceScale=['vo2','race_specific'].includes(spec.intent)?(athlete.enduranceReadiness?.qualityScale||1):1;
+    const enduranceAdjustedCapKm=Number.isFinite(danielsPolicy.capKm)?round(danielsPolicy.capKm*enduranceScale,1):danielsPolicy.capKm;
+    spec=capQualitySpec(spec,enduranceAdjustedCapKm);
     const pace=paceForIntensity(athlete.anchors,spec.intensity);
     const effortTarget=spec.intent==='threshold'?athlete.effortTargets.tempo:null;
     const targetPaceRange=effortTarget?`${formatPace(effortTarget.paceFast)}-${formatPace(effortTarget.paceSlow)}`:'';
@@ -504,7 +523,7 @@
     return {
       type:legacyTypeForIntent(spec.intent),intent:spec.intent,targetDist:totalKm,targetPace:pace?formatPace(pace):'',targetPaceRange,targetHR,
       priority:['threshold','vo2','repetition','race_specific'].includes(spec.intent)?'key':'normal',
-      workoutSpec:{...spec,qualityDistanceKm:spec.workKm||0,danielsClass:danielsPolicy.qualityClass,danielsCapKm:danielsPolicy.capKm,danielsRule:danielsPolicy.rule,totalDistanceKm:totalKm,distanceBreakdown,intensityTarget:{basis:effortTarget?.basis||spec.intensity,paceMinPerKm:pace?round(pace,3):null,paceFast:effortTarget?.paceFast||null,paceSlow:effortTarget?.paceSlow||null,hrMin:effortTarget?.hrMin||null,hrMax:effortTarget?.hrMax||null}},
+      workoutSpec:{...spec,qualityDistanceKm:spec.workKm||0,danielsClass:danielsPolicy.qualityClass,danielsCapKm:danielsPolicy.capKm,enduranceAdjustedCapKm,enduranceReadiness:athlete.enduranceReadiness?.status||'not_required',danielsRule:danielsPolicy.rule,totalDistanceKm:totalKm,distanceBreakdown,intensityTarget:{basis:effortTarget?.basis||spec.intensity,paceMinPerKm:pace?round(pace,3):null,paceFast:effortTarget?.paceFast||null,paceSlow:effortTarget?.paceSlow||null,hrMin:effortTarget?.hrMin||null,hrMax:effortTarget?.hrMax||null}},
       details,
       description:details.targetDescription
     };
@@ -695,6 +714,7 @@
         level:athlete.level,daysPerWeek,longRunDay:String(longRunDay),unavailableRaw:input.unavailableRaw||input.goalProfile?.unavailableRaw||'',
         athleteSettings:athlete.athleteSettingsUsed,easyPaceEvidenceSessions:athlete.easyPaceEvidence.sessions,
         paceBasis:athlete.paceBasis,volumeBasis:athlete.volumeBasis,
+        enduranceReadiness:athlete.enduranceReadiness,
         longRunPolicy:{targets:profile.longRunTargets||{},maxLongKm:profile.maxLongKm,progressionPerWeekPct:8},
         qualityBudgetKm:profile.qualityBudgetKm||{},continuousTempoRatio:profile.continuousTempoRatio??.6,
         danielsQualityCaps:profile.daniels?.qualityCaps||null,
@@ -724,6 +744,7 @@
       const weeklyKm=weeklyTargets[(session.week||1)-1]||0;
       const danielsPolicy=danielsQualityCap(profile,session.workoutSpec,weeklyKm,session.phase);
       if(danielsPolicy.rule&&session.workoutSpec?.qualityDistanceKm>danielsPolicy.capKm+.15)errors.push(`daniels_quality_cap_exceeded:${session.sessionId}`);
+      if(Number.isFinite(session.workoutSpec?.enduranceAdjustedCapKm)&&session.workoutSpec.qualityDistanceKm>session.workoutSpec.enduranceAdjustedCapKm+.15)errors.push(`cross_distance_endurance_cap_exceeded:${session.sessionId}`);
       if(['Tempo','Interval'].includes(session.type)){
         const breakdown=session.workoutSpec?.distanceBreakdown;
         if(!breakdown){warnings.push(`quality_distance_breakdown_missing:${session.sessionId}`);}
@@ -771,6 +792,7 @@
     }
     if(profile.race&&plan.athleteProfile.goalRisk==='high')warnings.push('target_requires_large_improvement');
     if(plan.athleteProfile.confidence==='low')warnings.push('pace_anchors_low_confidence');
+    if(plan.athleteProfile.enduranceReadiness?.status==='insufficient')warnings.push('cross_distance_endurance_evidence_insufficient');
     const plannedWeeks=(plan.phaseSchedule||[]).map((row,index)=>({phase:row.phase,target:weeklyTargets[index]||row.targetVolumeKm}));
     const weeklyActualKm=(plan.phaseSchedule||[]).map(row=>round((plan.sessions||[]).filter(session=>session.week===row.week).reduce((sum,session)=>sum+(parseFloat(session.targetDist)||0),0),1));
     plannedWeeks.forEach((row,index)=>{

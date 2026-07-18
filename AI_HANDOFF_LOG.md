@@ -1,5 +1,47 @@
 # AI Handoff Log
 
+## 2026-07-18 Cross-Distance VDOT And Endurance Readiness
+
+Status: implemented locally and verified. New plans only; existing saved plans are unchanged.
+
+Problem addressed:
+
+- A 5K race result is a valid VDOT source for constructing 10K pace anchors, but the previous engine treated any benchmark as high-confidence even when the target distance was longer and the athlete had little endurance evidence.
+- The former plan could therefore use a valid 5K VDOT while overstating confidence in 10K/Half/Marathon-specific workload.
+
+Implementation:
+
+- `js/domain/training/engine-v2.js` now records `athleteProfile.enduranceReadiness` whenever the benchmark distance is shorter than the goal distance.
+- It inspects the last 90 days of run-like activities and stores:
+  - longest run, sustained-run count (>= 60% of target distance), longest-run/target ratio, status, and quality scale.
+- Status rules:
+  - `supported`: longest run >= 80% of goal plus at least two sustained runs. No workload reduction.
+  - `developing`: longest run >= 60% plus one sustained run. I/race-specific quality cap is scaled to 85%.
+  - `insufficient`: otherwise. Confidence becomes low, goal risk is high, I/race-specific cap is scaled to 70%, and a validation warning is saved.
+- VDOT pace anchors are not replaced with target-race pace. A 5K benchmark still drives R/I/T pace, while missing endurance evidence limits only I and race-specific volume.
+- Each affected `workoutSpec` now records `enduranceAdjustedCapKm` and `enduranceReadiness`; validation rejects quality work above this cap.
+- Coach plan creation output and AI suitability facts now display the cross-distance endurance status, evidence, and applied scale.
+
+Verification added:
+
+- `coach_v2_test.js` covers an insufficient `5K -> 10K` history: VDOT parses, confidence is reduced, warning is present, and I/race-specific work stays within the adjusted cap.
+- It also covers a supported `5K -> 10K` history with repeated 9-10 km runs: the scale remains 100%.
+- Existing Marathon test now verifies marathon-specific work against its persisted evidence cap rather than an unsafe fixed minimum when its benchmark/history distance mismatch is intentional.
+
+PWA:
+
+- Cache is `mydash-v3-cross-distance-readiness-20260718-1`.
+
+Verification completed:
+
+```powershell
+node --check js\domain\training\engine-v2.js
+node --check js\coach.js
+node coach_v2_test.js
+node verify_dashboard.js
+python smoke_test_dashboard.py
+```
+
 ## 2026-07-18 All-Distance Quality Progression Correction
 
 Status: implemented locally and verified. This updates only newly generated plans. Existing saved plans are not regenerated or silently changed.
