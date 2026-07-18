@@ -16,6 +16,9 @@
     root._fb.listen('activity_details', data => {
       root.AppState.set('activityDetails', data || {});
     });
+    root._fb.listen('training_analyses', data => {
+      root.AppState.set('trainingAnalyses', data || {});
+    });
     root._fb.listen('coach_plan', data => {
       if (data) {
         root.AppState.set('coachPlan', data);
@@ -159,6 +162,7 @@
     AppState.subscribe('coachPlan', () => {
       if (document.getElementById('page-coach')?.classList.contains('active')) root.renderCoachTracking();
       if (document.getElementById('page-post-run-review')?.classList.contains('active')) root.renderPostRunReview();
+      if (document.getElementById('page-fitness-stats')?.classList.contains('active')) root.renderCurrentStatsView();
     });
 
     AppState.subscribe('postRunReviews', () => {
@@ -170,6 +174,12 @@
       if (document.getElementById('page-post-run-review')?.classList.contains('active')) root.renderPostRunReview();
       root.renderIntegratedHealth();
       if (document.getElementById('page-today')?.classList.contains('active')) root.renderDashboardHomeInsights();
+      if (document.getElementById('page-fitness-stats')?.classList.contains('active')) root.renderCurrentStatsView();
+    });
+
+    AppState.subscribe('trainingAnalyses', () => {
+      if (document.getElementById('page-fitness-stats')?.classList.contains('active')) root.renderCurrentStatsView();
+      if (document.getElementById('page-post-run-review')?.classList.contains('active')) root.renderPostRunReview();
     });
 
     AppState.subscribe('garminSyncStatus', () => {

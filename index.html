@@ -811,6 +811,13 @@ tbody tr:hover td { background: var(--bg); }
 .coach-session-actions .btn { min-height:30px; }
 .training-insights { display:grid; grid-template-columns:1.1fr .9fr; gap:12px; }
 .training-insight-panel { background:var(--surface); border:1.5px solid var(--border); border-radius:8px; padding:14px; }
+.training-session-list { display:grid; gap:10px; }
+.training-session-card { border:1px solid var(--border); border-radius:10px; padding:12px; background:var(--bg2); }
+.training-session-head { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+.training-session-type { flex-shrink:0; border:1px solid; border-radius:999px; padding:3px 8px; font:700 10px var(--font-mono); white-space:nowrap; }
+.training-session-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.training-session-actions .btn { min-height:28px; }
+.active-session-type { background:var(--accent-light) !important; border-color:var(--accent) !important; color:var(--accent) !important; }
 .training-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
 .training-kpi { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px; min-width:0; }
 .training-kpi-value { font-family:var(--font-mono); font-size:22px; line-height:1.1; font-weight:900; color:var(--text); }
@@ -2044,7 +2051,7 @@ img, video, iframe, canvas { max-width: 100%; }
         <div class="flex justify-between items-center mb-16 flex-wrap gap-10">
           <div>
             <div style="font-size:16px;font-weight:800">Training Insights</div>
-            <div class="text-sm c2 mt-8">ย้อนหลัง 8 สัปดาห์ · ใช้ประเภทที่ยืนยันแล้วก่อน Auto classification</div>
+            <div class="text-sm c2 mt-8">ย้อนหลัง 8 สัปดาห์ · AI ใช้ข้อมูล Garmin, wellness, แผนซ้อม และบริบทที่บันทึกไว้</div>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="renderStatsInsights()">รีเฟรช</button>
         </div>
@@ -2076,6 +2083,14 @@ img, video, iframe, canvas { max-width: 100%; }
             <div class="confidence-meter mt-12"><div id="stats-confidence-bar" style="width:0;background:var(--green)"></div></div>
             <div id="stats-confidence-details" class="wellness-summary-list mt-16"></div>
           </div>
+        </div>
+
+        <div class="card mb-16">
+          <div class="flex justify-between items-center mb-12 flex-wrap gap-8">
+            <div><div class="card-label" style="margin:0">Session Classification</div><div class="text-xs c3 mt-4">ผลอัตโนมัติเป็นข้อเสนอ กดหนึ่งครั้งเพื่อยืนยันหรือแก้ประเภทได้</div></div>
+            <span class="text-xs c3">ผู้ใช้ยืนยันแล้วจะมีสิทธิ์เหนือ AI</span>
+          </div>
+          <div id="stats-session-classifications" class="training-session-list"><div class="text-sm c2">กำลังโหลดประเภทเซสชัน...</div></div>
         </div>
 
         <div class="card">
@@ -4096,6 +4111,7 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
     <script src="js/domain/review/matcher-v2.js"></script>
     <script src="js/post-run-review.js"></script>
     <script src="js/activity-detail-model.js"></script>
+    <script src="js/training-analyst.js"></script>
     <script src="js/studio-home.js"></script>
     <script src="js/studio-coach.js"></script>
     <script src="js/chart-semantics.js"></script>

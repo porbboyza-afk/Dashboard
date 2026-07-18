@@ -1,5 +1,105 @@
 # AI Handoff Log
 
+## 2026-07-18 Central Training Analyst, Statistics Context, And Safe Cleanup
+
+Status: implemented locally and verified. This change has not changed raw Garmin, Health Connect, Strava, or manual workout records.
+
+Problem addressed:
+
+- Statistics Week and Month AI analysis timed out.
+- The old Statistics prompt only sent selected-period summaries and a narrow wellness slice, so it could not reliably explain a deliberately slower/shorter session caused by heat, wind, recovery, or an unplanned prior workout.
+- Garmin lap evidence existed, but Statistics treated automatic classification as already confirmed and did not provide the previous fast card-style confirmation workflow.
+
+Architecture added:
+
+```text
+workouts + Garmin activity details + wellness + active Coach plan
+-> js/training-analyst.js facts/context builder
+-> deterministic fallback classification or cached AI classification
+-> users/{uid}/training_analyses/{firebaseSafeActivityKey}
+-> Statistics and Post-Run Review
+```
+
+New Firebase path:
+
+- `users/{uid}/training_analyses/{activityKey}`
+- This stores metadata only: analysis version, activity revision, AI classification, generated timestamp, and optional user override.
+- Never write classification back into the raw `workouts` record. Garmin imports remain immutable.
+- The activity key is sanitized for Firebase-invalid characters.
+
+Classification precedence:
+
+1. User override in `training_analyses/{activityKey}.override`
+2. Cached AI classification when its `activityRevision` still matches
+3. Garmin lap evidence through `MyDashActivityAnalysis`
+4. Existing Athlete Profile pace/HR fallback
+5. `other` with low confidence when facts are insufficient
+
+Supported types:
+
+- `recovery`, `easy`, `long`, `steady`, `tempo`, `threshold`, `interval`, `other`
+
+Important behavior:
+
+- Auto classification is no longer presented as user-confirmed.
+- Statistics > Training Insights now renders the latest 12 activities as quick cards. One click can select any session type or return to `Auto`.
+- A user choice always overrides AI and deterministic evidence.
+- Long runs are counted with aerobic/easy volume in the Easy/Quality balance. Unknown/`other` sessions are excluded from that balance instead of being incorrectly counted as quality work.
+- A changed user classification is included in the Post-Run facts hash, so an old AI review becomes stale instead of silently contradicting the new choice.
+
+AI request fix:
+
+- `askDeepSeek()` previously inherited `callNewsChat()`'s default `useSearch: true`. Training analysis was therefore unnecessarily waiting for the news-search pipeline before calling DeepSeek.
+- `askDeepSeek()` now defaults to `useSearch: false`, max 1400 tokens, 60-second timeout, and lower temperature. The News page still calls `callNewsChat()` directly and keeps its search-enabled default.
+- Statistics now calls `MyDashTrainingAnalyst.analyzePeriod()` directly with `useSearch: false`, 1800 tokens, 60-second timeout, and structured JSON output.
+- The AI receives the selected activities plus per-activity weather/temperature/surface if logged, RPE/pain/feeling/note, same-day wellness, nearby Coach sessions, and actual sessions from 3 days before to 1 day after. It is explicitly instructed not to invent missing weather or interpret every deviation as a training failure.
+
+Cross-page integration:
+
+- `js/app-bootstrap.js` listens to `training_analyses` and rerenders active Statistics/Post-Run pages when metadata changes.
+- Post-Run Review now displays the shared Training Analyst result and recorded weather context alongside raw Garmin lap evidence.
+- `js/app-state.js` now initializes `trainingAnalyses: {}`.
+
+PWA and verification updates:
+
+- Service worker cache is `mydash-v3-training-analyst-20260718-1` and now includes `activity-detail-model.js` plus `training-analyst.js`.
+- `verify_dashboard.js` validates the new script, its public API, index script registration, and service-worker assets.
+- `smoke_test_dashboard.py` checks that `window.MyDashTrainingAnalyst.analyzePeriod` is loaded.
+- Added `training_analyst_test.js` for Firebase-safe key generation, deterministic fallback, weather/Coach context, and user-override precedence.
+
+Safe cleanup completed:
+
+- Removed `manualSessionType()` from `js/stats.js`. It was a Statistics-only duplicate that was fully replaced by the central analyst fallback.
+- Do not remove `sessionTypeFromProfile()` from `js/sources-strava.js`; legacy Strava detail rendering still uses it.
+- No broader deletion was made: many old global handlers are still referenced by inline HTML or legacy pages. Search call sites and run browser smoke tests before removing any additional code.
+
+Verification completed:
+
+```powershell
+node --check js\training-analyst.js
+node --check js\stats.js
+node --check js\post-run-review.js
+node --check js\news-ai.js
+node --check js\app-bootstrap.js
+node training_analyst_test.js
+node verify_dashboard.js
+python smoke_test_dashboard.py
+```
+
+Results:
+
+- Training Analyst unit test passed.
+- Dashboard verifier passed: `Syntax OK: 2 inline scripts, 26 external scripts, manifest, service worker, Apps Script`.
+- Browser smoke passed with no page errors, console errors, or request failures; it confirmed Training Analyst is loaded.
+
+Next operational validation after deploy:
+
+1. Hard-refresh MyDash or accept the PWA update prompt.
+2. Open Statistics > Training Insights and confirm Garmin sessions show an automatic type/reason card.
+3. Select a different type on one card, reload, and confirm the override persists.
+4. Run Week and Month Analyze. Confirm the answer discusses only recorded weather/context and no longer times out through the news-search path.
+5. Open the same activity in Post-Run Review and confirm its type matches the Statistics card.
+
 ## 2026-07-13 Garmin scheduler catch-up fix (local)
 
 - The user reported that opening the PC after 09:00 caused the Garmin sync to be missed.

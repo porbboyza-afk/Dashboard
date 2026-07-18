@@ -18,6 +18,7 @@ const wellnessScriptPath = path.join(root, 'js', 'wellness.js');
 const statsScriptPath = path.join(root, 'js', 'stats.js');
 const coachScriptPath = path.join(root, 'js', 'coach.js');
 const postRunReviewScriptPath = path.join(root, 'js', 'post-run-review.js');
+const trainingAnalystScriptPath = path.join(root, 'js', 'training-analyst.js');
 const studioHomeScriptPath = path.join(root, 'js', 'studio-home.js');
 const studioCoachScriptPath = path.join(root, 'js', 'studio-coach.js');
 const chartDataScriptPath = path.join(root, 'js', 'chart-data.js');
@@ -52,6 +53,7 @@ const extraScripts = [
   racesScriptPath,
   reviewMatcherScriptPath,
   postRunReviewScriptPath,
+  trainingAnalystScriptPath,
   studioHomeScriptPath,
   studioCoachScriptPath,
   chartDataScriptPath,
@@ -129,6 +131,8 @@ ensureContains(indexPath, [
   '<script src="js/races.js"></script>',
   '<script src="js/domain/review/matcher-v2.js"></script>',
   '<script src="js/post-run-review.js"></script>',
+  '<script src="js/activity-detail-model.js"></script>',
+  '<script src="js/training-analyst.js"></script>',
   '<script src="js/studio-home.js"></script>',
   '<script src="js/studio-coach.js"></script>',
   '<script src="js/chart-data.js"></script>',
@@ -141,7 +145,7 @@ ensureContains(indexPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-training-studio-ui-20260711-10',
+  'mydash-v3-training-analyst-20260718-1',
   './app-redesign.css?v=20260711-1',
   './training-studio-ui.css?v=20260711-1',
   './studio-shell.css?v=20260711-1',
@@ -175,6 +179,13 @@ ensureContains(statsScriptPath, [
   'async function renderStatsInsights',
   'function renderStatsEfficiencyChart',
   'async function analyzeFitnessAI',
+]);
+
+ensureContains(trainingAnalystScriptPath, [
+  'MyDashTrainingAnalyst',
+  'async function analyzePeriod',
+  'async function setOverride',
+  'training_analyses/',
 ]);
 
 ensureContains(newsAiScriptPath, [
@@ -339,7 +350,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-training-studio-ui-20260711-10",
+  "mydash-v3-training-analyst-20260718-1",
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',
@@ -361,6 +372,8 @@ ensureContains(swPath, [
   './js/races.js',
   './js/domain/review/matcher-v2.js',
   './js/post-run-review.js',
+  './js/activity-detail-model.js',
+  './js/training-analyst.js',
 ]);
 
 console.log(`Syntax OK: ${inlineCount} inline scripts, ${extraScripts.length} external scripts, manifest, service worker, Apps Script`);

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-training-studio-ui-20260711-10';
+const CACHE_NAME = 'mydash-v3-training-analyst-20260718-1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -30,6 +30,8 @@ const APP_SHELL = [
   './js/races.js',
   './js/domain/review/matcher-v2.js',
   './js/post-run-review.js'
+  ,'./js/activity-detail-model.js'
+  ,'./js/training-analyst.js'
   ,'./js/studio-home.js'
   ,'./js/studio-coach.js'
   ,'./js/chart-semantics.js'

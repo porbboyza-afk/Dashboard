@@ -148,39 +148,14 @@ function renderMonthStats(){
   if(listEl){listEl.innerHTML=monthWks.length?[...monthWks].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(w=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background .15s" onclick="showActivityDetail(encodeURIComponent(JSON.stringify(${JSON.stringify(JSON.stringify(w))})))" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'"><span style="font-size:15px">${em[w.type]||'🏅'}</span><div style="flex:1"><div style="font-size:12px;font-weight:600">${parseFloat(w.dist||0).toFixed(2)} km${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${sourceBadge(w,true)}</div><div style="font-size:10px;color:var(--text2);font-family:var(--font-mono)">${w.date}${w.name?' · '+w.name:''}</div></div>${w.hr?`<span style="font-size:11px;color:var(--red)">♥${w.hr}</span>`:''}<span style="color:var(--text3);font-size:14px">›</span></div>`).join(''):'<p class="text-sm c2">ไม่มีกิจกรรมเดือนนี้</p>';}
 }
 
-function manualSessionType(workout){
-  const purpose=(workout.purpose||'').toLowerCase();
-  if(workout.type==='interval'||purpose==='interval')return {type:'interval',confidence:100,confirmed:true,detailed:false};
-  if(['recovery','easy','tempo'].includes(purpose))return {type:purpose,confidence:100,confirmed:true,detailed:false};
-  if(purpose==='long')return {type:'steady',confidence:80,confirmed:true,detailed:false};
-  const activity={
-    name:workout.name||workout.note||'',average_heartrate:+workout.hr||null,
-    average_speed:workout.avgPace?1000/(workout.avgPace*60):0,
-    distance:(+workout.dist||0)*1000,moving_time:(+workout.time||0)*60
-  };
-  const result=sessionTypeFromProfile(activity,[],getAthleteProfile());
-  return {type:result.type,confidence:result.confidence,confirmed:false,detailed:false};
-}
-
 async function getClassifiedActivitiesForInsights(){
   const cutoff=dateDaysAgo(55);
   const activities=getAllActivities().filter(row=>row.date&&new Date(`${row.date}T12:00:00`)>=cutoff);
-  let details=window._stravaDetailCache||{};
-  if(!Object.keys(details).length){
-    try{details=await window._fb.getData('strava_activity_details')||{};window._stravaDetailCache=details;}catch(error){}
-  }
+  const analyst=window.MyDashTrainingAnalyst;
   return activities.map(activity=>{
+    const result=analyst?.classification?.(activity)||{type:'other',confidence:0,confirmed:false,evidence:['Training Analyst ยังไม่พร้อม']};
     const garminAnalysis=window.MyDashActivityAnalysis?.analyze?.(activity);
-    if(garminAnalysis?.laps?.length)return {...activity,sessionType:garminAnalysis.type,classificationConfidence:garminAnalysis.confidence,classificationConfirmed:true,hasDetail:true,activityAnalysis:garminAnalysis};
-    if(activity.source==='strava'&&activity.stravaId){
-      const payload=details[activity.stravaId];
-      const analysis=payload?.analysis;
-      if(analysis){
-        return {...activity,sessionType:analysis.userType||analysis.detectedType,classificationConfidence:analysis.confidence||0,classificationConfirmed:!!analysis.confirmed,hasDetail:true};
-      }
-    }
-    const inferred=manualSessionType(activity);
-    return {...activity,sessionType:inferred.type,classificationConfidence:inferred.confidence,classificationConfirmed:inferred.confirmed,hasDetail:inferred.detailed};
+    return {...activity,sessionType:result.type,classificationConfidence:result.confidence||0,classificationConfirmed:!!result.confirmed,hasDetail:!!garminAnalysis?.laps?.length,activityAnalysis:garminAnalysis,classification:result};
   });
 }
 
@@ -188,9 +163,9 @@ async function renderStatsInsights(){
   const mixElement=document.getElementById('stats-training-mix');if(!mixElement)return;
   mixElement.innerHTML='<div class="text-sm c2">กำลังวิเคราะห์...</div>';
   const activities=await getClassifiedActivitiesForInsights();
-  const types=['recovery','easy','steady','tempo','threshold','interval'];
-  const labels={recovery:'Recovery',easy:'Easy',steady:'Steady',tempo:'Tempo',threshold:'Threshold',interval:'Interval'};
-  const colors={recovery:'#5AC8FA',easy:'#34C759',steady:'#0E7490',tempo:'#AF52DE',threshold:'#FF2D55',interval:'#FC4C02'};
+  const types=['recovery','easy','long','steady','tempo','threshold','interval','other'];
+  const labels={recovery:'Recovery',easy:'Easy',long:'Long',steady:'Steady',tempo:'Tempo',threshold:'Threshold',interval:'Interval',other:'Other'};
+  const colors={recovery:'#5AC8FA',easy:'#34C759',long:'#0A84FF',steady:'#0E7490',tempo:'#AF52DE',threshold:'#FF2D55',interval:'#FC4C02',other:'#8E8E93'};
   const totals=Object.fromEntries(types.map(type=>[type,{minutes:0,count:0}]));
   activities.forEach(activity=>{
     const type=types.includes(activity.sessionType)?activity.sessionType:'steady';
@@ -206,23 +181,25 @@ async function renderStatsInsights(){
     <div class="training-mix-legend">${types.map(type=>`<div class="training-mix-item"><div class="stat-label" style="color:${colors[type]}">${labels[type]}</div><div class="mono bold">${totals[type].minutes.toFixed(0)} min</div><div class="text-xs c3">${totals[type].count} sessions</div></div>`).join('')}</div>`
     :'<div class="text-sm c2">ยังไม่มีข้อมูลจำแนกใน 8 สัปดาห์ล่าสุด</div>';
 
-  const easyMinutes=totals.recovery.minutes+totals.easy.minutes;
-  const qualityMinutes=classifiedMinutes-easyMinutes;
-  const easyPercent=classifiedMinutes?easyMinutes/classifiedMinutes*100:0;
-  const qualityPercent=classifiedMinutes?qualityMinutes/classifiedMinutes*100:0;
+  const easyMinutes=totals.recovery.minutes+totals.easy.minutes+totals.long.minutes;
+  const qualityMinutes=totals.steady.minutes+totals.tempo.minutes+totals.threshold.minutes+totals.interval.minutes;
+  const knownMinutes=easyMinutes+qualityMinutes;
+  const easyPercent=knownMinutes?easyMinutes/knownMinutes*100:0;
+  const qualityPercent=knownMinutes?qualityMinutes/knownMinutes*100:0;
   const set=(id,value)=>{const element=document.getElementById(id);if(element)element.textContent=value;};
-  set('stats-easy-pct',classifiedMinutes?`${easyPercent.toFixed(0)}%`:'—');
-  set('stats-quality-pct',classifiedMinutes?`${qualityPercent.toFixed(0)}%`:'—');
+  set('stats-easy-pct',knownMinutes?`${easyPercent.toFixed(0)}%`:'—');
+  set('stats-quality-pct',knownMinutes?`${qualityPercent.toFixed(0)}%`:'—');
   const balance=document.getElementById('stats-balance-note');
-  if(balance)balance.textContent=!classifiedMinutes?'ข้อมูลยังไม่พอ'
+  if(balance)balance.textContent=!knownMinutes?'ข้อมูลยังไม่พอ'
     :easyPercent>=75&&easyPercent<=85?'ใกล้สมดุล 80/20'
     :easyPercent<75?'สัดส่วนงานคุณภาพค่อนข้างสูง':'สัดส่วนงานเบาสูง เหมาะกับ Base/Recovery';
 
   renderStatsEfficiencyChart(activities);
   renderStatsConfidence(activities);
+  renderSessionClassificationCards(activities);
   const notes=document.getElementById('stats-insight-notes');
   const insightNotes=[];
-  if(classifiedMinutes){
+  if(knownMinutes){
     insightNotes.push([easyPercent>=75?'':'warn',`งานเบา ${easyPercent.toFixed(0)}% · งานคุณภาพ ${qualityPercent.toFixed(0)}% จากเวลาซ้อมทั้งหมด`]);
     const tempoCount=totals.tempo.count+totals.threshold.count+totals.interval.count;
     insightNotes.push([tempoCount<=2?'':'warn',`มี Tempo/Threshold/Interval ${tempoCount} เซสชันใน 8 สัปดาห์ล่าสุด`]);
@@ -230,6 +207,29 @@ async function renderStatsInsights(){
   const confirmed=activities.filter(activity=>activity.classificationConfirmed).length;
   insightNotes.push(['',`ประเภทที่คุณยืนยันแล้ว ${confirmed}/${activities.length} เซสชัน ผลจะน่าเชื่อถือขึ้นเมื่อยืนยันกิจกรรมสำคัญ`]);
   if(notes)notes.innerHTML=insightNotes.map(([level,text])=>`<div class="wellness-alert ${level}">${text}</div>`).join('');
+}
+
+function renderSessionClassificationCards(activities){
+  const element=document.getElementById('stats-session-classifications');if(!element)return;
+  const analyst=window.MyDashTrainingAnalyst;
+  const labels=analyst?.labels||{};
+  const colors={recovery:'#5AC8FA',easy:'#34C759',long:'#0A84FF',steady:'#0E7490',tempo:'#AF52DE',threshold:'#FF2D55',interval:'#FC4C02',other:'#8E8E93'};
+  const recent=[...activities].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,12);
+  if(!recent.length){element.innerHTML='<div class="text-sm c2">ยังไม่มีกิจกรรมใน 8 สัปดาห์ล่าสุด</div>';return;}
+  element.innerHTML=recent.map(activity=>{
+    const result=activity.classification||{};const key=result.activityKey||analyst?.activityKey?.(activity)||'';
+    const metric=[`${(+activity.dist||0).toFixed(2)} km`,activity.avgPace?formatPace(activity.avgPace)+'/km':'',activity.hr?`HR ${Math.round(activity.hr)}`:''].filter(Boolean).join(' · ');
+    const options=['recovery','easy','long','steady','tempo','threshold','interval'];
+    return `<div class="training-session-card"><div class="training-session-head"><div><div class="text-xs c3">${activity.date||'—'} · ${sourceBadge(activity,true)}</div><div class="text-sm bold mt-4">${escapeHTML(activity.name||activity.type||'Activity')} · ${metric}</div></div><div class="training-session-type" style="border-color:${colors[result.type]||colors.other};color:${colors[result.type]||colors.other}">${escapeHTML(labels[result.type]||'Other')} ${result.confidence?`${Math.round(result.confidence)}%`:''}</div></div><div class="text-xs c2 mt-8">${escapeHTML((result.evidence||[]).slice(0,2).join(' · ')||'ยังไม่มีเหตุผลจากข้อมูล')}</div><div class="training-session-actions">${options.map(type=>`<button class="btn btn-ghost btn-sm ${result.confirmed&&result.type===type?'active-session-type':''}" onclick="setTrainingSessionOverride('${key}','${type}')">${labels[type]||type}</button>`).join('')}<button class="btn btn-ghost btn-sm" onclick="setTrainingSessionOverride('${key}',null)">Auto</button></div></div>`;
+  }).join('');
+}
+
+async function setTrainingSessionOverride(key,type){
+  try{
+    await window.MyDashTrainingAnalyst?.setOverride?.(key,type);
+    showToast(type?'บันทึกประเภทเซสชันแล้ว':'กลับไปใช้ผลอัตโนมัติแล้ว');
+    renderStatsInsights();
+  }catch(error){showToast(error.message||String(error),'error');}
 }
 
 function renderStatsEfficiencyChart(activities){
@@ -282,16 +282,22 @@ async function analyzeFitnessAI(period='week'){
   let wks=[],periodLabel='';
   if(period==='week'){const days=getWeekDates(_statsWeekOffset);const ds0=toLocalDateStr(days[0]),ds6=toLocalDateStr(days[6]);wks=allWks.filter(w=>w.date>=ds0&&w.date<=ds6);periodLabel=`week ${ds0} to ${ds6}`;}
   else{const{year,month}=getMonthBounds(_statsMonthOffset);wks=allWks.filter(w=>{if(!w.date)return false;const d=new Date(w.date+'T00:00:00');return d.getFullYear()===year&&d.getMonth()===month;});periodLabel=`month ${new Date(year,month,1).toLocaleDateString('en-GB',{month:'long',year:'numeric'})}`;}
-  const totalDist=wks.reduce((s,w)=>s+parseFloat(w.dist||0),0);
-  const totalTime=wks.reduce((s,w)=>s+parseFloat(w.time||0),0);
-  const avgPace=totalDist>0?totalTime/totalDist:0;
-  const avgHR=wks.filter(w=>w.hr).length?Math.round(wks.filter(w=>w.hr).reduce((s,w)=>s+w.hr,0)/wks.filter(w=>w.hr).length):0;
-  const summary=wks.length>0?wks.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(w=>`[${w.date}] ${w.type||'run'} ${w.dist}km ${w.time}min${w.hr?' HR'+w.hr:''}${w.avgPace?' Pace'+formatPace(w.avgPace):''}${w.rpe?' RPE'+w.rpe:''}${w.pain?' Pain'+w.pain:''}`).join('\n'):'No data in this period';
-  const statsLine=wks.length>0?`\n\nSummary: ${wks.length} sessions · ${totalDist.toFixed(2)}km · ${Math.round(totalTime)}min · Pace ${formatPace(avgPace)}${avgHR?' · HR '+avgHR+' bpm':''}`:'' ;
-  const wellness=(AppState.get('wellness')||[]).filter(r=>!wks.length||wks.some(w=>w.date===r.date)).slice(0,14).map(r=>`[${r.date}] Sleep ${r.sleepHours??'-'}h RHR ${r.restingHR??'-'} HRV ${r.hrv??'-'} Fatigue ${r.fatigue??'-'} Stress ${r.stress??'-'} Pain ${r.soreness??'-'} Recovery ${calculateRecoveryScore(r)??'-'}`).join('\n');
-  const readiness=calculateReadiness();
-  const prompt=`Activity data for ${periodLabel}:\n${summary}${statsLine}\n\nWellness:\n${wellness||'No wellness data'}\n\nCurrent integrated metrics: Readiness ${readiness.score}/100, Acute load ${Math.round(readiness.load.acute)}, Chronic weekly ${Math.round(readiness.load.chronicWeekly)}, ACWR ${readiness.load.acwr?.toFixed(2)??'n/a'}, Monotony ${readiness.load.monotony.toFixed(2)}.\n\n${wks.length===0?'No activity data available. Explain what should be logged.':'Analyze together:\n1. Training load and recovery balance\n2. Pace/HR efficiency and consistency\n3. Sleep, RHR, HRV, fatigue and pain risk signals\n4. Specific recommendation for the next 24–48 hours\n5. Three actionable changes. Do not diagnose disease.'}`;
-  await askDeepSeek(prompt,'คุณคือนักสรีรวิทยาและโค้ชวิ่ง วิเคราะห์เป็นภาษาไทย ตรงประเด็น',period==='week'?'btn-analyze-wk':'btn-analyze-mo',period==='week'?'ai-stats-output':'ai-month-output');
+  const outputId=period==='week'?'ai-stats-output':'ai-month-output';
+  const button=document.getElementById(period==='week'?'btn-analyze-wk':'btn-analyze-mo');
+  const output=document.getElementById(outputId);
+  if(!wks.length){if(output){output.style.display='block';output.textContent='ยังไม่มีกิจกรรมในช่วงที่เลือกให้ AI วิเคราะห์';}return;}
+  if(!window.MyDashTrainingAnalyst){showToast('Training Analyst ยังไม่พร้อม','error');return;}
+  const oldHTML=button?.innerHTML;if(button){button.disabled=true;button.textContent='Analyzing...';}
+  if(output){output.style.display='block';output.innerHTML='<span style="opacity:.55;font-style:italic;font-size:12px">กำลังเชื่อมโยง session, wellness, สภาพอากาศ และแผนซ้อม...</span>';}
+  try{
+    const result=await window.MyDashTrainingAnalyst.analyzePeriod({label:periodLabel,activities:wks});
+    if(output)output.innerHTML=mdToHtml(result.markdown||'AI วิเคราะห์เสร็จแล้ว');
+    await renderStatsInsights();
+  }catch(error){
+    const message=error.name==='AbortError'?'AI ใช้เวลานานเกินกำหนด ลองใหม่อีกครั้ง':'AI วิเคราะห์ไม่สำเร็จ: '+(error.message||String(error));
+    if(output)output.innerHTML=`<span style="color:var(--red)">⚠️ ${escapeHTML(message)}</span>`;
+    showToast(message,'error');
+  }finally{if(button){button.disabled=false;button.innerHTML=oldHTML;}}
 }
 
 // ── AI COACH DATE HELPERS ──

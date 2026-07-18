@@ -14,6 +14,7 @@
       manualWellness: [],
       garminWellness: {},
       activityDetails: {},
+      trainingAnalyses: {},
 
       deepseekKey: '',
       aiProxyUrl: DEFAULT_AI_PROXY_URL,

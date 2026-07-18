@@ -82,6 +82,8 @@ function postRunReadinessAsOf(workout,wellness){
 
 function buildPostRunFacts(workout){
   const activityAnalysis=window.MyDashActivityAnalysis?.analyze?.(workout)||null;
+  const sessionClassification=window.MyDashTrainingAnalyst?.classification?.(workout)||null;
+  const trainingContext=window.MyDashTrainingAnalyst?.contextActivity?.(workout)||null;
   const match=postRunPlanMatch(workout);
   const activePlan=window._coachPlan;
   const session=match.compareTargets===false?null:match.session;
@@ -139,13 +141,15 @@ function buildPostRunFacts(workout){
       }
     },
     riskFlags,
+    sessionClassification:sessionClassification?{type:sessionClassification.type,confidence:sessionClassification.confidence,confirmed:!!sessionClassification.confirmed,source:sessionClassification.source||'',evidence:sessionClassification.evidence||[],context:sessionClassification.context||''}:null,
+    trainingContext:trainingContext?{weather:trainingContext.weather,plannedSessions:trainingContext.plannedSessions||[],wellness:trainingContext.wellness||null}:null,
     activityAnalysis:activityAnalysis?{type:activityAnalysis.type,confidence:activityAnalysis.confidence,workMinutes:activityAnalysis.workMinutes,recoveryMinutes:activityAnalysis.recoveryMinutes,averagePace:activityAnalysis.averagePace,averageHr:activityAnalysis.averageHr,hrDrift:activityAnalysis.hrDrift,lapCount:activityAnalysis.laps.length,coverage:activityAnalysis.coverage}:null,
     intervalAnalysis:workout?.interval?{
       reps:workout.interval.reps||0,repDist:workout.interval.repDist||0,repPace:workout.interval.repPace||'',restTime:workout.interval.restTime||0,
       plannedMainSet:session?.details?.mainSet||''
     }:null
   };
-  facts.factsHash=window.MyDashReviewMatcher?.factsHash(workout,activePlan,match)||'';
+  facts.factsHash=[window.MyDashReviewMatcher?.factsHash(workout,activePlan,match)||'',sessionClassification?.type||'',sessionClassification?.confirmed?'confirmed':'auto'].join('|');
   return facts;
 }
 
@@ -204,7 +208,7 @@ function renderPostRunReview(){
       <div>
         <div class="card-label">Post-Run Review</div>
         <div class="postrun-title">${escapeHTML(workout.date||'')} · ${escapeHTML(workout.type||'activity')} ${workout.dist||0} km</div>
-        <div class="text-sm c2 mt-4">${facts.planMatch.label}${session?` · ${escapeHTML(session.type)} ${session.targetDist||0} km`:''}</div>
+        <div class="text-sm c2 mt-4">${facts.planMatch.label}${session?` · ${escapeHTML(session.type)} ${session.targetDist||0} km`:''}${facts.sessionClassification?` · ${escapeHTML(facts.sessionClassification.type)} ${facts.sessionClassification.confirmed?'(confirmed)':'(auto)'}`:''}</div>
       </div>
       <div class="postrun-verdict" style="border-color:${verdict.color};color:${verdict.color}">${verdict.label}</div>
     </div>
@@ -233,7 +237,8 @@ function renderPostRunReview(){
       </div>
     </div>
     ${facts.intervalAnalysis?`<div class="card mt-16"><div class="card-label">Interval Analysis</div><div class="coach-session-preview mt-8">Actual: ${facts.intervalAnalysis.reps} x ${facts.intervalAnalysis.repDist} km @ ${escapeHTML(facts.intervalAnalysis.repPace||'--')} · Rest ${facts.intervalAnalysis.restTime||0} min${facts.intervalAnalysis.plannedMainSet?`<br>Plan: ${escapeHTML(facts.intervalAnalysis.plannedMainSet)}`:''}</div></div>`:''}
-    ${facts.activityAnalysis?`<div class="card mt-16"><div class="card-label">Activity Evidence</div><div class="text-sm mt-8">${escapeHTML(facts.activityAnalysis.type)} · ${facts.activityAnalysis.confidence}% · Work ${facts.activityAnalysis.workMinutes} min · Recovery ${facts.activityAnalysis.recoveryMinutes} min · HR drift ${facts.activityAnalysis.hrDrift===null?'--':facts.activityAnalysis.hrDrift+'%'}</div><div class="text-xs c3 mt-4">${facts.activityAnalysis.lapCount?`${facts.activityAnalysis.lapCount} laps analyzed from source data.`:'Summary-only source; no lap-level conclusion.'}</div></div>`:''}
+    ${facts.sessionClassification?`<div class="card mt-16"><div class="card-label">Training Analyst</div><div class="text-sm mt-8">${escapeHTML(facts.sessionClassification.type)} · ${facts.sessionClassification.confidence}% · ${facts.sessionClassification.confirmed?'คุณยืนยันแล้ว':'ผลอัตโนมัติ'}</div><div class="text-xs c3 mt-4">${escapeHTML((facts.sessionClassification.evidence||[]).join(' · ')||'ยังไม่มีหลักฐานเพิ่มเติม')}</div>${facts.trainingContext?.weather&&facts.trainingContext.weather!=='not logged'?`<div class="text-xs c3 mt-4">สภาพการวิ่ง: ${escapeHTML(facts.trainingContext.weather)}</div>`:''}</div>`:''}
+    ${facts.activityAnalysis?`<div class="card mt-16"><div class="card-label">Garmin Lap Evidence</div><div class="text-sm mt-8">${escapeHTML(facts.activityAnalysis.type)} · ${facts.activityAnalysis.confidence}% · Work ${facts.activityAnalysis.workMinutes} min · Recovery ${facts.activityAnalysis.recoveryMinutes} min · HR drift ${facts.activityAnalysis.hrDrift===null?'--':facts.activityAnalysis.hrDrift+'%'}</div><div class="text-xs c3 mt-4">${facts.activityAnalysis.lapCount?`${facts.activityAnalysis.lapCount} laps analyzed from source data.`:'Summary-only source; no lap-level conclusion.'}</div></div>`:''}
     <div class="card mt-16">
       <div class="flex justify-between items-center gap-12 flex-wrap">
         <div>

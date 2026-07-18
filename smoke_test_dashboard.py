@@ -74,6 +74,7 @@ def main():
             results["checks"]["document_title"] = page.title()
             results["checks"]["has_showPage"] = page.evaluate("typeof showPage === 'function'")
             results["checks"]["has_mdToHtml"] = page.evaluate("typeof mdToHtml === 'function'")
+            results["checks"]["has_training_analyst"] = page.evaluate("typeof window.MyDashTrainingAnalyst?.analyzePeriod === 'function'")
             results["checks"]["has_stravaLocalDateStr"] = page.evaluate("typeof stravaLocalDateStr === 'function'")
             results["checks"]["strava_local_date"] = page.evaluate(
                 "stravaLocalDateStr({start_date_local:'2026-06-21T18:00:00Z'})"
@@ -142,6 +143,7 @@ def main():
     expected_true = [
         "has_showPage",
         "has_mdToHtml",
+        "has_training_analyst",
         "has_stravaLocalDateStr",
         "today_active",
         "strava_active",

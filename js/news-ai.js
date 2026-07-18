@@ -162,7 +162,7 @@ async function callNewsChat(messages, options={}) {
   const maxTokens = options.maxTokens || 4096;
   const temperature = options.temperature ?? 0.7;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 45000);
+  const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 45000);
   try {
     if (proxyUrl) {
       const res = await fetch(proxyUrl, {
@@ -236,7 +236,7 @@ async function askNewsAI() {
   }
 }
 
-async function askDeepSeek(userPrompt, systemMsg='', btnId='', outId='') {
+async function askDeepSeek(userPrompt, systemMsg='', btnId='', outId='', options={}) {
   if (!userPrompt?.trim()) {
     showToast('กรุณากรอกข้อความ', 'warning');
     return null;
@@ -253,7 +253,7 @@ async function askDeepSeek(userPrompt, systemMsg='', btnId='', outId='') {
     const data = await callNewsChat([
       {role:'system', content: systemMsg || 'คุณคือผู้ช่วยอัจฉริยะ ตอบเป็นภาษาไทย กระชับ ตรงประเด็น'},
       {role:'user', content: userPrompt.trim()}
-    ]);
+    ], {useSearch:options.useSearch??false,maxTokens:options.maxTokens||1400,timeoutMs:options.timeoutMs||60000,temperature:options.temperature??0.35});
     const reply = data?.choices?.[0]?.message?.content;
     if (!reply) throw new Error('AI ไม่ส่งคำตอบกลับมา');
     if (out) out.innerHTML = mdToHtml(reply);
