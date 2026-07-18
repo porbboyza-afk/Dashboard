@@ -45,9 +45,14 @@ def process_lock(path: Path):
 
 def firebase_executable() -> str:
     executable = shutil.which("firebase.cmd") or shutil.which("firebase")
-    if not executable:
-        raise RuntimeError("Firebase CLI is not installed or not available on PATH")
-    return executable
+    if executable:
+        return executable
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        user_npm_executable = Path(appdata) / "npm" / "firebase.cmd"
+        if user_npm_executable.is_file():
+            return str(user_npm_executable)
+    raise RuntimeError("Firebase CLI is not installed or not available on PATH")
 
 
 def firebase_call(arguments: list[str], timeout: int = 120) -> str:

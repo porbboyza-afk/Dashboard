@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from garmin_direct.auto_sync import AlreadyRunning, is_cross_source_duplicate, plan_patch, process_lock
+from garmin_direct.auto_sync import AlreadyRunning, firebase_executable, is_cross_source_duplicate, plan_patch, process_lock
 from garmin_direct.firebase_plan import firebase_key
 from garmin_direct.sync_store import SyncStore
 
@@ -20,6 +20,14 @@ class AutoSyncTests(unittest.TestCase):
 
     def test_firebase_key_is_deterministic(self):
         self.assertEqual(firebase_key("garmin", "123"), "garmin_123")
+
+    def test_firebase_cli_falls_back_to_user_npm_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            executable = Path(directory) / "npm" / "firebase.cmd"
+            executable.parent.mkdir()
+            executable.touch()
+            with patch("garmin_direct.auto_sync.shutil.which", return_value=None), patch.dict("os.environ", {"APPDATA": directory}):
+                self.assertEqual(firebase_executable(), str(executable))
 
     def test_reported_rounded_pair_is_cross_source_duplicate(self):
         garmin = {"date": "2026-07-09", "type": "run", "source": "garmin", "dist": 1.32889, "time": 8.9667}
