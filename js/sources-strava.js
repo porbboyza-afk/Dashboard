@@ -513,9 +513,11 @@ function sourceCountBy(workouts, field, value){
   return (workouts||[]).filter(w=>w?.[field]===value).length;
 }
 
-function sourceRelativeTime(ms){
-  if(!ms)return 'never';
-  return new Date(ms).toLocaleString('th-TH');
+function sourceRelativeTime(value){
+  if(!value)return 'never';
+  const numeric=Number(value);
+  const date=Number.isFinite(numeric)?new Date(numeric):new Date(value);
+  return Number.isNaN(date.getTime())?'unknown':date.toLocaleString('th-TH');
 }
 
 function recoveryStatusCounts(recovery){
@@ -526,12 +528,13 @@ function recoveryStatusCounts(recovery){
   },{});
 }
 
-function renderSourcesOverview({healthStatus={},recovery={},workouts=[],stravaToken=null,stravaActivities=[]}={}){
+function renderSourcesOverview({healthStatus={},garminStatus=null,recovery={},workouts=[],stravaToken=null,stravaActivities=[]}={}){
   const card=document.getElementById('sources-overview-card');if(!card)return;
   const healthCount=sourceCountBy(workouts,'source','health_connect');
+  const garminCount=sourceCountBy(workouts,'source','garmin');
   const recoveredCount=sourceCountBy(workouts,'source','strava_recovered');
   const archiveCount=sourceCountBy(workouts,'source','strava_archive')+sourceCountBy(workouts,'source','strava');
-  const manualCount=(workouts||[]).filter(w=>!['health_connect','strava_recovered','strava_archive','strava'].includes(w?.source)).length;
+  const manualCount=(workouts||[]).filter(w=>!['garmin','health_connect','strava_recovered','strava_archive','strava'].includes(w?.source)).length;
   const recoveryCounts=recoveryStatusCounts(recovery);
   const stagedTotal=Object.keys(recovery||{}).length;
   const duplicateCount=recoveryCounts.duplicate_candidate||0;
@@ -545,19 +548,31 @@ function renderSourcesOverview({healthStatus={},recovery={},workouts=[],stravaTo
     ? `Last sync ${sourceRelativeTime(healthStatus.last_sync)} · scanned ${healthStatus.scanned||0}, imported ${healthStatus.imported||0}, skipped ${healthStatus.skipped||0}`
     : 'Use the Android companion to sync Garmin data through Health Connect.';
   const appText=sourceApps.length?`Source app: ${escapeHTML(sourceApps.join(', '))}`:'Source app will appear after sync.';
+  const status=garminStatus?.status||'unknown';
+  const garminOk=status==='success';
+  const garminFailed=status==='failed';
+  const garminTitle=garminOk?'SYNCED':garminFailed?'SYNC FAILED':'WAITING FOR SYNC';
+  const garminColor=garminOk?'var(--green)':garminFailed?'var(--red)':'var(--orange)';
+  const garminLastSync=garminStatus?.last_sync?sourceRelativeTime(garminStatus.last_sync):'No confirmed sync yet';
+  const garminDetail=garminFailed
+    ? `Last attempt failed: ${escapeHTML(garminStatus?.error_kind||'unknown error')}`
+    : garminStatus?.last_sync
+      ? `${garminStatus.automatic?'Automatic bridge sync':'Manual bridge sync'} · ${garminStatus.activity_count||garminCount} activities · ${garminStatus.wellness_count||0} wellness records`
+      : 'Garmin Direct status will appear after the first completed sync.';
   card.innerHTML=`
     <div class="card-label">Sync source status</div>
     <div class="strava-overview-grid mb-16" style="display:grid">
-      <div class="stat-card">
-        <div class="stat-label">Primary Source</div>
-        <div style="font-size:20px;font-weight:900;color:${healthReady?'var(--green)':'var(--orange)'}">Health Connect</div>
-        <div class="text-xs c3 mt-8">${escapeHTML(healthSub)}</div>
-        <div class="text-xs c3 mt-8">${appText}</div>
+      <div class="stat-card" style="border-color:${garminOk?'rgba(52,199,89,.38)':garminFailed?'rgba(255,59,48,.38)':'var(--border)'}">
+        <div class="stat-label">Garmin Direct</div>
+        <div style="font-size:20px;font-weight:900;color:${garminColor}">${garminTitle}</div>
+        <div class="text-xs c3 mt-8">Last sync ${escapeHTML(garminLastSync)}</div>
+        <div class="text-xs c3 mt-8">${garminDetail}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Health Workouts</div>
-        <span class="stat-value" style="font-size:28px">${healthCount}</span>
-        <span class="stat-unit">saved</span>
+        <div class="stat-label">Health Connect</div>
+        <div style="font-size:20px;font-weight:900;color:${healthReady?'var(--green)':'var(--orange)'}">Health Connect</div>
+        <div class="text-xs c3 mt-8">${escapeHTML(healthSub)}</div>
+        <div class="text-xs c3 mt-8">${appText} Â· ${healthCount} saved</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Recovered Strava</div>
@@ -574,7 +589,7 @@ function renderSourcesOverview({healthStatus={},recovery={},workouts=[],stravaTo
     </div>
     <div class="empty-state" style="border-style:solid">
       <div class="empty-state-title">Current plan</div>
-      <div class="empty-state-copy">Use Garmin -> Health Connect -> MyDash Sync as the daily path. Keep Strava for legacy cache, archive import, and review-only duplicate handling. Do not blindly merge staged Strava rows into workouts.</div>
+      <div class="empty-state-copy">Garmin Direct is the scheduled sync bridge. Health Connect remains an alternative source. Keep Strava for legacy cache, archive import, and review-only duplicate handling.</div>
       <div class="empty-actions mt-12">
         <button class="btn btn-green btn-sm" onclick="showToast('Open the Android MyDash Sync app, then tap Sync last 30 days.')">Health Connect sync</button>
         <button class="btn btn-ghost btn-sm" onclick="showPage('fitness-log')">View workouts</button>
@@ -584,16 +599,17 @@ function renderSourcesOverview({healthStatus={},recovery={},workouts=[],stravaTo
 }
 
 async function renderStravaPage(){
-  const [td,healthStatus,recovery,workoutsData,cached]=await Promise.all([
+  const [td,healthStatus,garminStatus,recovery,workoutsData,cached]=await Promise.all([
     window._fb.getData('strava_token').catch(()=>null),
     window._fb.getData('sync_sources/health_connect').catch(()=>({})),
+    window._fb.getData('sync_sources/garmin_direct').catch(()=>null),
     window._fb.getData('imports/strava_cache_recovery').catch(()=>({})),
     window._fb.getData('workouts').catch(()=>({})),
     window._fb.getData('strava_activities').catch(()=>null)
   ]);
   const workouts=workoutsData?(Array.isArray(workoutsData)?workoutsData.filter(Boolean):Object.values(workoutsData)):[];
   const legacyActs=cached?(Array.isArray(cached)?cached:Object.values(cached)):[];
-  renderSourcesOverview({healthStatus:healthStatus||{},recovery:recovery||{},workouts,stravaToken:td,stravaActivities:legacyActs});
+  renderSourcesOverview({healthStatus:healthStatus||{},garminStatus:garminStatus||window.AppState?.get('garminSyncStatus'),recovery:recovery||{},workouts,stravaToken:td,stravaActivities:legacyActs});
   const sb=document.getElementById('strava-status-box'),cb=document.getElementById('btn-strava-connect'),db=document.getElementById('btn-strava-disconnect'),sync=document.getElementById('btn-strava-sync');
   if(td?.access_token){
     const a=td.athlete||{};

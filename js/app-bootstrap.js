@@ -41,6 +41,9 @@
       root.AppState.set('garminWellness', data || {});
       mergeWellnessSources();
     });
+    root._fb.listen('sync_sources/garmin_direct', data => {
+      root.AppState.set('garminSyncStatus', data || null);
+    });
     root._fb.listen('strava_activities', data => {
       if (!data) return;
       const activities = Array.isArray(data) ? data : Object.values(data);
@@ -167,6 +170,10 @@
       if (document.getElementById('page-post-run-review')?.classList.contains('active')) root.renderPostRunReview();
       root.renderIntegratedHealth();
       if (document.getElementById('page-today')?.classList.contains('active')) root.renderDashboardHomeInsights();
+    });
+
+    AppState.subscribe('garminSyncStatus', () => {
+      if (document.getElementById('page-strava')?.classList.contains('active')) root.renderStravaPage();
     });
 
     AppState.subscribe('deepseekKey', key => {
