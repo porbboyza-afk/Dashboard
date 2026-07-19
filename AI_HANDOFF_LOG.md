@@ -2,7 +2,7 @@
 
 ## 2026-07-19 Firebase Non-Finite Plan Serialization Fix
 
-Status: pending verification and commit.
+Status: committed and pushed in `0bb2016`.
 
 - Firebase rejected new plan saves with `set failed: value argument contains Infinity in property`.
 - The engine used `Infinity` internally to mean “no workload ceiling”, then copied it into `workoutSpec.workloadCapKm` and `workoutSpec.enduranceAdjustedCapKm` for Base/R sessions without an applicable profile cap. Firebase Realtime Database cannot store `Infinity`.
