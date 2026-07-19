@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
 
-  const METHODOLOGY_VERSION = 'mydash-running-2026.07.19.1';
+  const METHODOLOGY_VERSION = 'mydash-running-2026.07.19.3';
 
   // Daniels, Running Formula 4e: reference ceilings for individual quality
   // sessions. The engine records these, but prescribes T/I work with a

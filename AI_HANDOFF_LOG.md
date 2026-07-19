@@ -1,5 +1,33 @@
 # AI Handoff Log
 
+## 2026-07-19 Plan Creation Validation Regression Fix
+
+Status: verified; pending commit and push.
+
+Problem:
+
+- Newly generated plans could fail immediately in `coach.js` with `Plan validation failed`, even though the engine itself had generated the plan. This was not a Firebase write or login issue.
+- The `404b0ca` validator treated three workload-advisory conditions as fatal errors: a deliberately reduced I-pace dose in a low-volume/short plan, I-pace repetitions outside the nominal 2-5 minute range after dose scaling, and a weekly session total more than 25% above the scheduled volume target.
+- This made legitimate low-volume or short-plan inputs impossible to create, even when the generator had already applied its hard safety caps.
+
+Correction:
+
+- `vo2_rep_duration_out_of_range`, `vo2_total_work_too_short`, `continuous_tempo_underrepresented`, and `weekly_volume_above_target` now return validation warnings. They remain visible for later coach refinement, but cannot block saving a structurally valid plan.
+- Hard safety and data-integrity failures remain errors: duplicate dates, race-day/eve violations, unavailable dates, invalid set structure, quality workload/budget caps, missing warm-up/cool-down, invalid distance breakdown, adjacent quality days, unsafe long-run progression, and missing race-phase safeguards.
+- Added a regression test that creates a 10-week low-volume 10K plan and asserts the plan remains creatable while exposing the reduced I-work and weekly-volume conditions as warnings.
+- PWA cache advances to `mydash-v3-plan-validation-20260719-1`; methodology version advances to `mydash-running-2026.07.19.2`.
+
+Do not claim the workload model is now complete or athlete-specific solely because plan creation works again. The next methodology pass must use the user's real recent training history and explicitly review the generated progression before changing workload targets further.
+
+## 2026-07-19 Weekly Baseline Correction
+
+Status: verified; pending commit and push.
+
+- The engine previously replaced limited Garmin/activity history with 60% of the distance profile's default weekly volume. For an intermediate 10K profile, this became 19.2 km/week. This value was not the user's data and must not be used as a training baseline.
+- The engine now totals only run-like activities for its 30-day volume calculation and keeps the observed value unchanged. It records limited history as `activity_history_limited` rather than silently inflating it.
+- Coach Create Plan adds an optional `Weekly Running Baseline (km)` confirmation field. A confirmed value overrides history; otherwise it uses only run activity volume from the last 30 days. If neither exists, plan creation stops with a clear request for the baseline instead of inventing one.
+- The generated confirmation output displays the exact weekly baseline and its source. PWA cache is `mydash-v3-volume-baseline-20260719-1`; methodology version is `mydash-running-2026.07.19.3`.
+
 ## 2026-07-19 Workout Structure, Rep Recovery, And Distance-Specific Progression
 
 Status: committed and pushed in `404b0ca`. This affects newly generated plans only.

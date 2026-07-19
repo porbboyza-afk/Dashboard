@@ -120,8 +120,14 @@ function getCoachGoalProfile(plan=null,{preferPlan=false}={}){
 function coachSourceSummary(activities){
   return activities.reduce((acc,w)=>{const key=w.source||'manual';acc[key]=(acc[key]||0)+1;return acc;},{});
 }
+function coachIsRunningActivity(activity){
+  const text=`${activity?.type||''} ${activity?.purpose||''} ${activity?.name||''}`.toLowerCase();
+  return /run|running|jog|easy|recovery|long|interval|tempo|threshold|race/.test(text)
+    && !/walk|hike|cycle|bike|swim|strength|yoga/.test(text);
+}
 function buildCoachContext(plan=null){
   const activities=getAllActivities();
+  const runningActivities=activities.filter(coachIsRunningActivity);
   const wellness=AppState.get('wellness')||[];
   const readiness=calculateReadiness();
   const goalProfile=getCoachGoalProfile(plan,{preferPlan:!!plan});
@@ -129,7 +135,7 @@ function buildCoachContext(plan=null){
   const endDate=plan?.endDate||document.getElementById('coach-end-date')?.value||'';
   const totalWeeks=plan?.totalWeeks||parseInt(document.getElementById('coach-weeks')?.value)||8;
   const today=toLocalDateStr();
-  const since=days=>activities.filter(w=>new Date((w.date||'')+'T12:00:00')>=dateDaysAgo(days-1));
+  const since=days=>runningActivities.filter(w=>new Date((w.date||'')+'T12:00:00')>=dateDaysAgo(days-1));
   const volume=rows=>rows.reduce((sum,w)=>sum+(parseFloat(w.dist)||0),0);
   const latest=activities.slice(0,12).map(w=>`${w.date} ${w.type||'run'} ${w.dist||0}km ${Math.round(w.time||0)}min${w.avgPace?' pace '+formatPace(w.avgPace):''}${w.hr?' HR'+w.hr:''}${w.cad?' Cad '+w.cad:''}${w.stride?' stride '+w.stride:''}${w.rpe?' RPE'+w.rpe:''} ${sourceMeta(w).label}`).join('\n');
   const wellnessRows=wellness.slice(0,14).map(r=>`${r.date}: sleep ${r.sleepHours??'-'}h, RHR ${r.restingHR??'-'}, HRV ${r.hrv??'-'}, SpO2 ${r.spo2??'-'}, fatigue ${r.fatigue??'-'}, pain ${r.soreness??'-'}, status ${r.healthStatus||'-'}`).join('\n');
@@ -137,7 +143,7 @@ function buildCoachContext(plan=null){
     today,startDate,endDate,totalWeeks,goalProfile,readiness,
     load:readiness.load,
     volumes:{d7:+volume(since(7)).toFixed(1),d30:+volume(since(30)).toFixed(1),d90:+volume(since(90)).toFixed(1)},
-    sourceSummary:coachSourceSummary(activities),
+    sourceSummary:coachSourceSummary(runningActivities),
     latestActivities:latest||'none',
     wellnessRows:wellnessRows||'none',
     phaseSchedule:coachPhaseSchedule(startDate,totalWeeks),
@@ -747,6 +753,15 @@ async function generateTrainingPlan(){
     if (diff > 0) totalWeeks = diff;
   }
   const context=buildCoachContext();
+  const weeklyInput=document.getElementById('coach-weekly-km');
+  const confirmedWeeklyKm=parseFloat(weeklyInput?.value);
+  const hasConfirmedWeeklyKm=Number.isFinite(confirmedWeeklyKm)&&confirmedWeeklyKm>0;
+  const historyWeeklyKm=context.volumes.d30/4.285;
+  if(!hasConfirmedWeeklyKm&&!historyWeeklyKm){
+    const missingBaselineOutput=document.getElementById('coach-output');
+    if(missingBaselineOutput)missingBaselineOutput.innerHTML='<span style="color:var(--red)">Please enter your weekly running distance before creating a plan. MyDash has no running history in the last 30 days to use as a baseline.</span>';
+    return;
+  }
   const out=document.getElementById('coach-output');
   if(out){out.style.color='var(--text2)';out.innerHTML='กำลังสร้างแผนด้วย Training Engine V2...';}
   const btn=document.getElementById('btn-coach');if(btn){btn.innerHTML='กำลังสร้างแผน...';btn.disabled=true;}
@@ -757,7 +772,7 @@ async function generateTrainingPlan(){
       goal,distance:context.goalProfile.distance,targetTime:context.goalProfile.targetTime,benchmark:context.goalProfile.benchmark,
       level,daysPerWeek:days,startDate,endDate,totalWeeks,longRunDay:context.goalProfile.longRunDay,
       unavailable:context.goalProfile.unavailable,unavailableRaw:context.goalProfile.unavailableRaw,
-      currentWeeklyKm:context.volumes.d30/4.285,currentWeeklyKmSource:'activity_history',recentActivities:getAllActivities(),asOfDate:toLocalDateStr(),
+      currentWeeklyKm:hasConfirmedWeeklyKm?confirmedWeeklyKm:historyWeeklyKm,currentWeeklyKmSource:hasConfirmedWeeklyKm?'manual':'activity_history',recentActivities:getAllActivities(),asOfDate:toLocalDateStr(),
       athleteSettings:typeof getAthleteProfile==='function'?getAthleteProfile():(window._athleteProfile||{})
     });
     if(!planPayload.validation?.valid)throw new Error(`Plan validation failed: ${planPayload.validation?.errors?.join(', ')||'unknown error'}`);
@@ -775,6 +790,7 @@ async function generateTrainingPlan(){
     const warning=planPayload.validation.warnings.length?`<br><span style="color:var(--orange)">ตรวจเพิ่ม: ${escapeHTML(planPayload.validation.warnings.join(', '))}</span>`:'';
     if(out){out.style.color='var(--text)';out.innerHTML=`<div style="color:var(--green);font-weight:700;margin-bottom:10px">สร้างและบันทึก Training Engine V2 แล้ว</div><div style="font-size:12px;color:var(--text2)">Goal: <strong style="color:var(--text)">${escapeHTML(planPayload.goal)}</strong><br>${planPayload.sessions.length} sessions · ${planPayload.totalWeeks} weeks · ${escapeHTML(planPayload.goalProfile.distance)}<br>Easy: ${escapeHTML(easyRange)}${easy.hrMin&&easy.hrMax?` · HR ${escapeHTML(easy.hrMin)}-${escapeHTML(easy.hrMax)}`:''}<br>Tempo: ${escapeHTML(tempoRange)}${tempo.hrMin&&tempo.hrMax?` · HR ${escapeHTML(tempo.hrMin)}-${escapeHTML(tempo.hrMax)}`:''}<br>Pace basis: ${escapeHTML(athlete.paceBasis||'conservative')} · easy evidence ${escapeHTML(athlete.easyPaceEvidence?.sessions||0)} runs · confidence ${escapeHTML(athlete.confidence||'low')}${enduranceText}${warning}</div>`;}
     showToast('สร้างแผน V2 และบันทึก Cloud แล้ว','success');
+    if(out)out.innerHTML+=`<div style="font-size:12px;color:var(--text2);margin-top:6px">Weekly running baseline used: <strong style="color:var(--text)">${escapeHTML(athlete.currentWeeklyKm)} km</strong> (${escapeHTML(athlete.volumeBasis||'unknown')})</div>`;
   }catch(e){if(out)out.innerHTML=`<span style="color:var(--red)">⚠️ ${e.message}</span>`;}
   finally{if(btn){btn.innerHTML='สร้างแผน + บันทึก Firebase';btn.disabled=false;}}
 }

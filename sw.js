@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-workout-structure-20260719-1';
+const CACHE_NAME = 'mydash-v3-volume-baseline-20260719-1';
 const APP_SHELL = [
   './',
   './index.html',

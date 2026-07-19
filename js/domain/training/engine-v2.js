@@ -92,11 +92,16 @@
   function levelDefault10kPace(level){
     return {beginner:6.5,intermediate:5.5,advanced:4.6}[level]||5.5;
   }
+  function isRunningActivity(activity){
+    const text=`${activity?.type||''} ${activity?.purpose||''} ${activity?.name||''}`.toLowerCase();
+    return /run|running|jog|easy|recovery|long|interval|tempo|threshold|race/.test(text)
+      && !/walk|hike|cycle|bike|swim|strength|yoga/.test(text);
+  }
   function recentVolume(activities=[],asOf=dateString(new Date())){
     const end=parseDate(asOf)||new Date();
     const start=new Date(end);start.setDate(start.getDate()-27);
     const rows=(activities||[]).filter(activity=>{
-      const date=parseDate(activity.date);return date&&date>=start&&date<=end;
+      const date=parseDate(activity.date);return date&&date>=start&&date<=end&&isRunningActivity(activity);
     });
     const total=rows.reduce((sum,activity)=>sum+(parseFloat(activity.dist)||0),0);
     const longest=rows.reduce((max,activity)=>Math.max(max,parseFloat(activity.dist)||0),0);
@@ -156,9 +161,9 @@
     const suppliedFromHistory=input.currentWeeklyKmSource==='activity_history';
     const observedWeekly=Number.isFinite(suppliedWeekly)&&suppliedWeekly>0?suppliedWeekly:recent.weeklyKm;
     const volumeHistoryReliable=!suppliedFromHistory||recent.activities>=3;
-    const weeklyKm=volumeHistoryReliable
-      ? observedWeekly
-      : Math.max(observedWeekly||0,profile.defaultWeeklyKm[level]*.60);
+    // Never manufacture a weekly baseline from a goal profile. Training volume must come
+    // from the athlete's running history or an explicitly confirmed value.
+    const weeklyKm=observedWeekly||0;
     const longestRunKm=Number.isFinite(suppliedLong)&&suppliedLong>0?suppliedLong:recent.longestRunKm;
     const fallback10k=levelDefault10kPace(level);
     const paceFor=distance=>benchmark?projectedMinutes(benchmark,distance)/distance:null;
@@ -218,7 +223,7 @@
       athleteSettingsUsed:{maxHR,lthr,easyHRMin,easyHRMax,z1Max:numeric(settings.z1Max),z2Max:numeric(settings.z2Max),z3Max:numeric(settings.z3Max),z4Max:numeric(settings.z4Max),z5Max:numeric(settings.z5Max),thresholdPace:settings.thresholdPace||'',tempoFast:settings.tempoFast||'',tempoSlow:settings.tempoSlow||''},
       improvementPct,confidence,goalRisk,
       paceBasis:benchmark?'recent_benchmark':recent.activities>=4?'recent_volume_with_conservative_pace':'level_fallback',
-      volumeBasis:volumeHistoryReliable?(suppliedFromHistory?'activity_history':'manual_or_explicit'):'insufficient_history_conservative_fallback'
+      volumeBasis:volumeHistoryReliable?(suppliedFromHistory?'activity_history':'manual_or_explicit'):'activity_history_limited'
     };
   }
 
@@ -279,7 +284,7 @@
   }
   function buildWeeklyTargets(profile,athlete,phases){
     const fallback=profile.defaultWeeklyKm[athlete.level];
-    let volume=athlete.currentWeeklyKm>0?Math.max(8,athlete.currentWeeklyKm):fallback;
+    let volume=athlete.currentWeeklyKm>0?athlete.currentWeeklyKm:fallback;
     const cap=volume*1.35;
     let peak=volume;
     return phases.map((phase,index)=>{
@@ -808,8 +813,10 @@
       if(session.workoutSpec?.intent==='vo2'&&session.phase!=='Taper'){
         if(!metrics||!Number.isFinite(metrics.repDurationMinutes)||!Number.isFinite(metrics.workDurationMinutes))errors.push(`interval_metrics_missing:${session.sessionId}`);
         else{
-          if(metrics.repDurationMinutes<2||metrics.repDurationMinutes>5)errors.push(`vo2_rep_duration_out_of_range:${session.sessionId}`);
-          if(metrics.workDurationMinutes<10)errors.push(`vo2_total_work_too_short:${session.sessionId}`);
+          // The generator may deliberately reduce I-pace dose for a low-volume or short plan.
+          // That needs coach review, not a failed plan creation; structural data errors still block.
+          if(metrics.repDurationMinutes<2||metrics.repDurationMinutes>5)warnings.push(`vo2_rep_duration_out_of_range:${session.sessionId}`);
+          if(metrics.workDurationMinutes<10)warnings.push(`vo2_total_work_too_short:${session.sessionId}`);
         }
       }
       if(Number.isFinite(session.workoutSpec?.enduranceAdjustedCapKm)&&session.workoutSpec.qualityDistanceKm>session.workoutSpec.enduranceAdjustedCapKm+.15)errors.push(`cross_distance_endurance_cap_exceeded:${session.sessionId}`);
@@ -831,7 +838,7 @@
     }
     const continuousTempo=thresholdSessions.filter(session=>session.workoutSpec?.structure==='continuous').length;
     const segmentedTempo=thresholdSessions.filter(session=>session.workoutSpec?.structure==='repetitions').length;
-    if(segmentedTempo>0&&continuousTempo/segmentedTempo<(profile.continuousTempoRatio??.6))errors.push('continuous_tempo_underrepresented');
+    if(segmentedTempo>0&&continuousTempo/segmentedTempo<(profile.continuousTempoRatio??.6))warnings.push('continuous_tempo_underrepresented');
     longRuns.sort((a,b)=>a.date.localeCompare(b.date));
     longRuns.forEach((session,index)=>{
       const phaseTarget=phaseLongTarget(profile,plan.athleteProfile?.level||'intermediate',session.phase);
@@ -865,7 +872,9 @@
     const weeklyActualKm=(plan.phaseSchedule||[]).map(row=>round((plan.sessions||[]).filter(session=>session.week===row.week).reduce((sum,session)=>sum+(parseFloat(session.targetDist)||0),0),1));
     plannedWeeks.forEach((row,index)=>{
       const actual=weeklyActualKm[index]||0;
-      if(row.phase!=='RaceWeek'&&actual>row.target*1.25)errors.push(`weekly_volume_above_target:w${index+1}`);
+      // Session construction can exceed the volume target while preserving all hard safety caps.
+      // Surface the balancing issue without rejecting an otherwise runnable plan.
+      if(row.phase!=='RaceWeek'&&actual>row.target*1.25)warnings.push(`weekly_volume_above_target:w${index+1}`);
       if(row.phase!=='RaceWeek'&&actual<row.target*.65)warnings.push(`weekly_volume_below_target:w${index+1}`);
     });
     const taper=plannedWeeks.filter(row=>['Taper','RaceWeek'].includes(row.phase));

@@ -163,7 +163,27 @@ async function main() {
     currentWeeklyKmSource:'activity_history',recentActivities:[{date:'2026-07-10',type:'run',dist:5.8}],asOfDate:'2026-07-10',now:1783900000001
   });
   assert.equal(sparseHistoryPlan.validation.valid,true,'Sparse history uses a conservative viable baseline');
-  assert.equal(sparseHistoryPlan.athleteProfile.volumeBasis,'insufficient_history_conservative_fallback','Sparse history is not treated as a reliable baseline');
+  assert.equal(sparseHistoryPlan.athleteProfile.currentWeeklyKm,1.4,'Sparse history never receives a fabricated profile-volume baseline');
+  assert.equal(sparseHistoryPlan.athleteProfile.volumeBasis,'activity_history_limited','Sparse history is labelled as limited rather than inflated');
+
+  const runOnlyVolumePlan=engine.createPlan({
+    goal:'Run-only volume',distance:'5K',targetTime:'24:30',level:'intermediate',daysPerWeek:3,
+    startDate:'2026-07-13',endDate:'2026-09-07',totalWeeks:8,longRunDay:0,currentWeeklyKm:0,currentWeeklyKmSource:'activity_history',
+    recentActivities:[{date:'2026-07-08',type:'run',dist:8},{date:'2026-07-09',type:'bike',dist:42},{date:'2026-07-10',type:'walk',dist:6}],asOfDate:'2026-07-10',now:1783900000009
+  });
+  assert.equal(runOnlyVolumePlan.athleteProfile.currentWeeklyKm,2,'Weekly baseline counts only running activities');
+  assert.equal(runOnlyVolumePlan.athleteProfile.volumeBasis,'activity_history_limited','One run is preserved as limited evidence, not replaced with a profile default');
+
+  // Low-volume inputs may produce advisory workload warnings, but must never be rejected by
+  // the same validator after the engine has already applied its hard safety caps.
+  const lowVolumeTenK=engine.createPlan({
+    goal:'Low-volume 10K',distance:'10K',targetTime:'49:30',benchmark:'10K 52:30',level:'intermediate',daysPerWeek:4,
+    startDate:'2026-07-13',endDate:'2026-09-21',totalWeeks:10,longRunDay:0,currentWeeklyKm:1,
+    currentWeeklyKmSource:'manual',recentActivities:[],asOfDate:'2026-07-10',now:1783900000008
+  });
+  assert.equal(lowVolumeTenK.validation.valid,true,`Low-volume 10K remains creatable: ${lowVolumeTenK.validation.errors.join(',')}`);
+  assert(lowVolumeTenK.validation.warnings.some(warning=>warning.startsWith('vo2_total_work_too_short:')),'Low-volume 10K surfaces the reduced I-pace dose as a warning');
+  assert(lowVolumeTenK.validation.warnings.some(warning=>warning.startsWith('weekly_volume_above_target:')),'Low-volume 10K surfaces weekly balancing as a warning');
 
   const fiveKToTenK=engine.createPlan({
     goal:'5K benchmark to 10K',distance:'10K',targetTime:'49:30',benchmark:'5K 23:30',level:'intermediate',daysPerWeek:4,
