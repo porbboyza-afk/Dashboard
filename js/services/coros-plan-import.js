@@ -80,11 +80,11 @@
     };
   }
   async function importPlan(){
-    if(!root._fb?.isSignedIn?.())throw new Error('Sign in before importing a plan.');
-    if(!root.MyDashCoachRepository?.replaceActivePlan)throw new Error('Coach repository is not ready.');
     const button=document.getElementById('btn-import-coros-sub50');
-    if(button){button.disabled=true;button.textContent='Importing COROS plan...';}
     try{
+      if(!root._fb?.isSignedIn?.())throw new Error('Sign in before importing a plan.');
+      if(!root.MyDashCoachRepository?.replaceActivePlan)throw new Error('Coach repository is not ready.');
+      if(button){button.disabled=true;button.textContent='Importing COROS plan...';}
       const saved=await root.MyDashCoachRepository.replaceActivePlan(createPlan());
       root.AppState?.set('coachPlan',saved);
       const output=document.getElementById('coach-output');

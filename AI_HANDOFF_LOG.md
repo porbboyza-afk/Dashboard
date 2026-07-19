@@ -13,6 +13,7 @@ Status: implemented and verified; pending user-visible import after deployment.
 - Added `coros_plan_import_test.js`: verifies 31 sessions, date range, no Monday/Friday sessions, retained threshold/progressive/race workouts, COROS source metadata, and expected weekly-distance total.
 - Verification passed: `node coros_plan_import_test.js`, `node verify_dashboard.js`, `node coach_v2_test.js`, and `python smoke_test_dashboard.py`.
 - PWA cache: `mydash-v3-coros-plan-import-20260719-1`.
+- Live-browser verification found the available Chrome tab was signed out of MyDash Cloud. The importer correctly made no Firebase write. Its precondition checks were moved inside the error-handling block so the button now shows `Sign in before importing a plan.` rather than failing silently. The user must complete Google sign-in in MyDash before an agent can perform the import; do not bypass Firebase authentication or write directly to another user's path.
 
 ## 2026-07-19 Training Generator Architecture Audit And Correction
 
