@@ -25,6 +25,16 @@
     const revisionNumber=currentRevision+1;
     return savePlan({...plan,revisionId:`r${revisionNumber}`,updatedAt:Date.now()},{mirrorLegacy});
   }
+  async function replaceActivePlan(plan,{mirrorLegacy=true}={}){
+    const current=await loadActivePlan();
+    const saved=await savePlan(plan,{mirrorLegacy});
+    if(current?.planId&&current.planId!==saved.planId){
+      const id=safeId(current.planId);
+      await firebase().setData(`coach_plans/${id}/status`,'archived');
+      await firebase().setData(`coach_plans/${id}/archivedAt`,Date.now());
+    }
+    return saved;
+  }
   async function archivePlan(plan){
     if(plan?.planId&&plan.engineVersion===2){
       const id=safeId(plan.planId);
@@ -41,5 +51,5 @@
     return plan?.status==='active'?plan:null;
   }
 
-  root.MyDashCoachRepository={savePlan,saveRevision,archivePlan,loadActivePlan,safeId};
+  root.MyDashCoachRepository={savePlan,saveRevision,replaceActivePlan,archivePlan,loadActivePlan,safeId};
 })(window);

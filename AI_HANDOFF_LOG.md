@@ -1,5 +1,19 @@
 # AI Handoff Log
 
+## 2026-07-19 COROS External Plan Import
+
+Status: implemented and verified; pending user-visible import after deployment.
+
+- User selected the shared COROS `10K under 50 minutes` plan: `planId=479006363339636967`.
+- Extracted all 8 weeks and 31 sessions from the public COROS schedule page. Key source sessions include the 5K benchmark, `4 x 1200 m` threshold, `4 x 1600 m` threshold, continuous 8 km tempo, progressive long runs, and the 10K race on 18 October 2026.
+- Added `js/services/coros-plan-import.js`. It creates a versioned Coach Engine V2-compatible external plan with source URL, COROS plan ID, original weekly distances, session detail, and an explicit external-plan warning. MyDash does not regenerate or reinterpret the COROS session structure.
+- User cannot run Monday or Friday and requires Sunday long runs. The importer preserves the COROS Tuesday/Wednesday/Sunday slots and moves only the source Friday session to Saturday. This adaptation is recorded in `sourcePlan.adaptation` and each moved session note.
+- Added `replaceActivePlan()` to the Coach repository. It saves the new versioned plan and active pointer first, then archives the old plan without deleting the new pointer.
+- Added an `Import COROS 10K sub-50 plan` button in Coach Create. It replaces the active plan only after sign-in and records the active COROS plan in Firebase.
+- Added `coros_plan_import_test.js`: verifies 31 sessions, date range, no Monday/Friday sessions, retained threshold/progressive/race workouts, COROS source metadata, and expected weekly-distance total.
+- Verification passed: `node coros_plan_import_test.js`, `node verify_dashboard.js`, `node coach_v2_test.js`, and `python smoke_test_dashboard.py`.
+- PWA cache: `mydash-v3-coros-plan-import-20260719-1`.
+
 ## 2026-07-19 Training Generator Architecture Audit And Correction
 
 Status: implemented and verified. Initial architecture commit is `cbbd08e`; scheduler follow-up is `9e6b9d0`.

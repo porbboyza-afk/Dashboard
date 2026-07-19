@@ -2196,6 +2196,11 @@ img, video, iframe, canvas { max-width: 100%; }
               </div>
             </div>
             <button class="btn btn-primary w100" id="btn-coach" onclick="generateTrainingPlan()">สร้างแผน + บันทึก Firebase</button>
+            <div style="margin-top:10px;padding:12px;border:1px solid rgba(45,206,137,.32);border-radius:var(--r);background:rgba(45,206,137,.06)">
+              <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:5px">External coach plan</div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.55;margin-bottom:9px">Import the selected COROS 10K sub-50 plan. It keeps the COROS sessions, moves Friday to Saturday, and replaces the active plan.</div>
+              <button class="btn btn-green w100" id="btn-import-coros-sub50" onclick="importCorosSub50Plan()">Import COROS 10K sub-50 plan</button>
+            </div>
             <div style="background:var(--accent-light);border:1.5px solid rgba(0,122,255,.2);border-radius:var(--r);padding:12px;margin-top:12px;font-size:12px;color:var(--text2);line-height:1.8">
               AI coach จะจับคู่อัตโนมัติกับกิจกรรมจาก MyDash Cloud และ Health Connect พร้อมกฎลดความเสี่ยงก่อนวันซ้อมหนัก
             </div>
@@ -4104,9 +4109,10 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
     <script src="js/settings.js"></script>
     <script src="js/backup-export.js"></script>
     <script src="js/domain/training/profiles.js"></script>
-    <script src="js/domain/training/engine-v2.js"></script>
-    <script src="js/services/coach-repository.js"></script>
-    <script src="js/training-dashboard-view-model.js"></script>
+      <script src="js/domain/training/engine-v2.js"></script>
+      <script src="js/services/coach-repository.js"></script>
+      <script src="js/services/coros-plan-import.js"></script>
+      <script src="js/training-dashboard-view-model.js"></script>
     <script src="js/coach.js"></script>
     <script src="js/races.js"></script>
     <script src="js/domain/review/matcher-v2.js"></script>

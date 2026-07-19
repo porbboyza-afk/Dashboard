@@ -28,6 +28,7 @@ const trainingEngineScriptPath = path.join(root, 'js', 'domain', 'training', 'en
 const trainingDashboardVmScriptPath = path.join(root, 'js', 'training-dashboard-view-model.js');
 const reviewMatcherScriptPath = path.join(root, 'js', 'domain', 'review', 'matcher-v2.js');
 const coachRepositoryScriptPath = path.join(root, 'js', 'services', 'coach-repository.js');
+const corosPlanImportScriptPath = path.join(root, 'js', 'services', 'coros-plan-import.js');
 const settingsScriptPath = path.join(root, 'js', 'settings.js');
 const backupExportScriptPath = path.join(root, 'js', 'backup-export.js');
 const racesScriptPath = path.join(root, 'js', 'races.js');
@@ -48,6 +49,7 @@ const extraScripts = [
   trainingProfilesScriptPath,
   trainingEngineScriptPath,
   coachRepositoryScriptPath,
+  corosPlanImportScriptPath,
   trainingDashboardVmScriptPath,
   coachScriptPath,
   racesScriptPath,
@@ -115,6 +117,7 @@ ensureContains(indexPath, [
   '<script src="js/ui-core.js"></script>',
   '<script src="js/app-state.js"></script>',
   '<script src="js/app-bootstrap.js"></script>',
+  '<script src="js/services/coros-plan-import.js"></script>',
   '<script src="js/activity-model.js"></script>',
   '<script src="js/today-dashboard-view-model.js"></script>',
   '<script src="js/share-card.js"></script>',
@@ -145,7 +148,7 @@ ensureContains(indexPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-training-availability-20260719-1',
+  'mydash-v3-coros-plan-import-20260719-1',
   './app-redesign.css?v=20260711-1',
   './training-studio-ui.css?v=20260711-1',
   './studio-shell.css?v=20260711-1',
@@ -350,7 +353,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-training-availability-20260719-1",
+  "mydash-v3-coros-plan-import-20260719-1",
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',

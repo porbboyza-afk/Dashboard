@@ -852,7 +852,8 @@ function renderCoachTracking(){
   const today=toLocalDateStr();
   const currentPhase=coachCurrentPhase(plan,today);
   set('coach-plan-goal-disp','🎯 '+(plan.goal||'—'));
-  set('coach-plan-meta-disp',`START ${plan.startDate||'—'} · ${plan.totalWeeks||4} WKS · ${plan.sessions.length} SESSIONS · ${coachPhaseThai(currentPhase).toUpperCase()}`);
+  const sourceMeta=plan.sourcePlan?.provider?` · ${plan.sourcePlan.provider} SOURCE`:'';
+  set('coach-plan-meta-disp',`START ${plan.startDate||'—'} · ${plan.totalWeeks||4} WKS · ${plan.sessions.length} SESSIONS · ${coachPhaseThai(currentPhase).toUpperCase()}${sourceMeta}`);
   const completedDates=plan.completedDates||{};
   const workoutDates=new Set(getAllActivities().map(w=>w.date));
   let doneCount=0,missCount=0,remainCount=0;

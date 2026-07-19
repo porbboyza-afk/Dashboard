@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-training-availability-20260719-1';
+const CACHE_NAME = 'mydash-v3-coros-plan-import-20260719-1';
 const APP_SHELL = [
   './',
   './index.html',
