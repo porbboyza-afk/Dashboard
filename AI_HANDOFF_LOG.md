@@ -2,7 +2,7 @@
 
 ## 2026-07-19 Plan Creation Validation Regression Fix
 
-Status: verified; pending commit and push.
+Status: committed and pushed in `e933898`.
 
 Problem:
 
@@ -21,7 +21,7 @@ Do not claim the workload model is now complete or athlete-specific solely becau
 
 ## 2026-07-19 Weekly Baseline Correction
 
-Status: verified; pending commit and push.
+Status: committed and pushed in `e933898`.
 
 - The engine previously replaced limited Garmin/activity history with 60% of the distance profile's default weekly volume. For an intermediate 10K profile, this became 19.2 km/week. This value was not the user's data and must not be used as a training baseline.
 - The engine now totals only run-like activities for its 30-day volume calculation and keeps the observed value unchanged. It records limited history as `activity_history_limited` rather than silently inflating it.
