@@ -2,7 +2,7 @@
 
 ## 2026-07-19 Training Generator Architecture Audit And Correction
 
-Status: pending verification and release commit.
+Status: implemented, verified, and committed in `cbbd08e`.
 
 Source review:
 
