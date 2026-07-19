@@ -1,5 +1,15 @@
 # AI Handoff Log
 
+## 2026-07-19 Active Plan Pointer Fix
+
+Status: pending verification and commit.
+
+- The app bootstrap listener previously accepted the legacy `coach_plan` mirror directly. If an archived plan's mirror arrived before its deletion event, the old plan could be restored in AppState and displayed on the Today page even with no active plan.
+- `active_coach_plan_id` is now the only source of truth. The repository returns a plan only when the pointer exists and that versioned record has `status: active`; it never falls back to `coach_plan`.
+- Today also filters AppState defensively and renders a plan only with `status: active`.
+- Added a regression test that injects a stale `coach_plan` mirror after archive and verifies it cannot restore the archived plan.
+- PWA cache advances to `mydash-v3-active-plan-pointer-20260719-1`.
+
 ## 2026-07-19 Plan Creation Validation Regression Fix
 
 Status: committed and pushed in `e933898`.

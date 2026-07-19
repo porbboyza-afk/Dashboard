@@ -36,11 +36,9 @@
   }
   async function loadActivePlan(){
     const id=await firebase().getData('active_coach_plan_id');
-    if(id){
-      const plan=await firebase().getData(`coach_plans/${safeId(id)}`);
-      if(plan)return plan;
-    }
-    return firebase().getData('coach_plan');
+    if(!id)return null;
+    const plan=await firebase().getData(`coach_plans/${safeId(id)}`);
+    return plan?.status==='active'?plan:null;
   }
 
   root.MyDashCoachRepository={savePlan,saveRevision,archivePlan,loadActivePlan,safeId};

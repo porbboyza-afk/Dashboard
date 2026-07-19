@@ -53,7 +53,8 @@
     host.closest('.page')?.classList.add('studio-enabled');
     const activities = typeof root.getAllActivities === 'function' ? root.getAllActivities() : (root._workouts || []);
     const wellness = root.AppState?.get('wellness') || [];
-    const plan = root.AppState?.get('coachPlan') || root._coachPlan || null;
+    const candidatePlan = root.AppState?.get('coachPlan') || root._coachPlan || null;
+    const plan = candidatePlan?.status === 'active' ? candidatePlan : null;
     const today = todayKey();
     const readiness = typeof root.calculateReadiness === 'function' ? root.calculateReadiness() : { score: null, level: 'Add wellness data', today: null, load: {} };
     const decision = plan && typeof root.coachDailyDecision === 'function' ? root.coachDailyDecision(plan, today) : null;

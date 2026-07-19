@@ -19,20 +19,19 @@
     root._fb.listen('training_analyses', data => {
       root.AppState.set('trainingAnalyses', data || {});
     });
-    root._fb.listen('coach_plan', data => {
-      if (data) {
-        root.AppState.set('coachPlan', data);
+    const refreshActiveCoachPlan = () => {
+      if (!root.MyDashCoachRepository?.loadActivePlan) {
+        root.AppState.set('coachPlan', null);
         return;
       }
-      // V2 plans are versioned under coach_plans. Keep Today and Coach on the same active plan.
-      if (root.MyDashCoachRepository?.loadActivePlan) {
-        root.MyDashCoachRepository.loadActivePlan()
-          .then(plan => root.AppState.set('coachPlan', plan || null))
-          .catch(error => console.warn('Active Coach plan:', error.message));
-      } else {
-        root.AppState.set('coachPlan', null);
-      }
-    });
+      root.MyDashCoachRepository.loadActivePlan()
+        .then(plan => root.AppState.set('coachPlan', plan || null))
+        .catch(error => console.warn('Active Coach plan:', error.message));
+    };
+    // The pointer is authoritative. `coach_plan` is only a compatibility mirror and may
+    // arrive before its deletion event when an old plan is archived.
+    root._fb.listen('active_coach_plan_id', refreshActiveCoachPlan);
+    root._fb.listen('coach_plan', refreshActiveCoachPlan);
     root._fb.listen('post_run_reviews', data => {
       root.AppState.set('postRunReviews', byDateDescending(data));
     });

@@ -293,6 +293,8 @@ async function main() {
   assert.equal(writes.get(`coach_plans/${ten.planId}/status`),'archived','Archive status');
   assert.equal(writes.has('active_coach_plan_id'),false,'Active pointer removed');
   assert.equal(writes.has('coach_plan'),false,'Legacy mirror removed');
+  writes.set('coach_plan',ten);
+  assert.equal(await repository.loadActivePlan(),null,'A stale legacy mirror cannot restore an archived plan');
 
   console.log(JSON.stringify({
     profiles:Object.keys(plans),
