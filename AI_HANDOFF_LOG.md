@@ -32,6 +32,12 @@ Screenshot-driven scheduler follow-up:
 - The generator now makes the second Specific session complementary (R for 5K/10K, cruise-T for longer goals), keeps only one sharpening session in Taper, reduces taper long runs to 67% of the preceding long run, and rejects adjacent long/quality loads, duplicate race-specific work in a week, or more than one quality workout in a taper week.
 - Regression coverage recreates this five-day layout and verifies the three failures cannot return. PWA cache is `mydash-v3-training-scheduler-20260719-1`.
 
+Availability-spacing follow-up:
+
+- A plan could still fail validation when an unavailable weekday caused `moveFromUnavailable()` to push a quality session forward into the day immediately before a long run. The repeated `adjacent_key_load:<Sunday>` errors were the validator correctly catching this scheduler defect.
+- Rescheduling now searches both backward and forward. It rejects candidate dates within one day of already scheduled key load and, for a quality workout, the planned long-run date. If there is no safe slot, the session is omitted instead of writing an invalid plan.
+- Added a regression for a five-day 10K plan with Friday unavailable and Sunday long run. It must create validly without placing quality work beside the long run. PWA cache is `mydash-v3-training-availability-20260719-1`.
+
 Do not describe an 8 km run generically as a Daniels T tempo. It may be a race-specific or steady session, but true T must retain the intended physiological domain. Saved plans remain unchanged; regenerate a plan to use this version.
 
 ## 2026-07-19 10K Threshold Progression Correction

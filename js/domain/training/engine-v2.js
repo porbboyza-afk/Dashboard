@@ -687,13 +687,15 @@
     const parsed=parseDate(date);if(!parsed)return false;
     return unavailable.has(`weekday:${parsed.getDay()}`);
   }
-  function moveFromUnavailable(date,used,unavailable,endDate){
-    let candidate=date;
-    for(let offset=0;offset<6;offset++){
-      if(!used.has(candidate)&&!isUnavailable(candidate,unavailable)&&(!endDate||candidate<endDate))return candidate;
-      candidate=addDays(candidate,1);
+  function moveFromUnavailable(date,used,unavailable,endDate,options={}){
+    const offsets=[0,-1,1,-2,2,-3,3,-4,4,-5,5];
+    const keyLoadDates=options.keyLoadDates||[];
+    for(const offset of offsets){
+      const candidate=addDays(date,offset);
+      const tooCloseToKeyLoad=keyLoadDates.some(keyDate=>Math.abs(dayDiff(candidate,keyDate))<=1);
+      if(candidate&&candidate>=options.startDate&&!used.has(candidate)&&!isUnavailable(candidate,unavailable)&&(!endDate||candidate<endDate)&&!tooCloseToKeyLoad)return candidate;
     }
-    return date;
+    return '';
   }
   function appendRaceWeekGuardSessions({sessions,profile,athlete,startDate,endDate,totalWeeks,planId,unavailable}){
     if(!profile.race||!endDate)return;
@@ -768,6 +770,7 @@
       const remaining=Math.max(easyMinimum*easySlots,targetVolume-qualityDistance-longDistance);
       const easyDistance=round(clamp(remaining/Math.max(1,easySlots),easyMinimum,12),1);
       const weekStart=weekDate(startDate,weekIndex,1);
+      const plannedLongDate=weekDate(startDate,weekIndex,longRunDay);
       phaseSchedule.push({week:weekIndex+1,phase,phaseLabel:phaseDisplay(phase),startDate:weekStart,targetVolumeKm:targetVolume});
 
       weekdays.forEach((slot,slotIndex)=>{
@@ -775,12 +778,16 @@
         if(!date||date<startDate)return;
         if(profile.race&&date===endDate)return;
         if(date>=endDate)return;
-        date=moveFromUnavailable(date,used,unavailable,endDate);
-        if(used.has(date)||date>=endDate)return;
+        const isQuality=slot.isQuality&&slot.qualityIndex<qualities.length;
+        const isLong=slot.isLong&&phase!=='RaceWeek';
+        const existingKeyLoadDates=sessions.filter(session=>['Tempo','Interval','Long'].includes(session.type)).map(session=>session.date);
+        const protectedKeyLoadDates=isQuality?[...existingKeyLoadDates,plannedLongDate]:isLong?existingKeyLoadDates:[];
+        date=moveFromUnavailable(date,used,unavailable,endDate,{startDate,keyLoadDates:protectedKeyLoadDates});
+        if(!date||used.has(date)||date>=endDate)return;
         used.add(date);
         let session;
-        if(slot.isQuality&&slot.qualityIndex<qualities.length)session={...qualities[slot.qualityIndex]};
-        else if(slot.isLong&&phase!=='RaceWeek'){
+        if(isQuality)session={...qualities[slot.qualityIndex]};
+        else if(isLong){
           const effort=athlete.effortTargets.easy;
           const details=longDetails(longDistance,athlete.anchors.easy,profile,effort);
           session={type:'Long',intent:'long',targetDist:longDistance,targetPace:formatPace(athlete.anchors.easy),targetPaceRange:`${formatPace(effort.paceFast)}-${formatPace(effort.paceSlow)}`,targetHR:effort.hrMax||'',priority:'key',

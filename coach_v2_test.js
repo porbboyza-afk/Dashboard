@@ -274,6 +274,15 @@ async function main() {
   assert(keyLoads.every((session,index)=>index===0||Math.abs((new Date(session.date)-new Date(keyLoads[index-1].date))/86400000)>1),'5-day plan never puts a long run directly next to a quality session');
   assert(fiveDayPlan.sessions.some(session=>session.type==='Recovery'&&session.recoveryIntent==='post_long_run'),'5-day plan includes post-long-run recovery run');
 
+  const unavailableFridayPlan=engine.createPlan({
+    goal:'10K unavailable Friday',distance:'10K',targetTime:'49:30',benchmark:'10K 52:30',
+    level:'intermediate',daysPerWeek:5,startDate:'2026-07-20',endDate:'2026-09-28',totalWeeks:10,longRunDay:0,
+    unavailableRaw:'Fri',currentWeeklyKm:30,longestRecentRunKm:12,recentActivities:[],now:1783900000011
+  });
+  assert.equal(unavailableFridayPlan.validation.valid,true,unavailableFridayPlan.validation.errors.join(','));
+  const unavailableKeyLoads=unavailableFridayPlan.sessions.filter(session=>['Tempo','Interval','Long'].includes(session.type)).sort((a,b)=>a.date.localeCompare(b.date));
+  assert(unavailableKeyLoads.every((session,index)=>index===0||Math.abs((new Date(session.date)-new Date(unavailableKeyLoads[index-1].date))/86400000)>1),'Unavailable Friday: quality work moves safely instead of being pushed next to Sunday long run');
+
   const sixDayPlan=engine.createPlan({
     goal:'Half six-day plan',distance:'Half',targetTime:'1:52:00',benchmark:'10K 52:30',
     level:'intermediate',daysPerWeek:6,startDate:'2026-07-13',endDate:'2026-10-05',totalWeeks:12,longRunDay:0,
