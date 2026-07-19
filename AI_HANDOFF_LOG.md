@@ -2,7 +2,7 @@
 
 ## 2026-07-19 10K Threshold Progression Correction
 
-Status: pending verification and commit.
+Status: committed and pushed in `6b2e83b`.
 
 - A reproduced 8-week intermediate 10K plan with a manually confirmed 30 km/week baseline scheduled only two continuous T sessions: one Build T and one Specific T. The prior Base rotation used hills/strides and the first Build session used R repetitions, leaving insufficient threshold progression.
 - `6.3 km` continuous T can be the correct 40-minute threshold ceiling at a slower athlete pace. It is not evidence that the engine applied the wrong 30 km baseline. Forcing 8 km continuous at that pace would prescribe about 50 minutes at threshold, which changes the session domain.
