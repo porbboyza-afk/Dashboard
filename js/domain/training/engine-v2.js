@@ -516,6 +516,9 @@
   }
   function qualitySpec(profile,phase,progress,weekIndex,phasePosition=0,phaseCount=1){
     if(phase==='Base'){
+      // A 10K plan needs threshold development before its short Build block.
+      // Keep one economy session, then introduce controlled continuous T work.
+      if(profile.key==='10K'&&weekIndex%2===1)return thresholdSpec(profile,Math.min(.25,Math.max(.12,progress)),'continuous');
       return weekIndex%2===0
         ? {intent:'speed_skill',structure:'repetitions',reps:6+Math.min(4,weekIndex),repSeconds:20,recoverySeconds:70,intensity:'strides',workKm:0}
         : {intent:'hill_strength',structure:'repetitions',reps:6+Math.min(4,weekIndex),repSeconds:30,recoverySeconds:90,intensity:'hill_controlled',workKm:0};
@@ -528,6 +531,7 @@
       // R work builds economy, but repeating it alone is not a 5K/10K
       // progression. Alternate it with T and I stimuli as the phase develops.
       const cycle=phasePosition%4;
+      if(profile.key==='10K'&&cycle===0)return thresholdSpec(profile,progress,'repetitions');
       if(cycle===0)return intervalSpec(repetition.length?repetition:profile.buildIntervals,0);
       if(cycle===1)return thresholdSpec(profile,progress,'continuous');
       if(cycle===2)return intervalSpec(vo2.length?vo2:profile.buildIntervals,nextProgress(progress,phasePosition));

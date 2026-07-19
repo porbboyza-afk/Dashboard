@@ -75,7 +75,7 @@ async function main() {
       assert.equal(breakdown.mainKm,session.workoutSpec.qualityDistanceKm,`${distance}: main distance is quality distance only`);
       assert(breakdown.warmupKm>0&&breakdown.cooldownKm>0,`${distance}: quality session has warm-up and cool-down`);
     });
-    const classes=new Set(qualitySessions.map(session=>session.workoutSpec.danielsClass));
+    const classes=new Set(plan.sessions.map(session=>session.workoutSpec?.danielsClass).filter(Boolean));
     if(['5K','10K'].includes(distance)){
       assert(classes.has('R')&&classes.has('I')&&classes.has('T'),`${distance}: uses distinct R, I, and T stimuli`);
       assert(plan.sessions.some(session=>session.phase==='Build'&&session.workoutSpec?.intent==='threshold'&&session.workoutSpec.structure==='continuous'),`${distance}: Build includes continuous threshold work`);
@@ -87,6 +87,17 @@ async function main() {
   }
 
   const ten = plans['10K'];
+  const tenK30km=engine.createPlan({
+    goal:'10K threshold progression',distance:'10K',targetTime:'47:59',benchmark:'10K 52:30',level:'intermediate',daysPerWeek:4,
+    startDate:'2026-07-13',endDate:'2026-09-07',totalWeeks:8,longRunDay:0,currentWeeklyKm:30,currentWeeklyKmSource:'manual',recentActivities:[],now:1783900000010
+  });
+  const tenKContinuousT=tenK30km.sessions.filter(session=>session.workoutSpec?.intent==='threshold'&&session.workoutSpec.structure==='continuous');
+  const tenKCruiseT=tenK30km.sessions.filter(session=>session.workoutSpec?.intent==='threshold'&&session.workoutSpec.structure==='repetitions');
+  assert.equal(tenK30km.validation.valid,true,tenK30km.validation.errors.join(','));
+  assert(tenKContinuousT.length>=3,'10K: eight-week plan contains a real continuous-T progression');
+  assert(tenKContinuousT.every(session=>session.workoutSpec.qualityDistanceKm>0),'10K: every continuous-T session contains real work');
+  assert(tenKCruiseT.length>=1,'10K: eight-week plan also includes cruise-T volume without forcing an overlong continuous tempo');
+  assert(tenK30km.sessions.filter(session=>['Tempo','Interval'].includes(session.type)&&session.phase!=='Taper').every((session,index,rows)=>index===0||session.week!==rows[index-1].week),'10K: never schedules more than one quality workout in a week');
   const tenPhases = ten.phaseSchedule.map(row=>row.phase);
   assert(tenPhases.filter(phase=>phase==='Build').length>=2, '10K: meaningful build block');
   assert(tenPhases.filter(phase=>phase==='Specific').length>=2, '10K: meaningful specific block');

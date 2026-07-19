@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
 
-  const METHODOLOGY_VERSION = 'mydash-running-2026.07.19.3';
+  const METHODOLOGY_VERSION = 'mydash-running-2026.07.19.4';
 
   // Daniels, Running Formula 4e: reference ceilings for individual quality
   // sessions. The engine records these, but prescribes T/I work with a
@@ -62,8 +62,8 @@
       defaultWeeks:10, defaultWeeklyKm:{beginner:18,intermediate:32,advanced:52},
       minLongKm:7, maxLongKm:{beginner:10,intermediate:14,advanced:16}, longRatio:.38, maxLongRatio:.52,
       longRunTargets:{Base:{beginner:8,intermediate:12,advanced:14},Build:{beginner:9,intermediate:13,advanced:15},Specific:{beginner:10,intermediate:14,advanced:16}},
-      qualityBudgetKm:{Base:0,Build:5,Specific:8,Taper:3}, continuousTempoRatio:.60,
-      qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:18,advanced:22},Specific:{beginner:14,intermediate:22,advanced:26},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Build:{beginner:18,intermediate:28,advanced:32},Specific:{beginner:28,intermediate:40,advanced:45},Taper:{beginner:10,intermediate:12,advanced:15}}},
+      qualityBudgetKm:{Base:4,Build:5,Specific:8,Taper:3}, continuousTempoRatio:.60,
+      qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:18,advanced:22},Specific:{beginner:14,intermediate:22,advanced:26},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Base:{beginner:12,intermediate:18,advanced:22},Build:{beginner:18,intermediate:28,advanced:32},Specific:{beginner:28,intermediate:40,advanced:45},Taper:{beginner:10,intermediate:12,advanced:15}}},
       thresholdWorkKm:{min:3,max:8}, specificWorkKm:{min:4,max:8},
       thresholdIntervals:[
         {intent:'threshold',reps:3,repKm:1.5,recoverySeconds:90,intensity:'threshold'},

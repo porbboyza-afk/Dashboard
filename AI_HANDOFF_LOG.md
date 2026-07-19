@@ -1,5 +1,14 @@
 # AI Handoff Log
 
+## 2026-07-19 10K Threshold Progression Correction
+
+Status: pending verification and commit.
+
+- A reproduced 8-week intermediate 10K plan with a manually confirmed 30 km/week baseline scheduled only two continuous T sessions: one Build T and one Specific T. The prior Base rotation used hills/strides and the first Build session used R repetitions, leaving insufficient threshold progression.
+- `6.3 km` continuous T can be the correct 40-minute threshold ceiling at a slower athlete pace. It is not evidence that the engine applied the wrong 30 km baseline. Forcing 8 km continuous at that pace would prescribe about 50 minutes at threshold, which changes the session domain.
+- The 10K rotation now introduces a controlled continuous T session in the second Base week and starts Build with cruise-T repetitions. An 8-week plan therefore carries at least three continuous T sessions plus one cruise-T session, while retaining one quality workout per week and I/race-pace work later in the plan.
+- Tests assert the 30 km/week 8-week 10K progression and prohibit more than one Tempo/Interval session per non-taper week. PWA cache is `mydash-v3-10k-threshold-progression-20260719-1`; methodology version is `mydash-running-2026.07.19.4`.
+
 ## 2026-07-19 Firebase Non-Finite Plan Serialization Fix
 
 Status: committed and pushed in `0bb2016`.
