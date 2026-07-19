@@ -2,7 +2,7 @@
 
 ## 2026-07-19 Training Generator Architecture Audit And Correction
 
-Status: implemented; initial architecture commit is `cbbd08e`. Scheduler follow-up is pending release commit.
+Status: implemented and verified. Initial architecture commit is `cbbd08e`; scheduler follow-up is `9e6b9d0`.
 
 Source review:
 
