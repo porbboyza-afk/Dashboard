@@ -2,7 +2,7 @@
 
 ## 2026-07-19 Training Generator Architecture Audit And Correction
 
-Status: implemented, verified, and committed in `cbbd08e`.
+Status: implemented; initial architecture commit is `cbbd08e`. Scheduler follow-up is pending release commit.
 
 Source review:
 
@@ -25,6 +25,12 @@ Regression coverage:
 - 10-week 10K: Specific contains distinct I, T, and race-specific stimuli; I repetitions remain 2-5 minutes with >=10 minutes total work outside taper.
 - 5-day and 6-day plans: Build weeks have two distinct quality sessions when the requested frequency supports it.
 - Existing Firebase finite-payload, long-run, recovery, plan persistence, and all-profile tests remain in `coach_v2_test.js`.
+
+Screenshot-driven scheduler follow-up:
+
+- A generated five-day plan exposed a critical regression: two identical `Race-specific` sessions could appear in one Specific week, Taper could retain two quality sessions, and long runs were not treated as key load when checking day-to-day spacing.
+- The generator now makes the second Specific session complementary (R for 5K/10K, cruise-T for longer goals), keeps only one sharpening session in Taper, reduces taper long runs to 67% of the preceding long run, and rejects adjacent long/quality loads, duplicate race-specific work in a week, or more than one quality workout in a taper week.
+- Regression coverage recreates this five-day layout and verifies the three failures cannot return. PWA cache is `mydash-v3-training-scheduler-20260719-1`.
 
 Do not describe an 8 km run generically as a Daniels T tempo. It may be a race-specific or steady session, but true T must retain the intended physiological domain. Saved plans remain unchanged; regenerate a plan to use this version.
 

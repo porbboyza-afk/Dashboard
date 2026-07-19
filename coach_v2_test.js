@@ -265,6 +265,13 @@ async function main() {
   assert.equal(fiveDayPlan.validation.valid,true,fiveDayPlan.validation.errors.join(','));
   assert(fiveDayPlan.sessions.some(session=>['Tempo','Interval'].includes(session.type)),'5-day plan still includes quality work');
   assert(fiveDayPlan.sessions.filter(session=>session.week===3&&['Tempo','Interval'].includes(session.type)).length===2,'5-day plan schedules two distinct quality sessions when frequency supports it');
+  const raceSpecificCounts=new Map();
+  fiveDayPlan.sessions.filter(session=>session.intent==='race_specific').forEach(session=>raceSpecificCounts.set(session.week,(raceSpecificCounts.get(session.week)||0)+1));
+  assert([...raceSpecificCounts.values()].every(count=>count===1),'5-day plan never duplicates race-specific work in the same week');
+  const taperWeek=fiveDayPlan.phaseSchedule.find(row=>row.phase==='Taper').week;
+  assert(fiveDayPlan.sessions.filter(session=>session.week===taperWeek&&['Tempo','Interval'].includes(session.type)).length===1,'5-day taper keeps exactly one sharpening session');
+  const keyLoads=fiveDayPlan.sessions.filter(session=>['Tempo','Interval','Long'].includes(session.type)).sort((a,b)=>a.date.localeCompare(b.date));
+  assert(keyLoads.every((session,index)=>index===0||Math.abs((new Date(session.date)-new Date(keyLoads[index-1].date))/86400000)>1),'5-day plan never puts a long run directly next to a quality session');
   assert(fiveDayPlan.sessions.some(session=>session.type==='Recovery'&&session.recoveryIntent==='post_long_run'),'5-day plan includes post-long-run recovery run');
 
   const sixDayPlan=engine.createPlan({

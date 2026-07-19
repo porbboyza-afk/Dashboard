@@ -279,7 +279,7 @@
       const recoveryCeiling=Math.max(previousLongKm*1.10,highestLongKm*1.08);
       distance=Math.min(distance,stepBack?previousLongKm*.88:recoveryCeiling);
     }
-    if(phase==='Taper')distance=Math.min(distance,Math.max(profile.minLongKm*.75,previousLongKm*.72));
+    if(phase==='Taper')distance=Math.min(distance,Math.max(profile.minLongKm*.75,previousLongKm*.67));
     return round(Math.max(phase==='Taper'?3:profile.minLongKm,distance),1);
   }
   function buildWeeklyTargets(profile,athlete,phases){
@@ -525,8 +525,12 @@
         : {intent:'speed_skill',structure:'repetitions',reps:6,recoverySeconds:70,repSeconds:20,intensity:'strides',workKm:0};
       if(phase==='Build')return thresholdSpec(profile,progress,'repetitions');
       if(phase==='Specific'){
-        const raceSpecific=specsForIntent(profile,'race_specific');
-        return raceSpecific.length?intervalSpec(raceSpecific,progress):thresholdSpec(profile,progress,'repetitions');
+        if(['5K','10K'].includes(profile.key)){
+          // Complement the primary stimulus instead of duplicating a second
+          // race-specific session in the same week.
+          return intervalSpec(profile.repetitionIntervals||profile.buildIntervals,progress);
+        }
+        return thresholdSpec(profile,progress,'repetitions');
       }
     }
     if(phase==='Base'){
@@ -748,14 +752,17 @@
       const phaseInfo=phaseMeta(phases,weekIndex);
       const progress=phaseInfo.progress;
       const qualitySlots=weekdays.filter(slot=>slot.isQuality);
-      const qualities=qualitySlots.map(slot=>createQualitySession(profile,phase,progress,weekIndex,athlete,targetVolume,phaseInfo.position,phaseInfo.count,slot.qualityIndex));
+      // A taper preserves one short sharpening session. A second hard session
+      // is fatigue, not fitness, this close to the race.
+      const scheduledQualitySlots=phase==='Taper'?qualitySlots.slice(0,1):qualitySlots;
+      const qualities=scheduledQualitySlots.map(slot=>createQualitySession(profile,phase,progress,weekIndex,athlete,targetVolume,phaseInfo.position,phaseInfo.count,slot.qualityIndex));
       const longDistance=longRunDistance(profile,athlete,phase,weekIndex,targetVolume,previousLongDistance,previousTargetVolume,highestLongDistance);
       if(phase!=='RaceWeek'){
         previousLongDistance=longDistance;
         highestLongDistance=Math.max(highestLongDistance,longDistance);
       }
       previousTargetVolume=targetVolume;
-      const easySlots=weekdays.filter(slot=>!slot.isLong&&!slot.isQuality).length;
+      const easySlots=weekdays.filter(slot=>!slot.isLong&&(!slot.isQuality||slot.qualityIndex>=qualities.length)).length;
       const easyMinimum=phase==='Taper'?2:3;
       const qualityDistance=qualities.reduce((sum,session)=>sum+(session.targetDist||0),0);
       const remaining=Math.max(easyMinimum*easySlots,targetVolume-qualityDistance-longDistance);
@@ -772,7 +779,7 @@
         if(used.has(date)||date>=endDate)return;
         used.add(date);
         let session;
-        if(slot.isQuality)session={...(qualities[slot.qualityIndex]||qualities[0])};
+        if(slot.isQuality&&slot.qualityIndex<qualities.length)session={...qualities[slot.qualityIndex]};
         else if(slot.isLong&&phase!=='RaceWeek'){
           const effort=athlete.effortTargets.easy;
           const details=longDetails(longDistance,athlete.anchors.easy,profile,effort);
@@ -838,7 +845,8 @@
   }
   function validatePlan(plan,profile,weeklyTargets,peakVolume){
     const errors=[],warnings=[];
-    const dates=new Set(),quality=[],longRuns=[],thresholdSessions=[];
+    const dates=new Set(),quality=[],longRuns=[],keyLoads=[],thresholdSessions=[];
+    const raceSpecificByWeek=new Map(),qualityByWeek=new Map();
     const unavailable=unavailableSet(plan.goalProfile?.unavailable||plan.goalProfile?.unavailableRaw||'');
     (plan.sessions||[]).forEach(session=>{
       if(dates.has(session.date))errors.push(`duplicate_date:${session.date}`);
@@ -847,6 +855,9 @@
       if(profile.race&&addDays(session.date,1)===plan.endDate&&session.type!=='Rest')errors.push(`race_eve_not_rest:${session.date}`);
       if(['Tempo','Interval'].includes(session.type))quality.push(session);
       if(session.type==='Long')longRuns.push(session);
+      if(['Tempo','Interval','Long'].includes(session.type))keyLoads.push(session);
+      if(['Tempo','Interval'].includes(session.type))qualityByWeek.set(session.week,(qualityByWeek.get(session.week)||0)+1);
+      if(session.workoutSpec?.intent==='race_specific')raceSpecificByWeek.set(session.week,(raceSpecificByWeek.get(session.week)||0)+1);
       if(session.workoutSpec?.intent==='threshold')thresholdSessions.push(session);
       const qualityBudget=profile.qualityBudgetKm?.[session.phase];
       if(qualityBudget&&session.workoutSpec?.qualityDistanceKm>qualityBudget+.15)errors.push(`quality_budget_exceeded:${session.sessionId}`);
@@ -885,6 +896,16 @@
     for(let index=1;index<quality.length;index++){
       if(Math.abs(dayDiff(quality[index].date,quality[index-1].date))<=1)errors.push(`adjacent_quality:${quality[index].date}`);
     }
+    keyLoads.sort((a,b)=>a.date.localeCompare(b.date));
+    for(let index=1;index<keyLoads.length;index++){
+      if(Math.abs(dayDiff(keyLoads[index].date,keyLoads[index-1].date))<=1)errors.push(`adjacent_key_load:${keyLoads[index].date}`);
+    }
+    raceSpecificByWeek.forEach((count,week)=>{
+      if(count>1)errors.push(`duplicate_race_specific:w${week}`);
+    });
+    (plan.phaseSchedule||[]).filter(row=>row.phase==='Taper').forEach(row=>{
+      if((qualityByWeek.get(row.week)||0)>1)errors.push(`taper_quality_excess:w${row.week}`);
+    });
     const continuousTempo=thresholdSessions.filter(session=>session.workoutSpec?.structure==='continuous').length;
     const segmentedTempo=thresholdSessions.filter(session=>session.workoutSpec?.structure==='repetitions').length;
     if(segmentedTempo>0&&continuousTempo/segmentedTempo<(profile.continuousTempoRatio??.6))warnings.push('continuous_tempo_underrepresented');
