@@ -2,7 +2,7 @@
 
 ## 2026-07-19 Active Plan Pointer Fix
 
-Status: pending verification and commit.
+Status: committed and pushed in `ccb1186`.
 
 - The app bootstrap listener previously accepted the legacy `coach_plan` mirror directly. If an archived plan's mirror arrived before its deletion event, the old plan could be restored in AppState and displayed on the Today page even with no active plan.
 - `active_coach_plan_id` is now the only source of truth. The repository returns a plan only when the pointer exists and that versioned record has `status: active`; it never falls back to `coach_plan`.
