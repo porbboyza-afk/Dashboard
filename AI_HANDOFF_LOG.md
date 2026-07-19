@@ -1,5 +1,33 @@
 # AI Handoff Log
 
+## 2026-07-19 Training Generator Architecture Audit And Correction
+
+Status: pending verification and release commit.
+
+Source review:
+
+- Extracted and reviewed the user-provided `dokumen.pub_daniels-running-formula-4.epub`, with the governing training chapters 1-16 and the event plans for 800 m, 1,500 m-2 mile, 5K/10K, 15K-30K, and marathon.
+- The book does not support treating every hard session as a generic interval or making continuous threshold work progressively longer without limit. It distinguishes R (economy/speed with full recovery), I (aerobic-power repetitions normally 2-5 minutes), true continuous T (about 20 minutes), and cruise-T (short-recovery blocks that may total up to about 30 minutes).
+- The published 5K/10K tables are for 64 km/week and above. MyDash must not copy their number of quality sessions or distance totals into a 30 km/week, four-day schedule. At that frequency the long run plus one main quality session is the conservative structure; at five or six days the engine can schedule a second, distinct quality session.
+
+Generator corrections:
+
+- Removed the 10K-only workaround that injected threshold work during Base. Base now remains E running plus economy work (strides/hills) for every race distance.
+- Short-road Build now follows the phase order R then T; I is deferred to Specific. Specific begins with I, then uses cruise-T and race-specific work on later weeks rather than pretending all of them are the same interval stimulus.
+- I repetitions are selected from the athlete's I-pace duration: candidates outside 2-5 minutes are rejected and the rep count is calculated from the planned time at intensity. The 10K profile now includes 1K as a viable I option for athletes whose pace makes 800 m too short.
+- A continuous T session is reshaped to at most 20 minutes. If the work is prescribed as cruise intervals, it is capped at 30 minutes. This also runs after a cruise session has been reduced to a continuous block by a workload cap.
+- `trainingWeekdays()` now schedules one main quality session for 3-4 runs/week and two distinct quality sessions for 5-6 runs/week. The weekly volume calculation subtracts both sessions rather than cloning a single session without accounting for it. The six-day recovery run was moved away from the second quality slot.
+- The 10K intermediate profile no longer carries the unsupported 40-45 minute continuous T target. Its Base quality budget is zero and Build/Specific T/I targets are conservative time-at-intensity targets.
+
+Regression coverage:
+
+- 8-week 30 km/week 10K: Base has no threshold, Build introduces continuous T after R, continuous T is <=20 minutes, and cruise-T is <=30 minutes.
+- 10-week 10K: Specific contains distinct I, T, and race-specific stimuli; I repetitions remain 2-5 minutes with >=10 minutes total work outside taper.
+- 5-day and 6-day plans: Build weeks have two distinct quality sessions when the requested frequency supports it.
+- Existing Firebase finite-payload, long-run, recovery, plan persistence, and all-profile tests remain in `coach_v2_test.js`.
+
+Do not describe an 8 km run generically as a Daniels T tempo. It may be a race-specific or steady session, but true T must retain the intended physiological domain. Saved plans remain unchanged; regenerate a plan to use this version.
+
 ## 2026-07-19 10K Threshold Progression Correction
 
 Status: committed and pushed in `6b2e83b`.

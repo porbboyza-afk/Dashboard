@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
 
-  const METHODOLOGY_VERSION = 'mydash-running-2026.07.19.4';
+  const METHODOLOGY_VERSION = 'mydash-running-2026.07.19.5';
 
   // Daniels, Running Formula 4e: reference ceilings for individual quality
   // sessions. The engine records these, but prescribes T/I work with a
@@ -62,8 +62,10 @@
       defaultWeeks:10, defaultWeeklyKm:{beginner:18,intermediate:32,advanced:52},
       minLongKm:7, maxLongKm:{beginner:10,intermediate:14,advanced:16}, longRatio:.38, maxLongRatio:.52,
       longRunTargets:{Base:{beginner:8,intermediate:12,advanced:14},Build:{beginner:9,intermediate:13,advanced:15},Specific:{beginner:10,intermediate:14,advanced:16}},
-      qualityBudgetKm:{Base:4,Build:5,Specific:8,Taper:3}, continuousTempoRatio:.60,
-      qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:18,advanced:22},Specific:{beginner:14,intermediate:22,advanced:26},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Base:{beginner:12,intermediate:18,advanced:22},Build:{beginner:18,intermediate:28,advanced:32},Specific:{beginner:28,intermediate:40,advanced:45},Taper:{beginner:10,intermediate:12,advanced:15}}},
+      qualityBudgetKm:{Base:0,Build:5,Specific:6,Taper:3}, continuousTempoRatio:.50,
+      // A Daniels T tempo is about 20 minutes, not a catch-all label for a
+      // long steady/race-pace run. Cruise intervals may accumulate more time.
+      qualityWorkMinutes:{I:{Build:{beginner:10,intermediate:14,advanced:18},Specific:{beginner:12,intermediate:18,advanced:22},Taper:{beginner:8,intermediate:10,advanced:12}},T:{Build:{beginner:14,intermediate:18,advanced:20},Specific:{beginner:16,intermediate:20,advanced:24},Taper:{beginner:10,intermediate:12,advanced:15}}},
       thresholdWorkKm:{min:3,max:8}, specificWorkKm:{min:4,max:8},
       thresholdIntervals:[
         {intent:'threshold',reps:3,repKm:1.5,recoverySeconds:90,intensity:'threshold'},
@@ -72,6 +74,7 @@
       buildIntervals:[
         {intent:'vo2',reps:6,repKm:.4,recoverySeconds:90,intensity:'interval'},
         {intent:'vo2',reps:5,repKm:.8,recoverySeconds:120,intensity:'interval'},
+        {intent:'vo2',reps:4,repKm:1,recoverySeconds:180,intensity:'interval'},
         {intent:'race_specific',reps:4,repKm:1,recoverySeconds:105,intensity:'current_10k'}
       ],
       repetitionIntervals:[

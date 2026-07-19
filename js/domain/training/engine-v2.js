@@ -302,11 +302,15 @@
     const days=clamp(parseInt(daysPerWeek)||4,3,6);
     const longDay=clamp(parseInt(longRunDay)||0,0,6);
     const offsets=days===3?[-5,-3,0]:days===4?[-6,-4,-2,0]:days===5?[-6,-5,-4,-2,0]:[-6,-5,-4,-3,-1,0];
-    return offsets.map(offset=>({weekday:(longDay+offset+7)%7,offset,isLong:offset===0,isQuality:offset===(days===3?-3:-4)}));
+    const qualityOffsets=days<=4?[days===3?-3:-4]:days===5?[-5,-2]:[-5,-3];
+    return offsets.map(offset=>({
+      weekday:(longDay+offset+7)%7,offset,isLong:offset===0,
+      isQuality:qualityOffsets.includes(offset),qualityIndex:qualityOffsets.indexOf(offset)
+    }));
   }
   function isRecoveryRunSlot(slot,daysPerWeek){
     const days=clamp(parseInt(daysPerWeek)||4,3,6);
-    return days>=5&&(slot.offset===-6||(days>=6&&slot.offset===-3));
+    return days>=5&&(slot.offset===-6||(days>=6&&slot.offset===-1));
   }
   function isQualityType(type){return ['Tempo','Interval'].includes(String(type||''));}
   function recoveryAdvice(intent,context={}){
@@ -514,11 +518,18 @@
     }
     return spec;
   }
-  function qualitySpec(profile,phase,progress,weekIndex,phasePosition=0,phaseCount=1){
+  function qualitySpec(profile,phase,progress,weekIndex,phasePosition=0,phaseCount=1,qualityIndex=0){
+    if(qualityIndex>0){
+      if(phase==='Base')return weekIndex%2===0
+        ? {intent:'hill_strength',structure:'repetitions',reps:6,recoverySeconds:90,repSeconds:30,intensity:'hill_controlled',workKm:0}
+        : {intent:'speed_skill',structure:'repetitions',reps:6,recoverySeconds:70,repSeconds:20,intensity:'strides',workKm:0};
+      if(phase==='Build')return thresholdSpec(profile,progress,'repetitions');
+      if(phase==='Specific'){
+        const raceSpecific=specsForIntent(profile,'race_specific');
+        return raceSpecific.length?intervalSpec(raceSpecific,progress):thresholdSpec(profile,progress,'repetitions');
+      }
+    }
     if(phase==='Base'){
-      // A 10K plan needs threshold development before its short Build block.
-      // Keep one economy session, then introduce controlled continuous T work.
-      if(profile.key==='10K'&&weekIndex%2===1)return thresholdSpec(profile,Math.min(.25,Math.max(.12,progress)),'continuous');
       return weekIndex%2===0
         ? {intent:'speed_skill',structure:'repetitions',reps:6+Math.min(4,weekIndex),repSeconds:20,recoverySeconds:70,intensity:'strides',workKm:0}
         : {intent:'hill_strength',structure:'repetitions',reps:6+Math.min(4,weekIndex),repSeconds:30,recoverySeconds:90,intensity:'hill_controlled',workKm:0};
@@ -528,14 +539,10 @@
     const vo2=specsForIntent(profile,'vo2');
     const raceSpecific=specsForIntent(profile,'race_specific');
     if(phase==='Build'&&shortRoadGoal){
-      // R work builds economy, but repeating it alone is not a 5K/10K
-      // progression. Alternate it with T and I stimuli as the phase develops.
-      const cycle=phasePosition%4;
-      if(profile.key==='10K'&&cycle===0)return thresholdSpec(profile,progress,'repetitions');
-      if(cycle===0)return intervalSpec(repetition.length?repetition:profile.buildIntervals,0);
-      if(cycle===1)return thresholdSpec(profile,progress,'continuous');
-      if(cycle===2)return intervalSpec(vo2.length?vo2:profile.buildIntervals,nextProgress(progress,phasePosition));
-      return raceSpecific.length?intervalSpec(raceSpecific,progress):thresholdSpec(profile,progress,'repetitions');
+      // Daniels Phase II introduces economy first: R is the new stress and T
+      // is added only after it. I pace belongs to the following phase.
+      if(phasePosition%2===0)return intervalSpec(repetition.length?repetition:profile.buildIntervals,progress);
+      return thresholdSpec(profile,progress,'continuous');
     }
     if(phase==='Build'){
       if(phasePosition%3===0)return thresholdSpec(profile,progress,'continuous');
@@ -543,12 +550,12 @@
       return thresholdSpec(profile,progress,'repetitions');
     }
     if(phase==='Specific'&&shortRoadGoal){
-      // Short-road race preparation needs VO2, race-pace endurance, and T
-      // work. Two-week blocks expose I plus race pace; longer blocks also add
-      // threshold rather than restarting a short-repetition cycle.
+      // Phase III makes I the primary new stress. At low running frequency
+      // there is only one hard workout beside the long run, so rotate the
+      // secondary T and race-specific stimuli rather than stacking them.
       if(phasePosition===0)return intervalSpec(vo2.length?vo2:profile.buildIntervals,Math.max(.6,nextProgress(progress,phasePosition)));
-      if(phasePosition===phaseCount-1)return thresholdSpec(profile,Math.max(.65,progress),'continuous');
-      return raceSpecific.length?intervalSpec(raceSpecific,progress):thresholdSpec(profile,Math.max(.65,progress),'continuous');
+      if(phasePosition%3===1)return thresholdSpec(profile,Math.max(.65,progress),'repetitions');
+      return raceSpecific.length?intervalSpec(raceSpecific,progress):thresholdSpec(profile,Math.max(.65,progress),'repetitions');
     }
     if(phase==='Specific'){
       if(phasePosition%3===0)return thresholdSpec(profile,Math.max(.65,progress),'continuous');
@@ -570,16 +577,49 @@
     if(['vo2','hill_strength','repetition'].includes(intent))return 'Interval';
     return 'Easy';
   }
-  function createQualitySession(profile,phase,progress,weekIndex,athlete,weeklyKm,phasePosition=0,phaseCount=1){
-    let spec=qualitySpec(profile,phase,progress,weekIndex,phasePosition,phaseCount);
+  function shapeThresholdWork(spec,workloadPolicy,pace){
+    if(spec.intent!=='threshold'||!pace)return spec;
+    const targetMinutes=workloadPolicy.targetMinutes;
+    if(!Number.isFinite(targetMinutes)||targetMinutes<=0)return spec;
+    if(spec.structure==='continuous'){
+      // Daniels defines a true tempo as roughly 20 minutes at T pace. Longer
+      // work uses cruise intervals, not an ever-longer continuous "tempo".
+      const minutes=Math.min(20,targetMinutes);
+      const workKm=round(minutes/pace,1);
+      return {...spec,reps:1,repsPerSet:1,repKm:workKm,workKm,recoverySeconds:0};
+    }
+    // Cruise intervals can accumulate more work, but never beyond 30 minutes.
+    const capKm=round(Math.min(30,targetMinutes)/pace,1);
+    return capQualitySpec(spec,capKm);
+  }
+  function shapeVo2Work(profile,spec,workloadPolicy,pace){
+    if(spec.intent!=='vo2'||!pace)return spec;
+    const candidates=specsForIntent(profile,'vo2').filter(candidate=>{
+      const duration=(candidate.repKm||0)*pace;
+      return duration>=2&&duration<=5;
+    });
+    if(!candidates.length)return spec;
+    const source=candidates.slice().sort((a,b)=>Math.abs(a.repKm*pace-3.5)-Math.abs(b.repKm*pace-3.5))[0];
+    const targetMinutes=workloadPolicy.targetMinutes||source.reps*source.repKm*pace;
+    const reps=Math.max(2,Math.round(targetMinutes/(source.repKm*pace)));
+    return {...source,structure:'repetitions',reps,repsPerSet:reps,sets:1,setRecoverySeconds:0,workKm:round(reps*source.repKm,1)};
+  }
+  function createQualitySession(profile,phase,progress,weekIndex,athlete,weeklyKm,phasePosition=0,phaseCount=1,qualityIndex=0){
+    let spec=qualitySpec(profile,phase,progress,weekIndex,phasePosition,phaseCount,qualityIndex);
     const danielsPolicy=danielsQualityCap(profile,spec,weeklyKm,phase);
     const workloadPolicy=physiologyQualityCap(profile,spec,athlete,weeklyKm,phase);
+    const initialPace=paceForIntensity(athlete.anchors,spec.intensity);
+    spec=shapeThresholdWork(spec,workloadPolicy,initialPace);
+    spec=shapeVo2Work(profile,spec,workloadPolicy,initialPace);
     const enduranceScale=['vo2','race_specific'].includes(spec.intent)?(athlete.enduranceReadiness?.qualityScale||1):1;
     // Firebase cannot persist Infinity. A missing finite cap means the profile has no
     // applicable workload ceiling for this session, so store null rather than a sentinel.
     const enduranceAdjustedCapKm=Number.isFinite(workloadPolicy.capKm)?round(workloadPolicy.capKm*enduranceScale,1):null;
     spec=capQualitySpec(spec,enduranceAdjustedCapKm);
     const pace=paceForIntensity(athlete.anchors,spec.intensity);
+    // A cruise session may be reduced to a continuous block when fewer than
+    // two whole reps fit. Reapply the true-tempo ceiling after that conversion.
+    spec=shapeThresholdWork(spec,workloadPolicy,pace);
     const effortTarget=spec.intent==='threshold'?athlete.effortTargets.tempo:null;
     const targetPaceRange=effortTarget?`${formatPace(effortTarget.paceFast)}-${formatPace(effortTarget.paceSlow)}`:'';
     const targetHR=spec.intent==='threshold'?(effortTarget?.hrMax||''):'';
@@ -707,7 +747,8 @@
       peakVolume=Math.max(peakVolume,targetVolume);
       const phaseInfo=phaseMeta(phases,weekIndex);
       const progress=phaseInfo.progress;
-      const quality=createQualitySession(profile,phase,progress,weekIndex,athlete,targetVolume,phaseInfo.position,phaseInfo.count);
+      const qualitySlots=weekdays.filter(slot=>slot.isQuality);
+      const qualities=qualitySlots.map(slot=>createQualitySession(profile,phase,progress,weekIndex,athlete,targetVolume,phaseInfo.position,phaseInfo.count,slot.qualityIndex));
       const longDistance=longRunDistance(profile,athlete,phase,weekIndex,targetVolume,previousLongDistance,previousTargetVolume,highestLongDistance);
       if(phase!=='RaceWeek'){
         previousLongDistance=longDistance;
@@ -716,7 +757,8 @@
       previousTargetVolume=targetVolume;
       const easySlots=weekdays.filter(slot=>!slot.isLong&&!slot.isQuality).length;
       const easyMinimum=phase==='Taper'?2:3;
-      const remaining=Math.max(easyMinimum*easySlots,targetVolume-quality.targetDist-longDistance);
+      const qualityDistance=qualities.reduce((sum,session)=>sum+(session.targetDist||0),0);
+      const remaining=Math.max(easyMinimum*easySlots,targetVolume-qualityDistance-longDistance);
       const easyDistance=round(clamp(remaining/Math.max(1,easySlots),easyMinimum,12),1);
       const weekStart=weekDate(startDate,weekIndex,1);
       phaseSchedule.push({week:weekIndex+1,phase,phaseLabel:phaseDisplay(phase),startDate:weekStart,targetVolumeKm:targetVolume});
@@ -730,7 +772,7 @@
         if(used.has(date)||date>=endDate)return;
         used.add(date);
         let session;
-        if(slot.isQuality)session={...quality};
+        if(slot.isQuality)session={...(qualities[slot.qualityIndex]||qualities[0])};
         else if(slot.isLong&&phase!=='RaceWeek'){
           const effort=athlete.effortTargets.easy;
           const details=longDetails(longDistance,athlete.anchors.easy,profile,effort);

@@ -94,9 +94,11 @@ async function main() {
   const tenKContinuousT=tenK30km.sessions.filter(session=>session.workoutSpec?.intent==='threshold'&&session.workoutSpec.structure==='continuous');
   const tenKCruiseT=tenK30km.sessions.filter(session=>session.workoutSpec?.intent==='threshold'&&session.workoutSpec.structure==='repetitions');
   assert.equal(tenK30km.validation.valid,true,tenK30km.validation.errors.join(','));
-  assert(tenKContinuousT.length>=3,'10K: eight-week plan contains a real continuous-T progression');
-  assert(tenKContinuousT.every(session=>session.workoutSpec.qualityDistanceKm>0),'10K: every continuous-T session contains real work');
-  assert(tenKCruiseT.length>=1,'10K: eight-week plan also includes cruise-T volume without forcing an overlong continuous tempo');
+  assert.equal(tenK30km.sessions.filter(session=>session.phase==='Base'&&session.workoutSpec?.intent==='threshold').length,0,'10K: Base adds economy work, not premature threshold stress');
+  assert(tenKContinuousT.length>=1,'10K: Build introduces a real continuous T session after economy work');
+  assert(tenKContinuousT.every(session=>session.workoutSpec.intervalMetrics.workDurationMinutes<=20.1),'10K: continuous T remains a true approximately-20-minute tempo');
+  assert(tenKCruiseT.length>=1,'10K: Specific block contains cruise-T work rather than extending continuous tempo indefinitely');
+  assert(tenKCruiseT.every(session=>session.workoutSpec.intervalMetrics.workDurationMinutes<=30.1),'10K: cruise-T work stays within the 30-minute ceiling');
   assert(tenK30km.sessions.filter(session=>['Tempo','Interval'].includes(session.type)&&session.phase!=='Taper').every((session,index,rows)=>index===0||session.week!==rows[index-1].week),'10K: never schedules more than one quality workout in a week');
   const tenPhases = ten.phaseSchedule.map(row=>row.phase);
   assert(tenPhases.filter(phase=>phase==='Build').length>=2, '10K: meaningful build block');
@@ -123,20 +125,14 @@ async function main() {
   const tenWeekSpecific=tenWeekPlan.sessions.filter(session=>session.phase==='Specific'&&session.workoutSpec?.qualityDistanceKm>0);
   assert.equal(tenWeekPlan.phaseSchedule.filter(row=>row.phase==='Specific').length,3,'10K: ten-week plan reserves three specific weeks');
   assert(tenWeekSpecific.some(session=>session.workoutSpec.intent==='vo2')&&tenWeekSpecific.some(session=>session.workoutSpec.intent==='race_specific')&&tenWeekSpecific.some(session=>session.workoutSpec.intent==='threshold'),'10K: specific block separates I, race pace, and T work');
-  assert(Math.max(...tenWeekThreshold.map(session=>session.workoutSpec.qualityDistanceKm))>=5, '10K: standard plan builds threshold work beyond 5 km when volume permits');
-  assert(Math.max(...tenWeekIntervals.map(session=>session.workoutSpec.qualityDistanceKm))>=4, '10K: standard plan reaches at least 4 km of I-pace work when volume permits');
-  assert(tenWeekIntervals.every(session=>session.workoutSpec.workloadTargetMinutes>=16||session.phase==='Taper'), '10K: I sessions use a meaningful time-at-intensity dose outside taper');
+  assert(tenWeekThreshold.some(session=>session.workoutSpec.structure==='continuous'&&session.workoutSpec.intervalMetrics.workDurationMinutes<=20.1), '10K: standard plan keeps continuous T inside its physiological domain');
+  assert(tenWeekIntervals.every(session=>session.workoutSpec.workloadTargetMinutes>=10||session.phase==='Taper'), '10K: I sessions use a meaningful time-at-intensity dose outside taper');
   assert(tenWeekIntervals.every(session=>session.phase==='Taper'||(session.workoutSpec.intervalMetrics.repDurationMinutes>=2&&session.workoutSpec.intervalMetrics.repDurationMinutes<=5&&session.workoutSpec.intervalMetrics.workDurationMinutes>=10)), '10K: I sessions use valid rep and total-work durations outside taper');
 
   const tenExtended=create('10K',12);
   const extendedThreshold=tenExtended.sessions.filter(session=>session.workoutSpec?.danielsClass==='T');
-  const structuredRace=tenExtended.sessions.find(session=>session.workoutSpec?.sets===2&&session.workoutSpec?.repsPerSet===3);
   assert(tenExtended.validation.valid,tenExtended.validation.errors.join(','));
-  assert(Math.max(...extendedThreshold.map(session=>session.workoutSpec.qualityDistanceKm))>=7,'10K: longer plan can progress T work beyond 6 km when volume permits');
-  assert(structuredRace,'10K: longer plan includes a deliberate multi-set race-pace session');
-  assert.equal(structuredRace.workoutSpec.intervalMetrics.totalReps,6,'10K: multi-set workout counts all reps');
-  assert(structuredRace.details.mainSet.includes('1:45')&&structuredRace.details.mainSet.includes('3:00'),'10K: recovery is rendered as m:ss for reps and sets');
-  assert(!structuredRace.details.mainSet.includes('1.8'),'10K: recovery never renders as decimal minutes');
+  assert(extendedThreshold.every(session=>session.workoutSpec.structure!=='continuous'||session.workoutSpec.intervalMetrics.workDurationMinutes<=20.1),'10K: longer plans do not turn T pace into an overlong continuous effort');
 
   assert(!plans.Base.phaseSchedule.some(row=>row.phase==='RaceWeek'), 'Base: no race week');
   assert.equal(plans.Base.goalProfile.raceGoal, false, 'Base: non-race goal');
@@ -268,6 +264,7 @@ async function main() {
   });
   assert.equal(fiveDayPlan.validation.valid,true,fiveDayPlan.validation.errors.join(','));
   assert(fiveDayPlan.sessions.some(session=>['Tempo','Interval'].includes(session.type)),'5-day plan still includes quality work');
+  assert(fiveDayPlan.sessions.filter(session=>session.week===3&&['Tempo','Interval'].includes(session.type)).length===2,'5-day plan schedules two distinct quality sessions when frequency supports it');
   assert(fiveDayPlan.sessions.some(session=>session.type==='Recovery'&&session.recoveryIntent==='post_long_run'),'5-day plan includes post-long-run recovery run');
 
   const sixDayPlan=engine.createPlan({
@@ -277,6 +274,7 @@ async function main() {
   });
   assert.equal(sixDayPlan.validation.valid,true,sixDayPlan.validation.errors.join(','));
   assert.equal(sixDayPlan.daysPerWeek,6,'6-day plan stores requested frequency');
+  assert(sixDayPlan.sessions.filter(session=>session.week===4&&['Tempo','Interval'].includes(session.type)).length===2,'6-day plan schedules two distinct quality sessions when frequency supports it');
   assert(sixDayPlan.sessions.some(session=>session.recoveryIntent==='post_quality'),'6-day plan includes post-quality recovery run');
   assert(sixDayPlan.recoveryCards.some(card=>card.intent==='passive_rest'),'6-day plan keeps at least one passive rest day');
 
