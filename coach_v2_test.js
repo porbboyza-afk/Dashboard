@@ -22,6 +22,16 @@ const engine = training.EngineV2;
 const trainingDashboard = context.window.MyDashTrainingDashboard;
 const matcher = context.window.MyDashReviewMatcher;
 
+function assertFirebaseSafe(value, path='root') {
+  if (typeof value === 'number') {
+    assert(Number.isFinite(value), `Firebase payload contains a non-finite number at ${path}`);
+    return;
+  }
+  if (value && typeof value === 'object') {
+    Object.entries(value).forEach(([key, child]) => assertFirebaseSafe(child, `${path}.${key}`));
+  }
+}
+
 function targetFor(distance) {
   return {Base:'', '5K':'24:30', '10K':'49:30', Half:'1:52:00', Marathon:'4:05:00'}[distance];
 }
@@ -46,6 +56,7 @@ async function main() {
   };
 
   for (const [distance, plan] of Object.entries(plans)) {
+    assertFirebaseSafe(plan, `${distance} plan`);
     assert.equal(plan.engineVersion, 2, `${distance}: engine version`);
     assert.equal(plan.methodologyVersion, training.METHODOLOGY_VERSION, `${distance}: methodology version`);
     assert.equal(plan.validation.valid, true, `${distance}: ${plan.validation.errors.join(',')}`);
@@ -182,6 +193,7 @@ async function main() {
     currentWeeklyKmSource:'manual',recentActivities:[],asOfDate:'2026-07-10',now:1783900000008
   });
   assert.equal(lowVolumeTenK.validation.valid,true,`Low-volume 10K remains creatable: ${lowVolumeTenK.validation.errors.join(',')}`);
+  assertFirebaseSafe(lowVolumeTenK,'low-volume 10K plan');
   assert(lowVolumeTenK.validation.warnings.some(warning=>warning.startsWith('vo2_total_work_too_short:')),'Low-volume 10K surfaces the reduced I-pace dose as a warning');
   assert(lowVolumeTenK.validation.warnings.some(warning=>warning.startsWith('weekly_volume_above_target:')),'Low-volume 10K surfaces weekly balancing as a warning');
 

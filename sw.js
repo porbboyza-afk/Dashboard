@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-active-plan-pointer-20260719-1';
+const CACHE_NAME = 'mydash-v3-firebase-finite-plan-20260719-1';
 const APP_SHELL = [
   './',
   './index.html',

@@ -1,5 +1,15 @@
 # AI Handoff Log
 
+## 2026-07-19 Firebase Non-Finite Plan Serialization Fix
+
+Status: pending verification and commit.
+
+- Firebase rejected new plan saves with `set failed: value argument contains Infinity in property`.
+- The engine used `Infinity` internally to mean “no workload ceiling”, then copied it into `workoutSpec.workloadCapKm` and `workoutSpec.enduranceAdjustedCapKm` for Base/R sessions without an applicable profile cap. Firebase Realtime Database cannot store `Infinity`.
+- Unbounded caps are now persisted as `null`; engine comparisons already use `Number.isFinite`, so `null` correctly means no cap rather than zero.
+- Added a recursive regression assertion across generated plans, including a low-volume input, which fails if any Firebase payload value is `Infinity` or `NaN`.
+- PWA cache advances to `mydash-v3-firebase-finite-plan-20260719-1`.
+
 ## 2026-07-19 Active Plan Pointer Fix
 
 Status: committed and pushed in `ccb1186`.

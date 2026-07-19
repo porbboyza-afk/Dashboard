@@ -484,14 +484,15 @@
       ? Math.min(rule.maxKm||Infinity,Math.max(0,weeklyKm*(rule.percentOfWeekly||0)))
       : Infinity;
     const phaseCap=Number.isFinite(profileBudget)?profileBudget:Infinity;
-    return {qualityClass,capKm:round(Math.min(ruleCap,phaseCap),1),rule:rule||null};
+    const capKm=Math.min(ruleCap,phaseCap);
+    return {qualityClass,capKm:Number.isFinite(capKm)?round(capKm,1):null,rule:rule||null};
   }
   function physiologyQualityCap(profile,spec,athlete,weeklyKm,phase){
     const qualityClass=danielsClassForSpec(profile,spec);
     const phaseCap=profile.qualityBudgetKm?.[phase];
     const configuredMinutes=profile.qualityWorkMinutes?.[qualityClass]?.[phase]?.[athlete.level];
     const pace=paceForIntensity(athlete.anchors||{},spec.intensity);
-    if(!configuredMinutes||!pace)return {qualityClass,capKm:Number.isFinite(phaseCap)?phaseCap:Infinity,targetMinutes:null,volumeScale:1,rule:'profile_quality_budget'};
+    if(!configuredMinutes||!pace)return {qualityClass,capKm:Number.isFinite(phaseCap)?phaseCap:null,targetMinutes:null,volumeScale:1,rule:'profile_quality_budget'};
     // At lower volume, reduce the work dose. At a stable profile volume, use
     // the planned time at intensity instead of a percentage-only distance cap.
     const normalVolume=profile.defaultWeeklyKm?.[athlete.level]||weeklyKm||1;
@@ -570,7 +571,9 @@
     const danielsPolicy=danielsQualityCap(profile,spec,weeklyKm,phase);
     const workloadPolicy=physiologyQualityCap(profile,spec,athlete,weeklyKm,phase);
     const enduranceScale=['vo2','race_specific'].includes(spec.intent)?(athlete.enduranceReadiness?.qualityScale||1):1;
-    const enduranceAdjustedCapKm=Number.isFinite(workloadPolicy.capKm)?round(workloadPolicy.capKm*enduranceScale,1):workloadPolicy.capKm;
+    // Firebase cannot persist Infinity. A missing finite cap means the profile has no
+    // applicable workload ceiling for this session, so store null rather than a sentinel.
+    const enduranceAdjustedCapKm=Number.isFinite(workloadPolicy.capKm)?round(workloadPolicy.capKm*enduranceScale,1):null;
     spec=capQualitySpec(spec,enduranceAdjustedCapKm);
     const pace=paceForIntensity(athlete.anchors,spec.intensity);
     const effortTarget=spec.intent==='threshold'?athlete.effortTargets.tempo:null;
