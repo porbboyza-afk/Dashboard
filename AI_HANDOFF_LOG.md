@@ -2,14 +2,14 @@
 
 ## 2026-07-22 Manual Schedule Builder
 
-Status: implemented locally; verification and deployment pending.
+Status: committed and pushed in `d04a141`.
 
 - The user rejected an automatic extension of the imported COROS plan to 15 November. That unpublished extension was removed; it must not be deployed or described as an active plan.
 - The prior external COROS plan is still the current active cloud plan until the user either clicks `AI Coach > Track Plan > ลบแผน` or saves a new manual schedule. Do not write directly to Firebase to delete it.
 - Added `js/services/manual-plan-builder.js` and the `Manual schedule` card in Coach Create. The user enters each session directly: date, type, total distance, title, main set, warm-up, cool-down, and notes. The builder validates valid dates, one session per date, positive distance for running, and exactly 0 km for Rest.
 - Saving calls `MyDashCoachRepository.replaceActivePlan()`: it writes the manual V2 plan and active pointer first, then archives the old plan. This prevents two active plans and preserves history.
 - Manual plans deliberately do not invoke Training Engine V2 or AI to invent workouts. They are marked `sourcePlan.provider: manual` and preserve the normal Dashboard/Track Plan persistence model.
-- Regression file: `manual_plan_builder_test.js`. Required verification before deploy: `node manual_plan_builder_test.js`, `node verify_dashboard.js`, `node coach_v2_test.js`, and `python smoke_test_dashboard.py`.
+- Verification passed: `node manual_plan_builder_test.js`, `node verify_dashboard.js`, `node coach_v2_test.js`, `node coros_plan_import_test.js`, and `python smoke_test_dashboard.py`. The browser smoke test opens the builder, adds an Easy 6 km session to its draft, and confirms save becomes available without page, console, or request errors.
 - PWA cache target: `mydash-v3-manual-plan-builder-20260722-1`.
 - Chrome control became unavailable during this change (`Browser is not available: extension`), so no browser click or Firebase action was performed. Restore the Chrome connection before any agent-driven UI action; do not bypass the signed-in app with direct database writes.
 
