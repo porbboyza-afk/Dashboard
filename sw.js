@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-coros-plan-import-20260719-1';
+const CACHE_NAME = 'mydash-v3-manual-plan-builder-20260722-1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -25,6 +25,7 @@ const APP_SHELL = [
   './js/domain/training/profiles.js',
   './js/domain/training/engine-v2.js',
   './js/services/coach-repository.js',
+  './js/services/manual-plan-builder.js',
   './js/training-dashboard-view-model.js',
   './js/coach.js',
   './js/races.js',

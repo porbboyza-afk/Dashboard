@@ -795,6 +795,79 @@ async function generateTrainingPlan(){
   finally{if(btn){btn.innerHTML='สร้างแผน + บันทึก Firebase';btn.disabled=false;}}
 }
 
+let manualPlanDraft=[];
+function manualPlanSessionInput(){
+  return {
+    date:document.getElementById('manual-session-date')?.value||'',
+    type:document.getElementById('manual-session-type')?.value||'',
+    targetDist:document.getElementById('manual-session-distance')?.value||'',
+    title:document.getElementById('manual-session-title')?.value||'',
+    mainSet:document.getElementById('manual-session-main')?.value||'',
+    warmup:document.getElementById('manual-session-warmup')?.value||'',
+    cooldown:document.getElementById('manual-session-cooldown')?.value||'',
+    notes:document.getElementById('manual-session-notes')?.value||''
+  };
+}
+function renderManualPlanDraft(){
+  const output=document.getElementById('manual-plan-draft');
+  const saveButton=document.getElementById('btn-save-manual-plan');
+  if(saveButton)saveButton.disabled=manualPlanDraft.length===0;
+  if(!output)return;
+  if(!manualPlanDraft.length){output.textContent='No sessions added.';return;}
+  const rows=manualPlanDraft.map((session,index)=>`<div class="flex between gap-8" style="padding:7px 0;border-bottom:1px solid var(--border)"><div><strong>${escapeHTML(session.date)}</strong> · ${escapeHTML(session.type)} · ${escapeHTML(session.targetDist)} km${session.title?` · ${escapeHTML(session.title)}`:''}</div><button class="btn btn-danger btn-sm" type="button" onclick="removeManualPlanSession(${index})">Remove</button></div>`).join('');
+  output.innerHTML=`<div style="font-weight:700;margin-bottom:5px">${manualPlanDraft.length} session${manualPlanDraft.length===1?'':'s'} in draft</div>${rows}`;
+}
+function toggleManualPlanBuilder(){
+  const builder=document.getElementById('manual-plan-builder');
+  if(!builder)return;
+  const opening=builder.style.display==='none'||!builder.style.display;
+  builder.style.display=opening?'block':'none';
+  if(opening){
+    const date=document.getElementById('manual-session-date');
+    if(date&&!date.value)date.value=toLocalDateStr();
+    renderManualPlanDraft();
+  }
+}
+function addManualPlanSession(){
+  try{
+    if(!window.MyDashManualPlan?.createPlan)throw new Error('Manual schedule builder is not loaded. Refresh the page and try again.');
+    const candidate=manualPlanSessionInput();
+    // Validate the complete draft before changing it, including duplicate dates.
+    window.MyDashManualPlan.createPlan([...manualPlanDraft,candidate],{goal:'Draft validation'});
+    manualPlanDraft.push(candidate);
+    ['manual-session-distance','manual-session-title','manual-session-main','manual-session-warmup','manual-session-cooldown','manual-session-notes'].forEach(id=>{
+      const input=document.getElementById(id);if(input)input.value='';
+    });
+    renderManualPlanDraft();
+  }catch(error){showToast(error.message,'error');}
+}
+function removeManualPlanSession(index){
+  manualPlanDraft.splice(index,1);
+  renderManualPlanDraft();
+}
+function clearManualPlanDraft(){
+  manualPlanDraft=[];
+  renderManualPlanDraft();
+}
+async function saveManualCoachPlan(){
+  const goal=document.getElementById('manual-plan-goal')?.value?.trim()||'Manual running schedule';
+  const button=document.getElementById('btn-save-manual-plan');
+  try{
+    if(!window._fb?.isSignedIn?.()){showToast('Sign in before saving a manual schedule.','error');showPage('settings');return;}
+    if(!window.MyDashCoachRepository?.replaceActivePlan)throw new Error('Coach repository is not loaded. Refresh the page and try again.');
+    const plan=window.MyDashManualPlan.createPlan(manualPlanDraft,{goal});
+    if(button){button.disabled=true;button.textContent='Saving...';}
+    const saved=await window.MyDashCoachRepository.replaceActivePlan(plan);
+    await assertCoachCloudSaved({createdAt:saved.createdAt});
+    AppState.set('coachPlan',saved);
+    manualPlanDraft=[];
+    renderManualPlanDraft();
+    showToast('Manual schedule saved. The previous active plan was archived.','success');
+    switchCoachTab('track');
+  }catch(error){showToast(error.message||'Could not save the manual schedule.','error');}
+  finally{if(button){button.textContent='Save manual schedule to Cloud';button.disabled=manualPlanDraft.length===0;}}
+}
+
 function switchCoachTab(tab,el){
   document.querySelectorAll('#page-coach .seg-tab').forEach(t=>t.classList.remove('active'));
   const tabs=document.querySelectorAll('#page-coach .seg-tab');

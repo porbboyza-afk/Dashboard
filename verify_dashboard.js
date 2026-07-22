@@ -28,6 +28,7 @@ const trainingEngineScriptPath = path.join(root, 'js', 'domain', 'training', 'en
 const trainingDashboardVmScriptPath = path.join(root, 'js', 'training-dashboard-view-model.js');
 const reviewMatcherScriptPath = path.join(root, 'js', 'domain', 'review', 'matcher-v2.js');
 const coachRepositoryScriptPath = path.join(root, 'js', 'services', 'coach-repository.js');
+const manualPlanBuilderScriptPath = path.join(root, 'js', 'services', 'manual-plan-builder.js');
 const corosPlanImportScriptPath = path.join(root, 'js', 'services', 'coros-plan-import.js');
 const settingsScriptPath = path.join(root, 'js', 'settings.js');
 const backupExportScriptPath = path.join(root, 'js', 'backup-export.js');
@@ -49,6 +50,7 @@ const extraScripts = [
   trainingProfilesScriptPath,
   trainingEngineScriptPath,
   coachRepositoryScriptPath,
+  manualPlanBuilderScriptPath,
   corosPlanImportScriptPath,
   trainingDashboardVmScriptPath,
   coachScriptPath,
@@ -130,6 +132,7 @@ ensureContains(indexPath, [
   '<script src="js/domain/training/profiles.js"></script>',
   '<script src="js/domain/training/engine-v2.js"></script>',
   '<script src="js/services/coach-repository.js"></script>',
+  '<script src="js/services/manual-plan-builder.js"></script>',
   '<script src="js/coach.js"></script>',
   '<script src="js/races.js"></script>',
   '<script src="js/domain/review/matcher-v2.js"></script>',
@@ -145,16 +148,18 @@ ensureContains(indexPath, [
   'out.innerHTML = mdToHtml(reply);',
   '.coach-plan-row',
   '.coach-adaptive-card',
+  'id="manual-plan-builder"',
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-coros-plan-import-20260719-1',
+  'mydash-v3-manual-plan-builder-20260722-1',
   './app-redesign.css?v=20260711-1',
   './training-studio-ui.css?v=20260711-1',
   './studio-shell.css?v=20260711-1',
   './studio-surfaces.css?v=20260711-1',
   './js/studio-home.js',
   './js/studio-coach.js',
+  './js/services/manual-plan-builder.js',
 ]);
 
 ensureContains(shareCardScriptPath, [
@@ -256,6 +261,7 @@ ensureContains(todayDashboardViewModelScriptPath, [
 
 ensureContains(coachScriptPath, [
   'function updateCoachGoalDefaults',
+  'async function saveManualCoachPlan()',
   'MyDashTraining.EngineV2.createPlan',
   "athleteSettings:typeof getAthleteProfile==='function'",
   'MyDashCoachRepository.savePlan',
@@ -353,12 +359,13 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-coros-plan-import-20260719-1",
+  "mydash-v3-manual-plan-builder-20260722-1",
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',
   './js/app-state.js',
   './js/app-bootstrap.js',
+  './js/services/manual-plan-builder.js',
   './js/activity-model.js',
   './js/today-dashboard-view-model.js',
   './js/share-card.js',

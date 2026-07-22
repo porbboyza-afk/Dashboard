@@ -116,6 +116,24 @@ def main():
             results["checks"]["coach_active"] = page.evaluate(
                 "document.getElementById('page-coach')?.classList.contains('active')"
             )
+            results["checks"]["has_manual_plan_builder"] = page.evaluate(
+                "typeof window.MyDashManualPlan?.createPlan === 'function' && typeof addManualPlanSession === 'function'"
+            )
+            results["checks"]["manual_plan_draft"] = page.evaluate(
+                """(() => {
+                    toggleManualPlanBuilder();
+                    document.getElementById('manual-session-date').value = '2026-08-25';
+                    document.getElementById('manual-session-type').value = 'Easy';
+                    document.getElementById('manual-session-distance').value = '6';
+                    document.getElementById('manual-session-title').value = 'Smoke test easy run';
+                    addManualPlanSession();
+                    return {
+                        visible: document.getElementById('manual-plan-builder').style.display === 'block',
+                        save_enabled: !document.getElementById('btn-save-manual-plan').disabled,
+                        text: document.getElementById('manual-plan-draft').textContent,
+                    };
+                })()"""
+            )
 
             page.evaluate("showPage('settings')")
             page.wait_for_timeout(300)
@@ -151,6 +169,7 @@ def main():
         "fitness_stats_active",
         "post_run_review_active",
         "coach_active",
+        "has_manual_plan_builder",
         "settings_active",
     ]
     for key in expected_true:
@@ -161,6 +180,12 @@ def main():
         bad = True
 
     if "<strong>ok</strong>" not in results["checks"].get("md_render", ""):
+        bad = True
+
+    manual_draft = results["checks"].get("manual_plan_draft", {})
+    if not manual_draft.get("visible") or not manual_draft.get("save_enabled"):
+        bad = True
+    if "Smoke test easy run" not in manual_draft.get("text", ""):
         bad = True
 
     raise SystemExit(1 if bad else 0)
