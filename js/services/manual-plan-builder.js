@@ -72,7 +72,7 @@
         sessionId:`manual-${createdAt}-s${index+1}`,date:session.date,week,phase:'Manual',phaseLabel:'Manual schedule',
         type:session.type,sourceType:session.sourceType,sourceSchedule:(session.sourceWeek||session.sourceDay)?{week:session.sourceWeek,day:session.sourceDay}:null,intent:provider==='manual'?'manual':'imported',targetDist:session.targetDist,targetPace:session.targetPace,targetPaceRange:session.targetPace,targetHR:session.targetHR,
         priority:['key','normal','optional'].includes(session.priority)?session.priority:(['Tempo','Interval','Long','Race'].includes(session.type)?'key':'normal'),description:session.title,
-        details:{warmup:session.warmup,mainSet:session.mainSet,cooldown:session.cooldown,execution:session.execution||'Follow the source session exactly as entered.',successCriteria:session.successCriteria||'Complete the planned session with controlled form.',intensity:session.intensity||'Source plan',targetDescription:session.title},
+        details:{warmup:session.warmup,mainSet:session.mainSet,cooldown:session.cooldown,execution:session.execution||(provider==='manual'?'Follow the entered session exactly.':''),successCriteria:session.successCriteria||(provider==='manual'?'Complete the planned session with controlled form.':''),intensity:session.intensity||(provider==='manual'?'Manual schedule':''),targetDescription:session.title},
         workoutSpec:{intent:provider==='manual'?'manual':'imported',structure:provider==='manual'?'manual':'imported_file',totalDistanceKm:session.targetDist,qualityDistanceKm:quality,sourceProvider:provider},
         notes:session.notes,methodologyVersion:'manual-schedule-2026.07.22'
       };

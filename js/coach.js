@@ -427,12 +427,19 @@ function coachSessionDistanceBreakdown(session){
   return null;
 }
 function coachSessionDistanceSummary(session){
+  const sourceProvider=session?.workoutSpec?.sourceProvider||window._coachPlan?.sourcePlan?.provider;
+  if(sourceProvider==='imported')return session?.targetDist>0?`ระยะตามไฟล์ ${Number(session.targetDist).toFixed(1)} กม.`:'';
   const breakdown=coachSessionDistanceBreakdown(session);
   if(!breakdown)return session?.targetDist>0?`รวม ${session.targetDist} กม.`:'';
   const main=breakdown.mainKm>0?`งานหลัก ${breakdown.mainKm.toFixed(1)} กม.`:'';
   return [`รวม ${breakdown.totalKm.toFixed(1)} กม.`,main].filter(Boolean).join(' · ');
 }
 function coachSessionDistanceBreakdownText(session){
+  const sourceProvider=session?.workoutSpec?.sourceProvider||window._coachPlan?.sourcePlan?.provider;
+  if(sourceProvider==='imported'&&session?.targetDist>0){
+    const hasWarmupOrCooldown=String(session?.details?.warmup||'').trim()||String(session?.details?.cooldown||'').trim();
+    return `ระยะที่ระบุในไฟล์ ${Number(session.targetDist).toFixed(1)} กม.${hasWarmupOrCooldown?'':' · ไฟล์ไม่ได้ระบุระยะวอร์ม/คูลดาวน์'}`;
+  }
   const breakdown=coachSessionDistanceBreakdown(session);
   if(!breakdown)return '';
   if(breakdown.legacy)return `งานหลัก ${breakdown.mainKm.toFixed(1)} กม. · รวม ${breakdown.totalKm.toFixed(1)} กม. (รวมวอร์ม/คูลดาวน์; แผนเดิมไม่ได้บันทึกส่วนย่อย)`;
@@ -528,6 +535,13 @@ function coachSessionDisplayDetails(session,index=0){
   const raw=session.details&&typeof session.details==='object'?session.details:{};
   // Manual and imported plans are source-of-truth. Never replace English source text with AI fallback copy.
   const sourceProvider=session?.workoutSpec?.sourceProvider||window._coachPlan?.sourcePlan?.provider;
+  if(sourceProvider==='imported'){
+    const imported={...raw};
+    if(imported.execution==='Follow the source session exactly as entered.')imported.execution='';
+    if(imported.successCriteria==='Complete the planned session with controlled form.')imported.successCriteria='';
+    if(imported.intensity==='Source plan')imported.intensity='';
+    return {...fallback,...imported};
+  }
   const hasSourceDetails=Object.values(raw).some(value=>String(value||'').trim());
   return (sourceProvider==='manual'||sourceProvider==='imported'||hasSourceDetails)?{...fallback,...raw}:fallback;
 }
@@ -1065,7 +1079,7 @@ function renderCoachTracking(){
     const displayType=coachSessionQualityLabel(s)||coachSessionTypeThai(s.type);
     const recoveryLine=s.recoveryAdvice?.summary?`<div class="coach-session-note">Recovery: ${escapeHTML(s.recoveryAdvice.summary)}</div>`:'';
     let actualLine='';
-    if(actualWks.length){const aw=actualWks[0];actualLine=`<div style="font-size:11px;color:var(--green);margin-top:5px;font-weight:600;font-family:var(--font-mono)">📊 ${aw.dist}km${aw.avgPace?' · '+formatPace(aw.avgPace)+'/km':''}${aw.hr?' · ♥'+aw.hr:''}</div>`;if(s.targetDist>0&&aw.dist>0){const diff=((parseFloat(aw.dist)-s.targetDist)/s.targetDist*100).toFixed(0);const c=Math.abs(diff)<=10?'var(--green)':(diff>0?'var(--accent)':'var(--orange)');actualLine+=`<div style="font-size:10px;color:${c};margin-top:2px;font-family:var(--font-mono)">${diff>0?'↑':'↓'} ${Math.abs(diff)}% from target</div>`;}}
+    if(actualWks.length){const aw=actualWks[0];actualLine=`<div style="font-size:11px;color:var(--green);margin-top:5px;font-weight:600;font-family:var(--font-mono)">📊 ${aw.dist}km${aw.avgPace?' · '+formatPace(aw.avgPace)+'/km':''}${aw.hr?' · ♥'+aw.hr:''}</div>`;const importedSource=(s.workoutSpec?.sourceProvider||plan.sourcePlan?.provider)==='imported';if(s.targetDist>0&&aw.dist>0&&!importedSource){const diff=((parseFloat(aw.dist)-s.targetDist)/s.targetDist*100).toFixed(0);const c=Math.abs(diff)<=10?'var(--green)':(diff>0?'var(--accent)':'var(--orange)');actualLine+=`<div style="font-size:10px;color:${c};margin-top:2px;font-family:var(--font-mono)">${diff>0?'↑':'↓'} ${Math.abs(diff)}% from target</div>`;}}
     return `<div class="${cls}"><div class="plan-day-header"><div class="plan-day-date">${dateStr} · ${escapeHTML(phaseLabel)}</div>${badge}</div>
       <div class="coach-plan-row"><span class="coach-session-icon">${typeEmoji[s.type]||'🏃'}</span>
       <div class="coach-session-main"><div class="coach-session-title" style="color:${typeColor[s.type]||'var(--text)'}">${displayType}${coachSessionDistanceSummary(s)?' · '+escapeHTML(coachSessionDistanceSummary(s)):''}</div>
@@ -1091,6 +1105,8 @@ function showCoachSessionDetail(index){
   const d=coachSessionDisplayDetails(s,index);
   const title=coachSessionDisplayDescription(s,index);
   const typeThai=coachSessionQualityLabel(s)||coachSessionTypeThai(s.type);
+  const sourceProvider=s.workoutSpec?.sourceProvider||window._coachPlan?.sourcePlan?.provider;
+  const detailSummary=s.notes||(sourceProvider==='imported'?'':'นี่คือแผนหลักของวันนั้น ถ้า readiness วันนี้เหลือง/แดง ให้ลดหรือเลื่อนจากปุ่มในหน้า Track Plan');
   const overlay=document.createElement('div');
   overlay.id='coach-session-detail-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:950;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
@@ -1104,10 +1120,10 @@ function showCoachSessionDetail(index){
       </div>
       <button class="coach-detail-close" onclick="document.getElementById('coach-session-detail-overlay').remove()">✕</button>
     </div>
-    <div class="coach-detail-summary">
+    ${detailSummary?`<div class="coach-detail-summary">
       <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;line-height:1.5">${escapeHTML(title)}</div>
-      <div class="text-xs c3">${escapeHTML(s.notes||'นี่คือแผนหลักของวันนั้น ถ้า readiness วันนี้เหลือง/แดง ให้ลดหรือเลื่อนจากปุ่มในหน้า Track Plan')}</div>
-    </div>
+      <div class="text-xs c3">${escapeHTML(detailSummary)}</div>
+    </div>`:''}
     ${row('วอร์มอัพ',d.warmup)}
     ${row('ชุดหลัก',d.mainSet)}
     ${row('คูลดาวน์',d.cooldown)}

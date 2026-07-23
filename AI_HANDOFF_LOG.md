@@ -9,8 +9,10 @@ Status: implemented locally; final verification and deployment pending.
 - Confirmed mapping for `C:\Users\pucca\Desktop\training_plan_block1.csv`: set Week 1 Monday to `2026-07-20`. Week 1 maps to Tue 21, Wed 22, Thu 23, Sat 25, Sun 26 July; the 20-session block ends Sun 16 August 2026. The user already completed the Tue 21 and Wed 22 sessions.
 - Repeated distance notation such as `3 x 1.2` and `3 x 1.6` is stored as total distance (3.6 km / 4.8 km) while retaining the original workout text in the session title.
 - CSV import preserves `HR Zone (bpm)`, `Pace (per km)`, and `Notes` exactly. The preview and Track Plan show the source values as `HR 130-147`, pace, and instruction text; they are not replaced by generic AI wording.
+- Imported-file distances are now labelled `ระยะตามไฟล์`, not as a confirmed total session distance. For example, `3 x 1.2` is displayed as 3.6 km specified by the file; MyDash does not claim that it includes warm-up or cool-down when those distances are absent. The UI also avoids a misleading percent comparison against the Garmin activity's total distance for imported sessions.
+- Imported plans no longer invent `วิธีวิ่ง`, `เกณฑ์ว่าวิ่งถูกต้อง`, or `ความหนัก` when those fields are absent from the file. The detail view displays only source fields that actually exist.
 - Replacing an active plan archives it rather than deleting it. Added `Track Plan > Plan history`, also available with no active plan, showing archived-plan completion, planned distance, and activity distance recorded on scheduled dates. Garmin activity data is not deleted or replaced by plan changes.
-- PWA cache target: `mydash-v3-open-plan-import-20260723-3`.
+- PWA cache target: `mydash-v3-open-plan-import-20260723-5`.
 
 ## 2026-07-23 Open Manual Schedule And File Import
 
