@@ -8,8 +8,9 @@ Status: implemented locally; final verification and deployment pending.
 - The import preview lists every calculated session date before enabling save. It preserves the source week and day beside each calculated date, so date alignment can be checked directly in the UI.
 - Confirmed mapping for `C:\Users\pucca\Desktop\training_plan_block1.csv`: set Week 1 Monday to `2026-07-20`. Week 1 maps to Tue 21, Wed 22, Thu 23, Sat 25, Sun 26 July; the 20-session block ends Sun 16 August 2026. The user already completed the Tue 21 and Wed 22 sessions.
 - Repeated distance notation such as `3 x 1.2` and `3 x 1.6` is stored as total distance (3.6 km / 4.8 km) while retaining the original workout text in the session title.
+- CSV import preserves `HR Zone (bpm)`, `Pace (per km)`, and `Notes` exactly. The preview and Track Plan show the source values as `HR 130-147`, pace, and instruction text; they are not replaced by generic AI wording.
 - Replacing an active plan archives it rather than deleting it. Added `Track Plan > Plan history`, also available with no active plan, showing archived-plan completion, planned distance, and activity distance recorded on scheduled dates. Garmin activity data is not deleted or replaced by plan changes.
-- PWA cache target: `mydash-v3-open-plan-import-20260723-2`.
+- PWA cache target: `mydash-v3-open-plan-import-20260723-3`.
 
 ## 2026-07-23 Open Manual Schedule And File Import
 

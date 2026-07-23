@@ -913,7 +913,8 @@ async function refreshCoachPlanImportPreview(){
     pendingImportedCoachPlan=plan;
     const calculated=plan.sessions.map(session=>{
       const source=session.sourceSchedule?.week?`W${escapeHTML(session.sourceSchedule.week)} ${escapeHTML(session.sourceSchedule.day)} → `:'';
-      return `<div style="padding:4px 0;border-bottom:1px solid var(--border)">${source}<strong>${escapeHTML(session.date)}</strong> · ${escapeHTML(session.sourceType||session.type)} · ${escapeHTML(session.targetDist)} km · ${escapeHTML(session.description||'')}</div>`;
+      const targets=[session.targetPace?`pace ${escapeHTML(session.targetPace)}`:'',session.targetHR?`HR ${escapeHTML(session.targetHR)}`:''].filter(Boolean).join(' · ');
+      return `<div style="padding:4px 0;border-bottom:1px solid var(--border)">${source}<strong>${escapeHTML(session.date)}</strong> · ${escapeHTML(session.sourceType||session.type)} · ${escapeHTML(session.targetDist)} km${targets?` · ${targets}`:''} · ${escapeHTML(session.description||'')}</div>`;
     }).join('');
     const mapping=plan.sourcePlan?.weekOneMonday?`Week 1 Monday: <strong>${escapeHTML(plan.sourcePlan.weekOneMonday)}</strong>`:'Dates supplied by source file';
     if(preview)preview.innerHTML=`<strong style="color:var(--green)">${escapeHTML(plan.goal)}</strong><br>${plan.sessions.length} sessions · ${escapeHTML(plan.startDate)} to ${escapeHTML(plan.endDate)}<br>${mapping}<details open class="mt-8"><summary style="cursor:pointer;font-weight:700">Check every calculated date before saving</summary><div style="max-height:280px;overflow:auto;margin-top:7px">${calculated}</div></details><div class="mt-8">Preview only. Saving will replace the active plan and archive it.</div>`;
@@ -1068,12 +1069,12 @@ function renderCoachTracking(){
     return `<div class="${cls}"><div class="plan-day-header"><div class="plan-day-date">${dateStr} · ${escapeHTML(phaseLabel)}</div>${badge}</div>
       <div class="coach-plan-row"><span class="coach-session-icon">${typeEmoji[s.type]||'🏃'}</span>
       <div class="coach-session-main"><div class="coach-session-title" style="color:${typeColor[s.type]||'var(--text)'}">${displayType}${coachSessionDistanceSummary(s)?' · '+escapeHTML(coachSessionDistanceSummary(s)):''}</div>
-      <div class="coach-session-desc">${escapeHTML(displayDescription)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
+      <div class="coach-session-desc">${escapeHTML(displayDescription)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR '+escapeHTML(s.targetHR):''}</div>
       ${coachSessionDistanceBreakdownText(s)?`<div class="coach-session-preview"><strong>แบ่งระยะ:</strong> ${escapeHTML(coachSessionDistanceBreakdownText(s))}</div>`:''}
       ${displayDetails.mainSet?`<div class="coach-session-preview"><strong>ชุดหลัก:</strong> ${escapeHTML(displayDetails.mainSet)}</div>`:''}
       ${coachSessionStructureText(s)?`<div class="coach-session-preview"><strong>โครงสร้าง:</strong> ${escapeHTML(coachSessionStructureText(s))}</div>`:''}
       ${recoveryLine}
-      ${s.notes?`<div class="coach-session-note">เหตุผล/หมายเหตุ: ${escapeHTML(hasThaiText(s.notes)?s.notes:'ทำตามรายละเอียดก่อนวิ่ง และปรับลดถ้าร่างกายไม่พร้อม')}</div>`:''}${actualLine}</div>
+      ${s.notes?`<div class="coach-session-note">เหตุผล/หมายเหตุ: ${escapeHTML(s.notes)}</div>`:''}${actualLine}</div>
       <div class="coach-session-actions">
         <button onclick="showCoachSessionDetail(${index})" class="btn btn-primary btn-xs">รายละเอียด</button>
         ${(!isDone&&!isFuture&&!isRest)?`<button onclick="markDone('${s.date}')" class="btn btn-green btn-xs">✓ ทำแล้ว</button>`:''}
@@ -1099,13 +1100,13 @@ function showCoachSessionDetail(index){
       <div>
         <div class="card-label">รายละเอียดการซ้อม</div>
         <div class="coach-detail-title" style="color:${coachDecisionColor(isHardSession(s.type)?'yellow':'green')}">${escapeHTML(typeThai)}${coachSessionDistanceSummary(s)?' · '+escapeHTML(coachSessionDistanceSummary(s)):''}</div>
-        <div class="text-sm c2 mt-4">${escapeHTML(s.date)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR < '+escapeHTML(s.targetHR):''}</div>
+        <div class="text-sm c2 mt-4">${escapeHTML(s.date)}${(s.targetPaceRange||s.targetPace)?' · pace '+escapeHTML(s.targetPaceRange||s.targetPace):''}${s.targetHR?' · HR '+escapeHTML(s.targetHR):''}</div>
       </div>
       <button class="coach-detail-close" onclick="document.getElementById('coach-session-detail-overlay').remove()">✕</button>
     </div>
     <div class="coach-detail-summary">
       <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;line-height:1.5">${escapeHTML(title)}</div>
-      <div class="text-xs c3">${escapeHTML(hasThaiText(s.notes)?s.notes:'นี่คือแผนหลักของวันนั้น ถ้า readiness วันนี้เหลือง/แดง ให้ลดหรือเลื่อนจากปุ่มในหน้า Track Plan')}</div>
+      <div class="text-xs c3">${escapeHTML(s.notes||'นี่คือแผนหลักของวันนั้น ถ้า readiness วันนี้เหลือง/แดง ให้ลดหรือเลื่อนจากปุ่มในหน้า Track Plan')}</div>
     </div>
     ${row('วอร์มอัพ',d.warmup)}
     ${row('ชุดหลัก',d.mainSet)}

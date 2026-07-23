@@ -26,6 +26,12 @@ assert.equal(csv.length,1);
 assert.equal(csv[0].mainSet,'2 km warm-up + 5 x 800 m + cool-down');
 assert.equal(csv[0].notes,'keep source text');
 
+const sourceTargets=global.MyDashPlanFileImport.parseCsv('Week,Day,Workout Type,Distance (km),HR Zone (bpm),Pace (per km),Notes\n1,Tuesday,Easy,7,130-147,~6:00,Strides 4x100m');
+const sourceTargetPlan=global.MyDashPlanFileImport.createImportedPlan({name:'Source targets',sessions:sourceTargets},{weekOneMonday:'2026-07-20',createdAt:234});
+assert.equal(sourceTargetPlan.sessions[0].targetHR,'130-147');
+assert.equal(sourceTargetPlan.sessions[0].targetPace,'~6:00');
+assert.equal(sourceTargetPlan.sessions[0].notes,'Strides 4x100m');
+
 const rows=global.MyDashPlanFileImport.parsePastedRows('2026-08-03 | Easy | 6 | Easy aerobic | comfortable\n2026-08-05 | Long | 12 | Long run | easy');
 assert.equal(rows.length,2);
 assert.equal(rows[1].targetDist,'12');

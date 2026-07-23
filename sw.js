@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-open-plan-import-20260723-2';
+const CACHE_NAME = 'mydash-v3-open-plan-import-20260723-3';
 const APP_SHELL = [
   './',
   './index.html',

@@ -53,7 +53,9 @@
       warmup:valueFrom(input,['warmup','warmUp','วอร์ม'])||input.warmup||details.warmup||'',
       cooldown:valueFrom(input,['cooldown','coolDown','คูลดาวน์'])||input.cooldown||details.cooldown||'',
       notes:valueFrom(input,['notes','note','remarks','หมายเหตุ'])||input.notes||input.note||'',
-      execution:input.execution||details.execution||'',successCriteria:input.successCriteria||details.successCriteria||'',intensity:input.intensity||details.intensity||'',targetPace:input.targetPace||input.targetPaceRange||'',targetHR:input.targetHR||'',priority:input.priority||''
+      execution:input.execution||details.execution||'',successCriteria:input.successCriteria||details.successCriteria||'',intensity:input.intensity||details.intensity||'',
+      targetPace:valueFrom(input,['targetPace','targetPaceRange','pace','pacePerKm'])||input.targetPace||input.targetPaceRange||'',
+      targetHR:valueFrom(input,['targetHR','hr','heartRate','hrZone','hrZoneBpm'])||input.targetHR||'',priority:input.priority||''
     };
     if(!session.date&&!allowMissingDate)throw new Error(`Session row ${rowNumber||'?'} is missing a date.`);
     return session;
