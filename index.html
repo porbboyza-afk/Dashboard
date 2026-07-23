@@ -2202,20 +2202,24 @@ img, video, iframe, canvas { max-width: 100%; }
               <button class="btn btn-primary w100" type="button" onclick="toggleManualPlanBuilder()">Create manual schedule</button>
               <div id="manual-plan-builder" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
                 <div class="form-group"><label>Schedule name</label><input type="text" id="manual-plan-goal" placeholder="e.g. 10K build to 15 Nov"></div>
-                <div class="grid g2"><div class="form-group"><label>Date</label><input type="date" id="manual-session-date"></div><div class="form-group"><label>Type</label><select id="manual-session-type"><option value="Easy">Easy</option><option value="Recovery">Recovery</option><option value="Tempo">Tempo</option><option value="Interval">Interval</option><option value="Long">Long</option><option value="Race">Race</option><option value="Rest">Rest</option></select></div></div>
+                <div class="grid g2"><div class="form-group"><label>Date</label><input type="date" id="manual-session-date"></div><div class="form-group"><label>Type</label><select id="manual-session-type"><option value="Easy">Easy</option><option value="Recovery">Recovery</option><option value="Tempo">Tempo</option><option value="Interval">Interval</option><option value="Long">Long</option><option value="Race">Race</option><option value="Rest">Rest</option><option value="Other">Other</option></select></div></div>
                 <div class="grid g2"><div class="form-group"><label>Total distance (km)</label><input type="number" id="manual-session-distance" min="0" step="0.1" placeholder="e.g. 8"></div><div class="form-group"><label>Session title</label><input type="text" id="manual-session-title" placeholder="e.g. 5 x 800 m"></div></div>
                 <div class="form-group"><label>Main set</label><input type="text" id="manual-session-main" placeholder="e.g. 2 km warm-up + 5 x 800 m + cool-down"></div>
                 <div class="grid g2"><div class="form-group"><label>Warm-up</label><input type="text" id="manual-session-warmup" placeholder="Optional"></div><div class="form-group"><label>Cool-down</label><input type="text" id="manual-session-cooldown" placeholder="Optional"></div></div>
                 <div class="form-group"><label>Notes</label><input type="text" id="manual-session-notes" placeholder="Optional"></div>
                 <button class="btn btn-ghost w100" type="button" onclick="addManualPlanSession()">Add session to schedule</button>
+                <details style="margin-top:10px"><summary style="cursor:pointer;color:var(--accent);font-size:12px;font-weight:700">Paste many sessions at once</summary><div class="form-group" style="margin-top:9px"><label>Date | Type | km | Title | Main set | Notes</label><textarea id="manual-plan-bulk" rows="5" placeholder="2026-08-03 | Easy | 6 | Easy aerobic | Comfortable effort&#10;2026-08-05 | Interval | 8 | 5 x 800 m | 2 km warm-up + 5 x 800 m + cool-down"></textarea></div><button class="btn btn-ghost w100" type="button" onclick="addManualPlanBulkRows()">Add pasted rows</button></details>
                 <div id="manual-plan-draft" class="mt-12 text-sm c2">No sessions added.</div>
                 <div class="flex gap-8 mt-12"><button class="btn btn-danger btn-sm" type="button" onclick="clearManualPlanDraft()">Clear draft</button><button class="btn btn-green btn-sm" id="btn-save-manual-plan" type="button" onclick="saveManualCoachPlan()" disabled>Save manual schedule to Cloud</button></div>
               </div>
             </div>
             <div style="margin-top:10px;padding:12px;border:1px solid rgba(45,206,137,.32);border-radius:var(--r);background:rgba(45,206,137,.06)">
-              <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:5px">External coach plan</div>
-              <div style="font-size:11px;color:var(--text2);line-height:1.55;margin-bottom:9px">Import the selected COROS 10K sub-50 plan. It keeps the COROS sessions, moves Friday to Saturday, and replaces the active plan.</div>
-              <button class="btn btn-green w100" id="btn-import-coros-sub50" onclick="importCorosSub50Plan()">Import COROS 10K sub-50 plan</button>
+              <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:5px">Import schedule file</div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.55;margin-bottom:9px">Import any JSON or CSV plan. MyDash preserves dates, workout text, distances, and notes exactly as supplied. It does not run the AI training generator.</div>
+              <label class="btn btn-green w100" style="cursor:pointer;text-align:center">Choose .json or .csv<input id="coach-plan-import-file" type="file" accept=".json,application/json,.csv,text/csv" style="display:none" onchange="previewCoachPlanImport(event)"></label>
+              <div id="coach-plan-import-preview" class="text-sm c2 mt-8">No file selected.</div>
+              <button class="btn btn-ghost w100 mt-8" id="btn-save-imported-plan" type="button" onclick="saveImportedCoachPlan()" disabled>Save imported schedule to Cloud</button>
+              <details class="mt-8" style="font-size:11px;color:var(--text2)"><summary style="cursor:pointer">Supported columns</summary><div class="mt-4">CSV: <code>date,type,distanceKm,title,mainSet,warmup,cooldown,notes</code>. JSON: an array of sessions or an object with <code>sessions</code>. Required: date, type, distance.</div></details>
             </div>
             <div style="background:var(--accent-light);border:1.5px solid rgba(0,122,255,.2);border-radius:var(--r);padding:12px;margin-top:12px;font-size:12px;color:var(--text2);line-height:1.8">
               AI coach จะจับคู่อัตโนมัติกับกิจกรรมจาก MyDash Cloud และ Health Connect พร้อมกฎลดความเสี่ยงก่อนวันซ้อมหนัก
@@ -4128,6 +4132,7 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
       <script src="js/domain/training/engine-v2.js"></script>
       <script src="js/services/coach-repository.js"></script>
       <script src="js/services/manual-plan-builder.js"></script>
+      <script src="js/services/plan-file-import.js"></script>
       <script src="js/services/coros-plan-import.js"></script>
       <script src="js/training-dashboard-view-model.js"></script>
     <script src="js/coach.js"></script>

@@ -19,7 +19,9 @@ assert.equal(plan.sessions.length,3);
 assert.deepEqual(plan.sessions.map(session=>session.date),['2026-08-25','2026-08-30','2026-09-02']);
 assert.equal(plan.validation.weeklyTargetsKm.reduce((sum,value)=>sum+value,0),26);
 assert.equal(plan.sessions.find(session=>session.type==='Tempo').workoutSpec.qualityDistanceKm,8);
-assert.throws(()=>global.MyDashManualPlan.createPlan([{date:'2026-08-25',type:'Easy',targetDist:4},{date:'2026-08-25',type:'Long',targetDist:8}]),/Only one session/);
+const doubleDay=global.MyDashManualPlan.createPlan([{date:'2026-08-25',type:'Easy',targetDist:4,title:'AM easy'},{date:'2026-08-25',type:'Long',targetDist:8,title:'PM long'}]);
+assert.equal(doubleDay.sessions.length,2);
+assert.equal(doubleDay.sessions[0].description,'AM easy');
 assert.throws(()=>global.MyDashManualPlan.createPlan([{date:'2026-08-25',type:'Rest',targetDist:1}]),/Rest must have 0 km/);
 
 console.log('Manual plan builder tests passed');

@@ -29,6 +29,7 @@ const trainingDashboardVmScriptPath = path.join(root, 'js', 'training-dashboard-
 const reviewMatcherScriptPath = path.join(root, 'js', 'domain', 'review', 'matcher-v2.js');
 const coachRepositoryScriptPath = path.join(root, 'js', 'services', 'coach-repository.js');
 const manualPlanBuilderScriptPath = path.join(root, 'js', 'services', 'manual-plan-builder.js');
+const planFileImportScriptPath = path.join(root, 'js', 'services', 'plan-file-import.js');
 const corosPlanImportScriptPath = path.join(root, 'js', 'services', 'coros-plan-import.js');
 const settingsScriptPath = path.join(root, 'js', 'settings.js');
 const backupExportScriptPath = path.join(root, 'js', 'backup-export.js');
@@ -51,6 +52,7 @@ const extraScripts = [
   trainingEngineScriptPath,
   coachRepositoryScriptPath,
   manualPlanBuilderScriptPath,
+  planFileImportScriptPath,
   corosPlanImportScriptPath,
   trainingDashboardVmScriptPath,
   coachScriptPath,
@@ -133,6 +135,7 @@ ensureContains(indexPath, [
   '<script src="js/domain/training/engine-v2.js"></script>',
   '<script src="js/services/coach-repository.js"></script>',
   '<script src="js/services/manual-plan-builder.js"></script>',
+  '<script src="js/services/plan-file-import.js"></script>',
   '<script src="js/coach.js"></script>',
   '<script src="js/races.js"></script>',
   '<script src="js/domain/review/matcher-v2.js"></script>',
@@ -152,7 +155,7 @@ ensureContains(indexPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-manual-plan-builder-20260722-1',
+  'mydash-v3-open-plan-import-20260723-1',
   './app-redesign.css?v=20260711-1',
   './training-studio-ui.css?v=20260711-1',
   './studio-shell.css?v=20260711-1',
@@ -160,6 +163,7 @@ ensureContains(swPath, [
   './js/studio-home.js',
   './js/studio-coach.js',
   './js/services/manual-plan-builder.js',
+  './js/services/plan-file-import.js',
 ]);
 
 ensureContains(shareCardScriptPath, [
@@ -359,13 +363,14 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-manual-plan-builder-20260722-1",
+  "mydash-v3-open-plan-import-20260723-1",
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',
   './js/app-state.js',
   './js/app-bootstrap.js',
   './js/services/manual-plan-builder.js',
+  './js/services/plan-file-import.js',
   './js/activity-model.js',
   './js/today-dashboard-view-model.js',
   './js/share-card.js',

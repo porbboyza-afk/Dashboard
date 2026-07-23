@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-manual-plan-builder-20260722-1';
+const CACHE_NAME = 'mydash-v3-open-plan-import-20260723-1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -26,6 +26,7 @@ const APP_SHELL = [
   './js/domain/training/engine-v2.js',
   './js/services/coach-repository.js',
   './js/services/manual-plan-builder.js',
+  './js/services/plan-file-import.js',
   './js/training-dashboard-view-model.js',
   './js/coach.js',
   './js/races.js',

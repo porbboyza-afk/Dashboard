@@ -1,5 +1,17 @@
 # AI Handoff Log
 
+## 2026-07-23 Open Manual Schedule And File Import
+
+Status: implemented and verified locally; deployment pending.
+
+- Removed the UI entry point that imported a fixed COROS 10K sub-50 blueprint. The legacy COROS helper remains in source for now, but it is no longer presented as the application's file-import feature.
+- Added `js/services/plan-file-import.js` and a file picker in `AI Coach > Create` for generic `.json` and `.csv` schedules. Import always previews first and only replaces the active plan after the user saves it while signed in.
+- Supported CSV columns: `date,type,distanceKm,title,mainSet,warmup,cooldown,notes`. JSON accepts a session array or an object containing `sessions`. Original session title, main set, warm-up, cool-down, notes, date, distance, and source type are preserved.
+- Manual schedule now supports pasting multiple rows (`Date | Type | km | Title | Main set | Notes`), editing draft rows, `Other` session type, and more than one session on a calendar date. No Training Engine V2 generation is invoked for manual/imported plans.
+- Fixed Track Plan display: it previously discarded English source text and showed Thai AI fallback details. Manual/imported session text is now treated as source-of-truth regardless of language.
+- PWA cache target: `mydash-v3-open-plan-import-20260723-1`.
+- Verification passed: `node manual_plan_builder_test.js`, `node plan_file_import_test.js`, `node verify_dashboard.js`, and `python smoke_test_dashboard.py`. Smoke test reported zero page, console, and request errors.
+
 ## 2026-07-22 Manual Schedule Builder
 
 Status: committed and pushed in `d04a141`.

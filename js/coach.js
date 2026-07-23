@@ -526,12 +526,14 @@ function coachSessionDetails(type,dist,goalProfile,week=0){
 function coachSessionDisplayDetails(session,index=0){
   const fallback=coachSessionDetails(session.type,session.targetDist,getCoachGoalProfile(window._coachPlan,{preferPlan:true}),Math.floor(index/4));
   const raw=session.details&&typeof session.details==='object'?session.details:{};
-  const useRaw=hasThaiText(Object.values(raw).join(' '));
-  return useRaw?{...fallback,...raw}:fallback;
+  // Manual and imported plans are source-of-truth. Never replace English source text with AI fallback copy.
+  const sourceProvider=session?.workoutSpec?.sourceProvider||window._coachPlan?.sourcePlan?.provider;
+  const hasSourceDetails=Object.values(raw).some(value=>String(value||'').trim());
+  return (sourceProvider==='manual'||sourceProvider==='imported'||hasSourceDetails)?{...fallback,...raw}:fallback;
 }
 function coachSessionDisplayDescription(session,index=0){
   const d=coachSessionDisplayDetails(session,index);
-  return hasThaiText(session.description)?session.description:(d.targetDescription||coachSessionTypeThai(session.type));
+  return String(session.description||'').trim()||d.targetDescription||session.sourceType||coachSessionTypeThai(session.type);
 }
 function coachSessionDateScore(session,index=0){
   const priorityScore={key:300,normal:200,optional:100}[session.priority]||0;
@@ -796,6 +798,7 @@ async function generateTrainingPlan(){
 }
 
 let manualPlanDraft=[];
+let pendingImportedCoachPlan=null;
 function manualPlanSessionInput(){
   return {
     date:document.getElementById('manual-session-date')?.value||'',
@@ -814,7 +817,7 @@ function renderManualPlanDraft(){
   if(saveButton)saveButton.disabled=manualPlanDraft.length===0;
   if(!output)return;
   if(!manualPlanDraft.length){output.textContent='No sessions added.';return;}
-  const rows=manualPlanDraft.map((session,index)=>`<div class="flex between gap-8" style="padding:7px 0;border-bottom:1px solid var(--border)"><div><strong>${escapeHTML(session.date)}</strong> · ${escapeHTML(session.type)} · ${escapeHTML(session.targetDist)} km${session.title?` · ${escapeHTML(session.title)}`:''}</div><button class="btn btn-danger btn-sm" type="button" onclick="removeManualPlanSession(${index})">Remove</button></div>`).join('');
+  const rows=manualPlanDraft.map((session,index)=>`<div class="flex between gap-8" style="padding:7px 0;border-bottom:1px solid var(--border)"><div><strong>${escapeHTML(session.date)}</strong> · ${escapeHTML(session.type)} · ${escapeHTML(session.targetDist)} km${session.title?` · ${escapeHTML(session.title)}`:''}</div><div class="flex gap-8"><button class="btn btn-ghost btn-sm" type="button" onclick="editManualPlanSession(${index})">Edit</button><button class="btn btn-danger btn-sm" type="button" onclick="removeManualPlanSession(${index})">Remove</button></div></div>`).join('');
   output.innerHTML=`<div style="font-weight:700;margin-bottom:5px">${manualPlanDraft.length} session${manualPlanDraft.length===1?'':'s'} in draft</div>${rows}`;
 }
 function toggleManualPlanBuilder(){
@@ -841,6 +844,30 @@ function addManualPlanSession(){
     renderManualPlanDraft();
   }catch(error){showToast(error.message,'error');}
 }
+function addManualPlanBulkRows(){
+  try{
+    const input=document.getElementById('manual-plan-bulk');
+    const rows=window.MyDashPlanFileImport?.parsePastedRows(input?.value||'');
+    if(!rows)throw new Error('Schedule import is not loaded. Refresh and try again.');
+    window.MyDashManualPlan.createPlan([...manualPlanDraft,...rows],{goal:'Draft validation'});
+    manualPlanDraft.push(...rows);
+    if(input)input.value='';
+    renderManualPlanDraft();
+    showToast(`${rows.length} sessions added to the draft.`,'success');
+  }catch(error){showToast(error.message||'Could not add pasted sessions.','error');}
+}
+function editManualPlanSession(index){
+  const session=manualPlanDraft[index];if(!session)return;
+  const fields={
+    'manual-session-date':session.date,'manual-session-type':session.type,'manual-session-distance':session.targetDist,
+    'manual-session-title':session.title,'manual-session-main':session.mainSet,'manual-session-warmup':session.warmup,
+    'manual-session-cooldown':session.cooldown,'manual-session-notes':session.notes
+  };
+  Object.entries(fields).forEach(([id,value])=>{const input=document.getElementById(id);if(input)input.value=value??'';});
+  manualPlanDraft.splice(index,1);renderManualPlanDraft();
+  const builder=document.getElementById('manual-plan-builder');if(builder)builder.style.display='block';
+  showToast('Session loaded into the editor. Save it with Add session to schedule.','success');
+}
 function removeManualPlanSession(index){
   manualPlanDraft.splice(index,1);
   renderManualPlanDraft();
@@ -866,6 +893,40 @@ async function saveManualCoachPlan(){
     switchCoachTab('track');
   }catch(error){showToast(error.message||'Could not save the manual schedule.','error');}
   finally{if(button){button.textContent='Save manual schedule to Cloud';button.disabled=manualPlanDraft.length===0;}}
+}
+async function previewCoachPlanImport(event){
+  const file=event?.target?.files?.[0];
+  const preview=document.getElementById('coach-plan-import-preview');
+  const saveButton=document.getElementById('btn-save-imported-plan');
+  pendingImportedCoachPlan=null;
+  if(saveButton)saveButton.disabled=true;
+  try{
+    const plan=await window.MyDashPlanFileImport?.parseFile(file);
+    if(!plan)throw new Error('Schedule import is not loaded. Refresh and try again.');
+    pendingImportedCoachPlan=plan;
+    if(preview)preview.innerHTML=`<strong style="color:var(--green)">${escapeHTML(plan.goal)}</strong><br>${plan.sessions.length} sessions · ${escapeHTML(plan.startDate)} to ${escapeHTML(plan.endDate)}<br>Preview only. Saving will replace the active plan and archive it.`;
+    if(saveButton)saveButton.disabled=false;
+  }catch(error){
+    if(preview)preview.innerHTML=`<span style="color:var(--red)">${escapeHTML(error.message||'Could not read file.')}</span>`;
+    showToast(error.message||'Could not read file.','error');
+  }
+}
+async function saveImportedCoachPlan(){
+  const button=document.getElementById('btn-save-imported-plan');
+  try{
+    if(!pendingImportedCoachPlan)throw new Error('Choose a valid schedule file first.');
+    if(!window._fb?.isSignedIn?.()){showToast('Sign in before saving an imported schedule.','error');showPage('settings');return;}
+    if(!window.MyDashCoachRepository?.replaceActivePlan)throw new Error('Coach repository is not loaded. Refresh and try again.');
+    if(button){button.disabled=true;button.textContent='Saving imported schedule...';}
+    const saved=await window.MyDashCoachRepository.replaceActivePlan(pendingImportedCoachPlan);
+    await assertCoachCloudSaved({createdAt:saved.createdAt});
+    AppState.set('coachPlan',saved);
+    pendingImportedCoachPlan=null;
+    const preview=document.getElementById('coach-plan-import-preview');if(preview)preview.textContent='Imported schedule saved.';
+    showToast('Imported schedule saved. The previous plan was archived.','success');
+    switchCoachTab('track');
+  }catch(error){showToast(error.message||'Could not save imported schedule.','error');}
+  finally{if(button){button.textContent='Save imported schedule to Cloud';button.disabled=!pendingImportedCoachPlan;}}
 }
 
 function switchCoachTab(tab,el){
