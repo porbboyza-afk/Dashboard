@@ -30,4 +30,13 @@ const rows=global.MyDashPlanFileImport.parsePastedRows('2026-08-03 | Easy | 6 | 
 assert.equal(rows.length,2);
 assert.equal(rows[1].targetDist,'12');
 
+const weekDayCsv=global.MyDashPlanFileImport.parseCsv('Week,Day,Workout Type,Distance (km),Notes\n1,อังคาร,Easy,7,Strides 4x100m\n1,พุธ,Easy,6,\n1,พฤหัสฯ,Cruise Intervals,3 x 1.2,พักจ็อก 2 นาที\n1,เสาร์,Easy,5,\n1,อาทิตย์,Long Run,12,');
+assert.equal(weekDayCsv[0].date,'');
+const mappedPlan=global.MyDashPlanFileImport.createImportedPlan({name:'Block 1',sessions:weekDayCsv},{fileName:'training_plan_block1.csv',format:'csv',weekOneMonday:'2026-07-20',createdAt:456});
+assert.deepEqual(mappedPlan.sessions.map(session=>session.date),['2026-07-21','2026-07-22','2026-07-23','2026-07-25','2026-07-26']);
+assert.equal(mappedPlan.sessions[2].targetDist,3.6);
+assert.equal(mappedPlan.sessions[2].description,'Cruise Intervals · 3 x 1.2 km');
+assert.equal(mappedPlan.sessions[0].sourceSchedule.week,'1');
+assert.throws(()=>global.MyDashPlanFileImport.createImportedPlan({sessions:weekDayCsv},{weekOneMonday:'2026-07-21'}),/not a Monday/);
+
 console.log('Plan file import tests passed');

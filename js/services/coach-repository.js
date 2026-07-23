@@ -50,6 +50,12 @@
     const plan=await firebase().getData(`coach_plans/${safeId(id)}`);
     return plan?.status==='active'?plan:null;
   }
+  async function listArchivedPlans(){
+    const plans=await firebase().getData('coach_plans')||{};
+    return Object.values(plans)
+      .filter(plan=>plan?.status==='archived'&&Array.isArray(plan.sessions))
+      .sort((a,b)=>(b.archivedAt||b.updatedAt||0)-(a.archivedAt||a.updatedAt||0));
+  }
 
-  root.MyDashCoachRepository={savePlan,saveRevision,replaceActivePlan,archivePlan,loadActivePlan,safeId};
+  root.MyDashCoachRepository={savePlan,saveRevision,replaceActivePlan,archivePlan,loadActivePlan,listArchivedPlans,safeId};
 })(window);

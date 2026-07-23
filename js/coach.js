@@ -799,6 +799,7 @@ async function generateTrainingPlan(){
 
 let manualPlanDraft=[];
 let pendingImportedCoachPlan=null;
+let pendingCoachPlanImportFile=null;
 function manualPlanSessionInput(){
   return {
     date:document.getElementById('manual-session-date')?.value||'',
@@ -895,16 +896,27 @@ async function saveManualCoachPlan(){
   finally{if(button){button.textContent='Save manual schedule to Cloud';button.disabled=manualPlanDraft.length===0;}}
 }
 async function previewCoachPlanImport(event){
-  const file=event?.target?.files?.[0];
+  pendingCoachPlanImportFile=event?.target?.files?.[0]||null;
+  return refreshCoachPlanImportPreview();
+}
+async function refreshCoachPlanImportPreview(){
+  const file=pendingCoachPlanImportFile;
   const preview=document.getElementById('coach-plan-import-preview');
   const saveButton=document.getElementById('btn-save-imported-plan');
+  const weekOneMonday=document.getElementById('coach-plan-import-week-one-monday')?.value||'';
   pendingImportedCoachPlan=null;
   if(saveButton)saveButton.disabled=true;
   try{
-    const plan=await window.MyDashPlanFileImport?.parseFile(file);
+    if(!file){if(preview)preview.textContent='No file selected.';return;}
+    const plan=await window.MyDashPlanFileImport?.parseFile(file,{weekOneMonday});
     if(!plan)throw new Error('Schedule import is not loaded. Refresh and try again.');
     pendingImportedCoachPlan=plan;
-    if(preview)preview.innerHTML=`<strong style="color:var(--green)">${escapeHTML(plan.goal)}</strong><br>${plan.sessions.length} sessions · ${escapeHTML(plan.startDate)} to ${escapeHTML(plan.endDate)}<br>Preview only. Saving will replace the active plan and archive it.`;
+    const calculated=plan.sessions.map(session=>{
+      const source=session.sourceSchedule?.week?`W${escapeHTML(session.sourceSchedule.week)} ${escapeHTML(session.sourceSchedule.day)} → `:'';
+      return `<div style="padding:4px 0;border-bottom:1px solid var(--border)">${source}<strong>${escapeHTML(session.date)}</strong> · ${escapeHTML(session.sourceType||session.type)} · ${escapeHTML(session.targetDist)} km · ${escapeHTML(session.description||'')}</div>`;
+    }).join('');
+    const mapping=plan.sourcePlan?.weekOneMonday?`Week 1 Monday: <strong>${escapeHTML(plan.sourcePlan.weekOneMonday)}</strong>`:'Dates supplied by source file';
+    if(preview)preview.innerHTML=`<strong style="color:var(--green)">${escapeHTML(plan.goal)}</strong><br>${plan.sessions.length} sessions · ${escapeHTML(plan.startDate)} to ${escapeHTML(plan.endDate)}<br>${mapping}<details open class="mt-8"><summary style="cursor:pointer;font-weight:700">Check every calculated date before saving</summary><div style="max-height:280px;overflow:auto;margin-top:7px">${calculated}</div></details><div class="mt-8">Preview only. Saving will replace the active plan and archive it.</div>`;
     if(saveButton)saveButton.disabled=false;
   }catch(error){
     if(preview)preview.innerHTML=`<span style="color:var(--red)">${escapeHTML(error.message||'Could not read file.')}</span>`;
@@ -927,6 +939,35 @@ async function saveImportedCoachPlan(){
     switchCoachTab('track');
   }catch(error){showToast(error.message||'Could not save imported schedule.','error');}
   finally{if(button){button.textContent='Save imported schedule to Cloud';button.disabled=!pendingImportedCoachPlan;}}
+}
+function coachPlanHistoryMetrics(plan){
+  const sessions=(plan.sessions||[]).filter(session=>session.type!=='Rest');
+  const completed=plan.completedDates||{};
+  const activities=getAllActivities();
+  const activityByDate=new Map();
+  activities.forEach(activity=>{
+    if(!activity?.date)return;
+    const current=activityByDate.get(activity.date)||[];current.push(activity);activityByDate.set(activity.date,current);
+  });
+  const done=sessions.filter(session=>completed[session.date]||activityByDate.has(session.date));
+  const actualKm=[...new Set(sessions.map(session=>session.date))].reduce((total,date)=>total+(activityByDate.get(date)||[]).reduce((sum,activity)=>sum+(parseFloat(activity.dist)||0),0),0);
+  return {plannedKm:sessions.reduce((sum,session)=>sum+(parseFloat(session.targetDist)||0),0),actualKm,done:done.length,total:sessions.length};
+}
+async function showCoachPlanHistory(){
+  const output=document.getElementById('coach-plan-history');if(!output)return;
+  try{
+    if(!window._fb?.isSignedIn?.())throw new Error('Sign in to view plan history.');
+    if(!window.MyDashCoachRepository?.listArchivedPlans)throw new Error('Coach history is not ready. Refresh and try again.');
+    output.innerHTML='<div class="card text-sm c2">Loading archived plans...</div>';
+    const plans=await window.MyDashCoachRepository.listArchivedPlans();
+    if(!plans.length){output.innerHTML='<div class="card text-sm c2">No archived plans yet.</div>';return;}
+    output.innerHTML=`<div class="card"><div class="card-label">Plan History</div>${plans.map(plan=>{
+      const metrics=coachPlanHistoryMetrics(plan);
+      const percent=metrics.total?Math.round(metrics.done/metrics.total*100):0;
+      const archived=plan.archivedAt?new Date(plan.archivedAt).toLocaleDateString('th-TH'):'unknown date';
+      return `<div style="padding:12px 0;border-bottom:1px solid var(--border)"><strong>${escapeHTML(plan.goal||'Archived plan')}</strong><div class="text-xs c3 mt-4">${escapeHTML(plan.startDate||'')} to ${escapeHTML(plan.endDate||'')} · archived ${escapeHTML(archived)} · ${escapeHTML(plan.sourcePlan?.provider||'plan')}</div><div class="mt-4">Completion ${percent}% (${metrics.done}/${metrics.total}) · Planned ${metrics.plannedKm.toFixed(1)} km · Activities on plan dates ${metrics.actualKm.toFixed(1)} km</div></div>`;
+    }).join('')}</div>`;
+  }catch(error){output.innerHTML=`<div class="card text-sm" style="color:var(--red)">${escapeHTML(error.message||'Could not load plan history.')}</div>`;}
 }
 
 function switchCoachTab(tab,el){

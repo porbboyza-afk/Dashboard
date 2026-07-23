@@ -2217,9 +2217,10 @@ img, video, iframe, canvas { max-width: 100%; }
               <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:5px">Import schedule file</div>
               <div style="font-size:11px;color:var(--text2);line-height:1.55;margin-bottom:9px">Import any JSON or CSV plan. MyDash preserves dates, workout text, distances, and notes exactly as supplied. It does not run the AI training generator.</div>
               <label class="btn btn-green w100" style="cursor:pointer;text-align:center">Choose .json or .csv<input id="coach-plan-import-file" type="file" accept=".json,application/json,.csv,text/csv" style="display:none" onchange="previewCoachPlanImport(event)"></label>
+              <div class="form-group mt-8"><label>Week 1 Monday (only for files with Week + Day, no date)</label><input id="coach-plan-import-week-one-monday" type="date" onchange="refreshCoachPlanImportPreview()"><div class="text-xs c3 mt-4">Required for a Week/Day file. The app rejects any date that is not Monday and shows every calculated date before saving.</div></div>
               <div id="coach-plan-import-preview" class="text-sm c2 mt-8">No file selected.</div>
               <button class="btn btn-ghost w100 mt-8" id="btn-save-imported-plan" type="button" onclick="saveImportedCoachPlan()" disabled>Save imported schedule to Cloud</button>
-              <details class="mt-8" style="font-size:11px;color:var(--text2)"><summary style="cursor:pointer">Supported columns</summary><div class="mt-4">CSV: <code>date,type,distanceKm,title,mainSet,warmup,cooldown,notes</code>. JSON: an array of sessions or an object with <code>sessions</code>. Required: date, type, distance.</div></details>
+              <details class="mt-8" style="font-size:11px;color:var(--text2)"><summary style="cursor:pointer">Supported columns</summary><div class="mt-4">CSV with real dates: <code>date,type,distanceKm,title,mainSet,warmup,cooldown,notes</code>. Week/Day files: <code>Week,Day,Workout Type,Distance (km)</code> plus the Week 1 Monday above. JSON accepts a session array or an object with <code>sessions</code>.</div></details>
             </div>
             <div style="background:var(--accent-light);border:1.5px solid rgba(0,122,255,.2);border-radius:var(--r);padding:12px;margin-top:12px;font-size:12px;color:var(--text2);line-height:1.8">
               AI coach จะจับคู่อัตโนมัติกับกิจกรรมจาก MyDash Cloud และ Health Connect พร้อมกฎลดความเสี่ยงก่อนวันซ้อมหนัก
@@ -2238,6 +2239,7 @@ img, video, iframe, canvas { max-width: 100%; }
           <div style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text)">No Training Plan</div>
           <div style="font-size:13px;margin-bottom:20px">Go to "Create Plan" tab to generate your schedule</div>
           <button class="btn btn-primary" onclick="switchCoachTab('create',null)">Create Plan</button>
+          <button class="btn btn-ghost" onclick="showCoachPlanHistory()">Plan history</button>
         </div>
         <div id="coach-plan-view" style="display:none">
           <div class="card mb-16">
@@ -2250,6 +2252,7 @@ img, video, iframe, canvas { max-width: 100%; }
                 <div style="text-align:center"><div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--green)" id="coach-done-count">0</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">ทำแล้ว</div></div>
                 <div style="text-align:center"><div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--red)" id="coach-miss-count">0</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">เลยวัน</div></div>
                 <div style="text-align:center"><div style="font-family:var(--font-mono);font-size:28px;font-weight:800;color:var(--text2)" id="coach-remain-count">0</div><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">คงเหลือ</div></div>
+                <button class="btn btn-ghost btn-sm" onclick="showCoachPlanHistory()">ประวัติแผน</button>
                 <button class="btn btn-danger btn-sm" onclick="clearCoachPlan()">ลบแผน</button>
               </div>
             </div>
@@ -2269,6 +2272,7 @@ img, video, iframe, canvas { max-width: 100%; }
           <div id="coach-review-output" class="ai-box mb-16"></div>
           <div id="coach-plan-days"></div>
         </div>
+        <div id="coach-plan-history" class="mt-16"></div>
       </div>
 
       <!-- Race Tab -->

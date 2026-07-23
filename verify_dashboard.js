@@ -155,7 +155,7 @@ ensureContains(indexPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-open-plan-import-20260723-1',
+  'mydash-v3-open-plan-import-20260723-2',
   './app-redesign.css?v=20260711-1',
   './training-studio-ui.css?v=20260711-1',
   './studio-shell.css?v=20260711-1',
@@ -363,7 +363,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  "mydash-v3-open-plan-import-20260723-1",
+  "mydash-v3-open-plan-import-20260723-2",
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',

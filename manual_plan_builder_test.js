@@ -22,6 +22,8 @@ assert.equal(plan.sessions.find(session=>session.type==='Tempo').workoutSpec.qua
 const doubleDay=global.MyDashManualPlan.createPlan([{date:'2026-08-25',type:'Easy',targetDist:4,title:'AM easy'},{date:'2026-08-25',type:'Long',targetDist:8,title:'PM long'}]);
 assert.equal(doubleDay.sessions.length,2);
 assert.equal(doubleDay.sessions[0].description,'AM easy');
+const repeats=global.MyDashManualPlan.createPlan([{date:'2026-08-27',type:'Interval',targetDist:'3 x 1.2',title:'3 x 1.2 km'}]);
+assert.equal(repeats.sessions[0].targetDist,3.6);
 assert.throws(()=>global.MyDashManualPlan.createPlan([{date:'2026-08-25',type:'Rest',targetDist:1}]),/Rest must have 0 km/);
 
 console.log('Manual plan builder tests passed');

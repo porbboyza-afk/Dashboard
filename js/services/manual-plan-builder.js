@@ -27,12 +27,18 @@
     value.setDate(value.getDate()+days);
     return value.toISOString().slice(0,10);
   }
+  function parseDistance(value){
+    const raw=String(value??'').trim().replace(',','.');
+    const direct=Number(raw);if(Number.isFinite(direct))return direct;
+    const repeated=raw.match(/^(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)$/i);
+    return repeated?Number(repeated[1])*Number(repeated[2]):NaN;
+  }
   function round(value){return +Number(value).toFixed(2);}
   function normalizeSession(input,index){
     const date=String(input?.date||'').trim();
     const sourceType=String(input?.sourceType||input?.type||'').trim();
     const type=normalizeType(sourceType);
-    const targetDist=round(Number(input?.targetDist??input?.distanceKm??input?.distance??input?.totalDistanceKm));
+    const targetDist=round(parseDistance(input?.targetDist??input?.distanceKm??input?.distance??input?.totalDistanceKm));
     if(!isIsoDate(date))throw new Error(`Session ${index+1}: choose a valid date.`);
     if(type==='Rest'&&targetDist!==0)throw new Error(`Session ${index+1}: Rest must have 0 km.`);
     if(type!=='Rest'&&(!Number.isFinite(targetDist)||targetDist<=0))throw new Error(`Session ${index+1}: distance must be greater than 0.`);
@@ -41,6 +47,7 @@
     const mainSet=String(input?.mainSet||details.mainSet||'').trim()||title;
     return {
       date,type,sourceType:sourceType||type,targetDist,title,mainSet,
+      sourceWeek:input?.sourceWeek??input?.week??'',sourceDay:String(input?.sourceDay??input?.dayName??''),
       warmup:String(input?.warmup??details.warmup??'').trim(),
       cooldown:String(input?.cooldown??details.cooldown??'').trim(),
       notes:String(input?.notes||'').trim(),
@@ -63,7 +70,7 @@
       const quality=['Tempo','Interval','Race'].includes(session.type)?session.targetDist:0;
       return {
         sessionId:`manual-${createdAt}-s${index+1}`,date:session.date,week,phase:'Manual',phaseLabel:'Manual schedule',
-        type:session.type,sourceType:session.sourceType,intent:provider==='manual'?'manual':'imported',targetDist:session.targetDist,targetPace:session.targetPace,targetPaceRange:session.targetPace,targetHR:session.targetHR,
+        type:session.type,sourceType:session.sourceType,sourceSchedule:(session.sourceWeek||session.sourceDay)?{week:session.sourceWeek,day:session.sourceDay}:null,intent:provider==='manual'?'manual':'imported',targetDist:session.targetDist,targetPace:session.targetPace,targetPaceRange:session.targetPace,targetHR:session.targetHR,
         priority:['key','normal','optional'].includes(session.priority)?session.priority:(['Tempo','Interval','Long','Race'].includes(session.type)?'key':'normal'),description:session.title,
         details:{warmup:session.warmup,mainSet:session.mainSet,cooldown:session.cooldown,execution:session.execution||'Follow the source session exactly as entered.',successCriteria:session.successCriteria||'Complete the planned session with controlled form.',intensity:session.intensity||'Source plan',targetDescription:session.title},
         workoutSpec:{intent:provider==='manual'?'manual':'imported',structure:provider==='manual'?'manual':'imported_file',totalDistanceKm:session.targetDist,qualityDistanceKm:quality,sourceProvider:provider},

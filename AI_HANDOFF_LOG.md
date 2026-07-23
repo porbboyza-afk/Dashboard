@@ -1,5 +1,16 @@
 # AI Handoff Log
 
+## 2026-07-23 Week/Day Import Safety And Plan History
+
+Status: implemented locally; final verification and deployment pending.
+
+- Generic CSV import now supports a schedule with `Week` and `Day` but no real date. It never guesses from the current date. The user must select the Monday that starts Week 1; any non-Monday is rejected before a plan can be saved.
+- The import preview lists every calculated session date before enabling save. It preserves the source week and day beside each calculated date, so date alignment can be checked directly in the UI.
+- Confirmed mapping for `C:\Users\pucca\Desktop\training_plan_block1.csv`: set Week 1 Monday to `2026-07-20`. Week 1 maps to Tue 21, Wed 22, Thu 23, Sat 25, Sun 26 July; the 20-session block ends Sun 16 August 2026. The user already completed the Tue 21 and Wed 22 sessions.
+- Repeated distance notation such as `3 x 1.2` and `3 x 1.6` is stored as total distance (3.6 km / 4.8 km) while retaining the original workout text in the session title.
+- Replacing an active plan archives it rather than deleting it. Added `Track Plan > Plan history`, also available with no active plan, showing archived-plan completion, planned distance, and activity distance recorded on scheduled dates. Garmin activity data is not deleted or replaced by plan changes.
+- PWA cache target: `mydash-v3-open-plan-import-20260723-2`.
+
 ## 2026-07-23 Open Manual Schedule And File Import
 
 Status: implemented and verified locally; deployment pending.
