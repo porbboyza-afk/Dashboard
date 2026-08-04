@@ -290,7 +290,7 @@ async function analyzeFitnessAI(period='week'){
   const oldHTML=button?.innerHTML;if(button){button.disabled=true;button.textContent='Analyzing...';}
   if(output){output.style.display='block';output.innerHTML='<span style="opacity:.55;font-style:italic;font-size:12px">กำลังเชื่อมโยง session, wellness, สภาพอากาศ และแผนซ้อม...</span>';}
   try{
-    const result=await window.MyDashTrainingAnalyst.analyzePeriod({label:periodLabel,activities:wks});
+    const result=await window.MyDashTrainingAnalyst.analyzePeriod({label:periodLabel,activities:wks,summaryOnly:period==='month'});
     if(output)output.innerHTML=mdToHtml(result.markdown||'AI วิเคราะห์เสร็จแล้ว');
     await renderStatsInsights();
   }catch(error){

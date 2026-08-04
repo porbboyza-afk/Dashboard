@@ -1,5 +1,15 @@
 # AI Handoff Log
 
+## 2026-08-04 Monthly Statistics AI Digest
+
+- Fixed the red Monthly AI analysis failure while Weekly analysis remained functional.
+- Root cause: both paths sent the full per-activity context into `MyDashTrainingAnalyst.analyzePeriod()`. A month can contain far more repeated wellness, weather, plan, and surrounding-load facts than a week, making the request materially more likely to exceed the AI/proxy capacity or timeout.
+- `analyzeFitnessAI('month')` now requests `summaryOnly: true`.
+- `training-analyst.js` builds a compact monthly digest: totals plus per-session date, distance, duration, pace, HR, cadence, existing session classification, weather, nearby plan types, and compact wellness values. It deliberately excludes repeated raw surrounding-load and full plan payloads.
+- Monthly AI returns only the period report and does not rewrite saved per-session classifications. Weekly analysis keeps the existing detailed classification-and-save path.
+- Monthly output is capped at 1000 tokens, uses no web search, and retains the 60-second timeout.
+- Verification passed: `node --check js\\training-analyst.js`, `node --check js\\stats.js`, `node training_analyst_test.js`, `node verify_dashboard.js`, and `python smoke_test_dashboard.py` (no page, console, or request errors).
+
 ## 2026-07-23 Week/Day Import Safety And Plan History
 
 Status: implemented locally; final verification and deployment pending.

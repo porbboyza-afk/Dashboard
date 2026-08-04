@@ -162,40 +162,76 @@
     ].filter(Boolean).join('\n\n');
   }
 
-  async function analyzePeriod({ label, activities }) {
+  function compactPeriodSummary(activities) {
+    const facts = periodFacts(activities);
+    const totalDistanceKm = facts.reduce((sum, item) => sum + (number(item.distanceKm) || 0), 0);
+    const totalDurationMin = facts.reduce((sum, item) => sum + (number(item.durationMin) || 0), 0);
+    return {
+      activityCount: facts.length,
+      totalDistanceKm: Math.round(totalDistanceKm * 100) / 100,
+      totalDurationMin: Math.round(totalDurationMin),
+      sessions: facts.map(item => ({
+        date: item.date,
+        distanceKm: item.distanceKm,
+        durationMin: item.durationMin,
+        averagePace: item.averagePace,
+        averageHr: item.averageHr,
+        cadence: item.cadence,
+        sessionType: item.currentClassification?.type || 'other',
+        classificationSource: item.currentClassification?.source || 'unknown',
+        weather: item.weather,
+        plannedTypes: (item.plannedSessions || []).map(session => session.type).slice(0, 2),
+        wellness: item.wellness ? {
+          sleepHours: item.wellness.sleepHours,
+          restingHr: item.wellness.restingHr,
+          hrv: item.wellness.hrv,
+          stress: item.wellness.stress,
+          bodyBattery: item.wellness.bodyBattery
+        } : null
+      }))
+    };
+  }
+
+  async function analyzePeriod({ label, activities, summaryOnly = false }) {
     if (!root._fb?.setData || (typeof root._fb.isSignedIn === 'function' && !root._fb.isSignedIn())) {
       throw new Error('กรุณา Sign in ก่อนให้ AI วิเคราะห์และบันทึกผล');
     }
-    const facts = periodFacts(activities);
+    const facts = summaryOnly ? compactPeriodSummary(activities) : periodFacts(activities);
     const readiness = root.calculateReadiness?.() || {};
     const prompt = [
       'You are MyDash Training Analyst. Return valid JSON only. Do not browse the web and do not invent weather, injuries, or missing data.',
-      'Classify each activity using only the supplied facts. A slower pace can be intentional because of heat, wind, terrain, recovery, fatigue, or an off-plan workout. Do not call a plan deviation a failure unless facts show a problem.',
-      'Allowed sessionType values: recovery, easy, long, steady, tempo, threshold, interval, other.',
-      'If evidence is weak, keep confidence low and say what is missing. A user-confirmed classification always wins and must not be contradicted.',
+      summaryOnly
+        ? 'This is a monthly digest. Summarize the month from the supplied evidence; do not reclassify or rewrite individual sessions.'
+        : 'Classify each activity using only the supplied facts. A slower pace can be intentional because of heat, wind, terrain, recovery, fatigue, or an off-plan workout. Do not call a plan deviation a failure unless facts show a problem.',
+      summaryOnly ? 'State data limitations and distinguish recorded facts from inference.' : 'Allowed sessionType values: recovery, easy, long, steady, tempo, threshold, interval, other.',
+      summaryOnly ? '' : 'If evidence is weak, keep confidence low and say what is missing. A user-confirmed classification always wins and must not be contradicted.',
       `Selected period: ${label}`,
       `Current readiness facts: ${JSON.stringify({ score: readiness.score ?? null, acute: readiness.load?.acute ?? null, chronicWeekly: readiness.load?.chronicWeekly ?? null, acwr: readiness.load?.acwr ?? null })}`,
       `Activities and local context: ${JSON.stringify(facts)}`,
-      'Return exactly this JSON shape: {"activities":[{"key":"...","sessionType":"easy","confidence":0,"evidence":["..."],"context":"..."}],"report":{"summary":"...","observations":["..."],"next48h":"...","limitations":["..."]}}'
+      summaryOnly
+        ? 'Return exactly this JSON shape: {"report":{"summary":"...","observations":["..."],"next48h":"...","limitations":["..."]}}'
+        : 'Return exactly this JSON shape: {"activities":[{"key":"...","sessionType":"easy","confidence":0,"evidence":["..."],"context":"..."}],"report":{"summary":"...","observations":["..."],"next48h":"...","limitations":["..."]}}'
     ].join('\n\n');
     const data = await root.callNewsChat([
       { role: 'system', content: 'You are a cautious running coach. Reply in Thai with valid JSON only.' },
       { role: 'user', content: prompt }
-    ], { useSearch: false, maxTokens: 1800, timeoutMs: 60000, temperature: 0.25 });
+    ], { useSearch: false, maxTokens: summaryOnly ? 1000 : 1800, timeoutMs: 60000, temperature: 0.25 });
     const content = data?.choices?.[0]?.message?.content;
     if (!content) throw new Error('AI ไม่ส่งผลวิเคราะห์กลับมา');
     const parsed = parseJson(content);
-    const responseByKey = new Map((parsed.activities || []).map(item => [String(item.key || ''), item]));
-    await Promise.all(activities.map(activity => {
-      const key = activityKey(activity), saved = analyses()[key] || {};
-      if (saved.override?.type) return Promise.resolve(saved);
-      return saveAssessment(activity, validateAssessment(responseByKey.get(key), deterministic(activity)));
-    }));
+    if (!summaryOnly) {
+      const responseByKey = new Map((parsed.activities || []).map(item => [String(item.key || ''), item]));
+      await Promise.all(activities.map(activity => {
+        const key = activityKey(activity), saved = analyses()[key] || {};
+        if (saved.override?.type) return Promise.resolve(saved);
+        return saveAssessment(activity, validateAssessment(responseByKey.get(key), deterministic(activity)));
+      }));
+    }
     return { markdown: reportMarkdown(parsed.report), report: parsed.report || {}, activities: facts };
   }
 
   root.MyDashTrainingAnalyst = {
-    version: ANALYSIS_VERSION, activityKey, revision, classification, contextActivity, periodFacts, analyzePeriod, setOverride,
+    version: ANALYSIS_VERSION, activityKey, revision, classification, contextActivity, periodFacts, compactPeriodSummary, analyzePeriod, setOverride,
     types: SESSION_TYPES, labels: TYPE_LABELS
   };
 })(window);
