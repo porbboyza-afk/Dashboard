@@ -166,29 +166,70 @@
     const facts = periodFacts(activities);
     const totalDistanceKm = facts.reduce((sum, item) => sum + (number(item.distanceKm) || 0), 0);
     const totalDurationMin = facts.reduce((sum, item) => sum + (number(item.durationMin) || 0), 0);
+    const sessionTypeSet = new Set(['tempo', 'threshold', 'interval', 'long']);
+    const compactSession = item => ({
+      date: item.date,
+      distanceKm: item.distanceKm,
+      durationMin: item.durationMin,
+      averagePace: item.averagePace,
+      averageHr: item.averageHr,
+      cadence: item.cadence,
+      sessionType: item.currentClassification?.type || 'other',
+      classificationSource: item.currentClassification?.source || 'unknown',
+      weather: item.weather,
+      plannedTypes: (item.plannedSessions || []).map(session => session.type).slice(0, 2),
+      wellness: item.wellness ? {
+        sleepHours: item.wellness.sleepHours,
+        restingHr: item.wellness.restingHr,
+        hrv: item.wellness.hrv,
+        stress: item.wellness.stress,
+        bodyBattery: item.wellness.bodyBattery
+      } : null
+    });
+    const weekStart = date => {
+      const value = new Date(`${date}T12:00:00`);
+      if (!Number.isFinite(value.getTime())) return date;
+      const day = (value.getDay() + 6) % 7;
+      value.setDate(value.getDate() - day);
+      return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    };
+    const weekly = new Map();
+    facts.forEach(item => {
+      const key = weekStart(item.date);
+      const row = weekly.get(key) || { weekStart: key, sessions: 0, distanceKm: 0, durationMin: 0, types: {}, qualitySessions: 0, longestRunKm: 0 };
+      const type = item.currentClassification?.type || 'other';
+      row.sessions += 1;
+      row.distanceKm += number(item.distanceKm) || 0;
+      row.durationMin += number(item.durationMin) || 0;
+      row.types[type] = (row.types[type] || 0) + 1;
+      if (sessionTypeSet.has(type)) row.qualitySessions += 1;
+      row.longestRunKm = Math.max(row.longestRunKm, number(item.distanceKm) || 0);
+      weekly.set(key, row);
+    });
+    const weeklySummary = [...weekly.values()].sort((a, b) => a.weekStart.localeCompare(b.weekStart)).map(row => ({
+      ...row,
+      distanceKm: Math.round(row.distanceKm * 100) / 100,
+      durationMin: Math.round(row.durationMin * 10) / 10,
+      longestRunKm: Math.round(row.longestRunKm * 100) / 100
+    }));
+    const dated = facts.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    const selected = [];
+    const add = item => {
+      const key = activityKey(item);
+      if (!selected.some(candidate => activityKey(candidate) === key)) selected.push(item);
+    };
+    facts.filter(item => sessionTypeSet.has(item.currentClassification?.type)).sort((a, b) => (number(b.distanceKm) || 0) - (number(a.distanceKm) || 0)).forEach(add);
+    dated.slice(0, 6).forEach(add);
+    facts.slice().sort((a, b) => (number(b.distanceKm) || 0) - (number(a.distanceKm) || 0)).slice(0, 2).forEach(add);
+    const keySessions = selected.slice(0, 10).map(compactSession);
     return {
       activityCount: facts.length,
       totalDistanceKm: Math.round(totalDistanceKm * 100) / 100,
       totalDurationMin: Math.round(totalDurationMin),
-      sessions: facts.map(item => ({
-        date: item.date,
-        distanceKm: item.distanceKm,
-        durationMin: item.durationMin,
-        averagePace: item.averagePace,
-        averageHr: item.averageHr,
-        cadence: item.cadence,
-        sessionType: item.currentClassification?.type || 'other',
-        classificationSource: item.currentClassification?.source || 'unknown',
-        weather: item.weather,
-        plannedTypes: (item.plannedSessions || []).map(session => session.type).slice(0, 2),
-        wellness: item.wellness ? {
-          sleepHours: item.wellness.sleepHours,
-          restingHr: item.wellness.restingHr,
-          hrv: item.wellness.hrv,
-          stress: item.wellness.stress,
-          bodyBattery: item.wellness.bodyBattery
-        } : null
-      }))
+      weekly: weeklySummary,
+      keySessionCount: keySessions.length,
+      omittedSessionCount: Math.max(0, facts.length - keySessions.length),
+      keySessions
     };
   }
 

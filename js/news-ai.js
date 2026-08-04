@@ -163,19 +163,40 @@ async function callNewsChat(messages, options={}) {
   const temperature = options.temperature ?? 0.7;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 45000);
+  const retryCount = Number.isInteger(options.retryCount) ? Math.max(0, options.retryCount) : 2;
+  const retryableStatuses = new Set([408, 425, 429, 500, 502, 503, 504, 529]);
+  const wait = delay => new Promise(resolve => setTimeout(resolve, delay));
+  const isRetryable = error => retryableStatuses.has(Number(error?.status)) || /too busy|temporarily unavailable|rate limit|try again later/i.test(String(error?.message || ''));
+  const request = async () => {
+    const res = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({model, messages, use_search: useSearch, max_tokens: maxTokens, temperature}),
+      signal: controller.signal
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      const error = new Error(errorData?.error?.message || errorData?.message || `Proxy Error: ${res.status}`);
+      error.status = res.status;
+      throw error;
+    }
+    return await res.json();
+  };
   try {
     if (proxyUrl) {
-      const res = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({model, messages, use_search: useSearch, max_tokens: maxTokens, temperature}),
-        signal: controller.signal
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData?.error?.message || errorData?.message || `Proxy Error: ${res.status}`);
+      for (let attempt = 0; attempt <= retryCount; attempt += 1) {
+        try {
+          return await request();
+        } catch (error) {
+          if (!isRetryable(error) || attempt === retryCount) {
+            if (isRetryable(error)) {
+              throw new Error('ผู้ให้บริการ AI ไม่ว่างชั่วคราว ลองใหม่อีกครั้งใน 30-60 วินาที');
+            }
+            throw error;
+          }
+          await wait(1200 * (attempt + 1));
+        }
       }
-      return await res.json();
     }
     const key = AppState.get('deepseekKey');
     if (!key) {

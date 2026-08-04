@@ -1,5 +1,13 @@
 # AI Handoff Log
 
+## 2026-08-04 Monthly AI Busy-Service Hardening
+
+- Follow-up to the Monthly digest fix: the live proxy health endpoint and a short AI request were healthy, but a synthetic Monthly-shaped request with 20 detailed sessions returned HTTP 503 from the upstream service. This confirms the red message `service is too busy` is an upstream capacity/request-shape issue, not Garmin sync or Firebase data loss.
+- `compactPeriodSummary()` now keeps monthly totals and weekly aggregates for the full period, then sends detailed context for at most 10 key sessions (quality/long sessions, recent sessions, and longest runs). It reports omitted session count so the AI can state the limitation instead of implying every session was inspected in detail.
+- `callNewsChat()` now retries proxy requests twice with short backoff for transient 408/425/429/5xx/529 or provider-busy responses. After retries it returns a clear Thai temporary-service message rather than exposing the raw provider advice.
+- Added coverage for a 20-session monthly summary cap in `training_analyst_test.js`.
+- Verification passed: `node --check js\\training-analyst.js`, `node --check js\\news-ai.js`, `node training_analyst_test.js`, `node verify_dashboard.js`, `node --check workers\\ai-proxy\\src\\index.js`, and `python smoke_test_dashboard.py`.
+
 ## 2026-08-04 Monthly Statistics AI Digest
 
 - Fixed the red Monthly AI analysis failure while Weekly analysis remained functional.

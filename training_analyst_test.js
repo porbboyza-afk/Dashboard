@@ -35,6 +35,17 @@ const contextFacts = analyst.contextActivity(activities[0]);
 assert.equal(contextFacts.weather, 'hot / 33C / road', 'preserves recorded weather context');
 assert.equal(contextFacts.plannedSessions[0].type, 'Easy', 'includes nearby Coach context');
 
+const expandedActivities = Array.from({ length: 20 }, (_, index) => ({
+  _key: `garmin_month_${index}`,
+  source: 'garmin', sourceId: `month_${index}`, date: `2026-07-${String((index % 20) + 1).padStart(2, '0')}`,
+  type: 'run', dist: 5 + index / 2, time: 30 + index, avgPace: 6, hr: 145, cad: 168
+}));
+const compact = analyst.compactPeriodSummary(expandedActivities);
+assert.equal(compact.activityCount, 20, 'monthly summary keeps the activity count');
+assert.ok(compact.weekly.length > 0, 'monthly summary aggregates sessions by week');
+assert.ok(compact.keySessions.length <= 10, 'monthly summary caps detailed sessions');
+assert.equal(compact.omittedSessionCount, 20 - compact.keySessionCount, 'monthly summary reports omitted sessions');
+
 (async () => {
   await analyst.setOverride(key, 'tempo');
   const overridden = analyst.classification(activities[0]);
