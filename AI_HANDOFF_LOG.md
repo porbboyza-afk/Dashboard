@@ -1,5 +1,32 @@
 # AI Handoff Log
 
+## 2026-08-21 Universal Deduplication, Pace Sanity Guard & Firebase Cleanup
+
+Status: Implemented, verified locally, and deployed to `main` on GitHub (`de7281b`).
+
+- **Context & Problem:** The user transitioned from Garmin to a backup wearable (Fitbit) syncing via Health Sync into Health Connect. Multi-channel sync and same-source duplicate submissions caused duplicate workouts and 2x doubled distance anomalies (with impossible paces < 3:30 min/km), inflating July 2026 recorded distance from ~122 km to 557 km.
+- **Database Cleanup (Firebase RTDB `dash-ca315`):**
+  - Full backup created before mutations: `firebase_backup_20260821.json`.
+  - Removed 88 duplicate records, doubled-distance anomalies, and redundant split lap fragments across June and July.
+  - Preserved all authentic main workouts and valid warm-up / cool-down segments.
+  - Aligned monthly totals exactly with user's authoritative Strava records:
+    - **June 2026:** **93.17 km** (Target: 93 km)
+    - **July 2026:** **122.12 km** (Target: 122 km)
+    - **August 2026:** **67.47 km**
+- **Codebase Upgrades (`js/activity-model.js`):**
+  - Removed same-source duplicate exclusion (`if (firstSource === secondSource) return false;`) to enable universal deduplication across any wearable or sync bridge.
+  - Added `isPaceAnomaly()`: flags and suppresses impossible paces (< 3:45 min/km for runs >= 1.0 km or < 3:24 min/km for >= 0.5 km) as distance-doubling / sensor corruption.
+  - Added double-distance detection in `isDuplicateCandidate()` to match and deduplicate 1x vs 2x distance entries with matching durations.
+  - Added `pickPrimaryWorkout()` to prioritize realistic pace, source priority, and data completeness (HR, cadence, calories).
+  - All regression gates passed: `verify_dashboard.js`, `coach_v2_test.js`, `training_analyst_test.js`, `manual_plan_builder_test.js`, `plan_file_import_test.js`, `coros_plan_import_test.js`, and new deduplication unit test suite.
+- **Sleep & Wellness Investigation (Paused State):**
+  - Inspected sleep data in Firebase `users/{uid}/wellness` (63 days recorded, up to 19 August 2026).
+  - Identified why recent Health Connect sleep data reads as 0 or fails to sync:
+    1. Health Connect app permissions (Read/Write Sleep) between Health Sync, Health Connect, and MyDash Companion.
+    2. Health Sync writing `SleepStageRecord` without generating a full `SleepSessionRecord` duration block expected by `HealthConnectSync.kt`.
+    3. Fitbit cloud processing latency after waking up before syncing to Health Connect.
+  - Next task when resuming: Diagnose Android Health Connect raw sleep records and permissions, and adapt companion / ingestion parser if needed.
+
 ## 2026-08-04 Monthly AI Busy-Service Hardening
 
 - Follow-up to the Monthly digest fix: the live proxy health endpoint and a short AI request were healthy, but a synthetic Monthly-shaped request with 20 detailed sessions returned HTTP 503 from the upstream service. This confirms the red message `service is too busy` is an upstream capacity/request-shape issue, not Garmin sync or Firebase data loss.
