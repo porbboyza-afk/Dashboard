@@ -50,13 +50,27 @@
     return ['strava', 'strava_recovered', 'strava_archive'].includes(workout?.source || '');
   }
 
+  function activityPace(workout) {
+    const dist = parseFloat(workout?.dist || 0);
+    const time = parseFloat(workout?.time || 0);
+    if (dist <= 0 || time <= 0) return null;
+    return time / dist;
+  }
+
+  function isPaceAnomaly(workout) {
+    const dist = parseFloat(workout?.dist || 0);
+    const pace = activityPace(workout);
+    const type = String(workout?.type || '').toLowerCase();
+    if (type === 'walk') return pace !== null && pace < 4.5;
+    if (dist >= 1.0 && pace !== null && pace < 3.75) return true;
+    return dist >= 0.5 && pace !== null && pace < 3.4;
+  }
+
   function isDuplicateCandidate(first, second) {
     if (!first || !second || first === second || (first.date || '') !== (second.date || '')) return false;
-    const firstSource = first.source || 'manual';
-    const secondSource = second.source || 'manual';
-    if (firstSource === secondSource) return false;
-    const supported = new Set(['garmin','health_connect','manual','strava','strava_recovered','strava_archive']);
-    if (!supported.has(firstSource) || !supported.has(secondSource)) return false;
+    const firstKey = activitySourceKey(first);
+    const secondKey = activitySourceKey(second);
+    if (firstKey && secondKey && firstKey === secondKey) return false;
 
     const firstDistance = parseFloat(first.dist || 0);
     const secondDistance = parseFloat(second.dist || 0);
@@ -66,10 +80,35 @@
 
     const distanceDifference = Math.abs(firstDistance - secondDistance);
     const timeDifference = Math.abs(firstTime - secondTime);
-    return distanceDifference <= 0.25
-      && distanceDifference / Math.max(firstDistance, secondDistance) <= 0.04
-      && timeDifference <= 3
-      && timeDifference / Math.max(firstTime, secondTime) <= 0.06;
+    const maxDistance = Math.max(firstDistance, secondDistance);
+    const maxTime = Math.max(firstTime, secondTime);
+
+    // 1. Near match / rounding difference across same or different sources
+    const isNearMatch = (distanceDifference <= 0.35 || distanceDifference / maxDistance <= 0.05)
+      && (timeDifference <= 3.5 || timeDifference / maxTime <= 0.07);
+    if (isNearMatch) return true;
+
+    // 2. Double-distance anomaly (e.g. 6 km vs 12 km in same duration)
+    const isDoubleDistanceMatch = (timeDifference <= 3.5 || timeDifference / maxTime <= 0.06)
+      && (Math.abs(firstDistance - 2 * secondDistance) <= 0.6 || Math.abs(secondDistance - 2 * firstDistance) <= 0.6);
+    if (isDoubleDistanceMatch) return true;
+
+    return false;
+  }
+
+  function pickPrimaryWorkout(first, second) {
+    const anomalyFirst = isPaceAnomaly(first);
+    const anomalySecond = isPaceAnomaly(second);
+    if (anomalyFirst && !anomalySecond) return second;
+    if (anomalySecond && !anomalyFirst) return first;
+
+    const prioFirst = activitySourcePriority(first);
+    const prioSecond = activitySourcePriority(second);
+    if (prioFirst > prioSecond) return first;
+    if (prioSecond > prioFirst) return second;
+
+    const score = w => (w.hr ? 2 : 0) + (w.cadence ? 1 : 0) + (w.cal ? 1 : 0);
+    return score(first) >= score(second) ? first : second;
   }
 
   function duplicateRoundingRegression() {
@@ -87,7 +126,7 @@
         if (rows[candidateIndex].date !== rows[index].date) break;
         if (!isDuplicateCandidate(rows[index], rows[candidateIndex])) continue;
 
-        const primary = activitySourcePriority(rows[index]) >= activitySourcePriority(rows[candidateIndex]) ? rows[index] : rows[candidateIndex];
+        const primary = pickPrimaryWorkout(rows[index], rows[candidateIndex]);
         const duplicate = primary === rows[index] ? rows[candidateIndex] : rows[index];
         pairs.push({
           primary,
@@ -106,7 +145,7 @@
     [...(root._workouts || []), ...(root._stravaWorkouts || [])].forEach(workout => {
       const fingerprint = workoutFingerprint(workout);
       const previous = seen.get(fingerprint);
-      if (!previous || activitySourcePriority(workout) > activitySourcePriority(previous)) {
+      if (!previous || pickPrimaryWorkout(workout, previous) === workout) {
         seen.set(fingerprint, { ...workout, _dedupedWith: previous ? [...(previous._dedupedWith || []), previous.source || 'manual'] : workout._dedupedWith });
       } else {
         previous._dedupedWith = [...(previous._dedupedWith || []), workout.source || 'manual'];
@@ -115,7 +154,7 @@
 
     const merged = [...seen.values()];
     const suppressed = new Set();
-    duplicateCandidatePairs().forEach(pair => {
+    duplicateCandidatePairs(merged).forEach(pair => {
       const primaryKey = activitySourceKey(pair.primary);
       suppressed.add(activitySourceKey(pair.duplicate));
       const target = merged.find(workout => activitySourceKey(workout) === primaryKey || workoutFingerprint(workout) === workoutFingerprint(pair.primary));
@@ -139,6 +178,9 @@
     sourceMeta,
     sourceBadge,
     workoutFingerprint,
+    activityPace,
+    isPaceAnomaly,
+    pickPrimaryWorkout,
     activitySourcePriority,
     activitySourceKey,
     isStravaLike,
