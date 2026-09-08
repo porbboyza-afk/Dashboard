@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
             gravity = Gravity.START
         })
         root.addView(TextView(this).apply {
-            text = "Garmin -> Health Connect -> Firebase -> MyDash Web"
+            text = "Wearable / Health Sync -> Health Connect -> Firebase -> MyDash Web"
             textSize = 14f
             setTextColor(0xFF607070.toInt())
             setPadding(0, 8, 0, 24)

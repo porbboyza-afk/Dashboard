@@ -3,7 +3,7 @@
 Android-only sync bridge for MyDash.
 
 ```text
-Garmin Connect Android
+Wearable / Health Sync
 -> Health Connect
 -> MyDash Sync Companion
 -> Firebase Realtime Database
@@ -69,7 +69,9 @@ C:\Users\pucca\AppData\Local\Android\Sdk\platform-tools\adb.exe install -r app\b
   - SpO2
 - Existing manual wellness values are not overwritten.
 - Auto sync is scheduled with WorkManager every 12 hours when the user is signed in and permissions are granted.
-- Route and laps are not imported yet.
+- Version 0.2.0 imports source laps (optional lengths) and distance intervals into each workout's healthConnectDetail, with source counts and explicit truncation flags (2000 rows per collection). Times are elapsed, not moving time; laps are not assumed to be 1 km.
+- Sessions and distance records are paginated. Existing workouts are matched by Health Connect record ID before legacy fingerprinting, and only detail/missing cadence fields are enriched; manually edited summaries remain intact.
+- Route/GPS is not imported. The local web Post-Run Review displays source laps when available, or the absence of laps and distance record count. It does not manufacture kilometer splits from aggregate distance.
 - On the tested phone, Garmin/Health Connect returned zero cadence samples; the app still attempts cadence import when available.
 - Google Sign-In API currently uses the legacy GoogleSignIn client. It builds, but can be migrated to Credential Manager later.
 - `gradle.properties` forces Gradle JVM locale to `en-US`; this avoids an AGP zip timestamp bug on Thai locale machines.

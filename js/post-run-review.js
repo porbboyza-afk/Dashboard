@@ -169,6 +169,22 @@ function postRunMetric(label,value,color='var(--text)'){
   return `<div class="wellness-summary-item"><span class="c2">${label}</span><span style="color:${color}">${value??'--'}</span></div>`;
 }
 
+function postRunHealthConnectLaps(workout){
+  const detail=workout?.healthConnectDetail;
+  if(!detail)return '';
+  const laps=Array.isArray(detail.laps)?detail.laps:Object.values(detail.laps||{});
+  const number=value=>value!==null&&value!==undefined&&Number.isFinite(Number(value))?Number(value):null;
+  const rows=laps.map((lap,index)=>{
+    const meters=number(lap.distanceMeters),seconds=number(lap.durationSeconds);
+    const pace=meters>0&&seconds>0?formatPace(seconds/60/(meters/1000)):'—';
+    return `<tr><td>${index+1}</td><td>${meters!==null?Number((meters/1000).toFixed(3))+' km':'—'}</td><td>${seconds!==null?Number((seconds/60).toFixed(2))+' นาที':'—'}</td><td>${pace}</td></tr>`;
+  }).join('');
+  return `<div class="card mt-16"><div class="card-label">Health Connect · รอบจากต้นทาง</div>
+    <div class="text-sm c2 mt-8">${laps.length? 'แสดงรอบตามที่ต้นทางบันทึก ระยะต่อรอบอาจไม่ใช่ 1 กม. · เวลาและ pace รวมช่วงหยุดพัก':'ต้นทางไม่ได้ส่ง Lap มาในกิจกรรมนี้'} · ข้อมูลระยะทาง ${number(detail.distanceRecordCount)??0} ช่วง</div>
+    ${detail.truncated?'<div class="text-sm c2">ข้อมูลรายละเอียดถูกจำกัดจำนวน จึงแสดงไม่ครบทุกช่วง</div>':''}
+    ${rows?`<div style="overflow-x:auto"><table class="strava-lap-table"><thead><tr><th>รอบ</th><th>ระยะ</th><th>เวลา</th><th>Pace /km</th></tr></thead><tbody>${rows}</tbody></table></div>`:''}</div>`;
+}
+
 function postRunRenderWorkoutList(selectedKey){
   const container=document.getElementById('postrun-workout-list');
   if(!container)return;
@@ -236,6 +252,7 @@ function renderPostRunReview(){
         </div>
       </div>
     </div>
+    ${postRunHealthConnectLaps(workout)}
     ${facts.intervalAnalysis?`<div class="card mt-16"><div class="card-label">Interval Analysis</div><div class="coach-session-preview mt-8">Actual: ${facts.intervalAnalysis.reps} x ${facts.intervalAnalysis.repDist} km @ ${escapeHTML(facts.intervalAnalysis.repPace||'--')} · Rest ${facts.intervalAnalysis.restTime||0} min${facts.intervalAnalysis.plannedMainSet?`<br>Plan: ${escapeHTML(facts.intervalAnalysis.plannedMainSet)}`:''}</div></div>`:''}
     ${facts.sessionClassification?`<div class="card mt-16"><div class="card-label">Training Analyst</div><div class="text-sm mt-8">${escapeHTML(facts.sessionClassification.type)} · ${facts.sessionClassification.confidence}% · ${facts.sessionClassification.confirmed?'คุณยืนยันแล้ว':'ผลอัตโนมัติ'}</div><div class="text-xs c3 mt-4">${escapeHTML((facts.sessionClassification.evidence||[]).join(' · ')||'ยังไม่มีหลักฐานเพิ่มเติม')}</div>${facts.trainingContext?.weather&&facts.trainingContext.weather!=='not logged'?`<div class="text-xs c3 mt-4">สภาพการวิ่ง: ${escapeHTML(facts.trainingContext.weather)}</div>`:''}</div>`:''}
     ${facts.activityAnalysis?`<div class="card mt-16"><div class="card-label">Garmin Lap Evidence</div><div class="text-sm mt-8">${escapeHTML(facts.activityAnalysis.type)} · ${facts.activityAnalysis.confidence}% · Work ${facts.activityAnalysis.workMinutes} min · Recovery ${facts.activityAnalysis.recoveryMinutes} min · HR drift ${facts.activityAnalysis.hrDrift===null?'--':facts.activityAnalysis.hrDrift+'%'}</div><div class="text-xs c3 mt-4">${facts.activityAnalysis.lapCount?`${facts.activityAnalysis.lapCount} laps analyzed from source data.`:'Summary-only source; no lap-level conclusion.'}</div></div>`:''}

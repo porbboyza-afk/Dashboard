@@ -26,6 +26,46 @@ Status: Implemented, verified locally, and deployed to `main` on GitHub (`de7281
     2. Health Sync writing `SleepStageRecord` without generating a full `SleepSessionRecord` duration block expected by `HealthConnectSync.kt`.
     3. Fitbit cloud processing latency after waking up before syncing to Health Connect.
   - Next task when resuming: Diagnose Android Health Connect raw sleep records and permissions, and adapt companion / ingestion parser if needed.
+## 2026-09-08 Health Connect Detail Import 0.2.0
+
+- User clarified the current device is Huawei Watch Fit 4, via Huawei Health -> Health Sync -> Health Connect. Explicitly approved transmitting lap/interval timing and distance to the existing MyDash Firebase account and provided ADB access.
+- Added optional recorded laps and distance intervals under workouts/{id}/healthConnectDetail, preserving missing lengths, elapsed duration semantics, source counts and truncation flags. No GPS permission or data collection added.
+- Paginate sessions/distance records; reuse existing Health Connect IDs to enrich records without overwriting manual summaries or creating a new ID when totals change. Existing cadence enrichment now patches only missing cadence fields instead of replacing the workout.
+- Added source lap table to local Post-Run Review. No fabricated 1 km splits; source laps can have arbitrary lengths. No AI payload extension.
+- Built and installed Android version 0.2.0 (versionCode 2) through ADB. Static web checks, lap rendering edge checks and browser smoke passed. Device was locked after installation; foreground sync verification pending.
+- APK: android-sync-companion/app/build/outputs/apk/debug/app-debug.apk. PWA cache: mydash-v3-health-connect-laps-20260908-1. No GitHub push or web deployment.
+- Foreground verification completed on Samsung SM-A346E: 21 sessions scanned/enriched; 0 source lap sessions; cadence in 6 sessions / 2,078 samples. Firebase confirms the Health Sync origin `nl.appyhapps.healthsync` provides no laps and, in the six records current Health Connect exposes, a single whole-activity DistanceRecord. MyDash therefore cannot calculate genuine per-kilometer splits from this path. Existing Fitbit-origin records can contain multiple distance records, which confirms the reader works but does not change the Health Sync result.
+- The post-verification wording correction from Garmin to Wearable / Health Sync is saved locally but was not rebuilt: Gradle first hit an inaccessible wrapper lock, then native-platform.dll failed to initialize. The functional 0.2.0 APK remains installed; no extra logic change is pending in that APK.
+
+## 2026-09-08 Decimal Sleep Display
+
+- User confirmed that sleep should display as decimal hours, matching manual input. Shared formatSleepHours now displays 5.5 as `5.5 ชั่วโมง` (compact: `5.5 ชม.`), with up to two decimal places and no trailing zeros. Stored values and calculations are unchanged.
+- Cache identifier and verifier updated to mydash-v3-decimal-sleep-20260908-1. Static verification and focused formatter checks passed (5.5, 5.3, integers, zero, missing values, and rounded averages). No push or deployment.
+- Reviewed HealthConnectSync.kt on user request: current mapper sums DistanceRecord values and exports session totals/average pace; it does not export per-kilometer splits. This does not establish whether the upstream Health Sync app supplies lap data.
+
+## 2026-09-08 AI Q&A Restored Locally; Manual Sleep Units Reviewed
+
+- User requested restoring AI Q&A. Restored its page and desktop/mobile navigation in index.html, and restored js/news-ai.js from the preserved pre-removal backup.
+- PWA cache is now mydash-v3-restore-news-qa-20260908-1; verifier expectations updated. Existing unrelated edits and rollback snapshots are preserved. PUSH FREEZE remains in effect; no commit, push, or deployment performed.
+- Manual sleep input uses decimal hours: getWellnessFormEntry stores 5.5 unchanged; formatSleepHours displays it as 5 hours 30 minutes. 5.3 means 5 hours 18 minutes. No sleep storage or calculation changes made; this was a diagnosis of unit conversion.
+- Static verification and news JavaScript syntax checks passed. Direct formatter checks confirmed the conversions above.
+- Existing browser smoke test passed with zero page errors, console errors, or request failures. It does not test a live AI response.
+
+## 2026-09-08 AI Q&A (News AI) Feature Hold & Push Freeze
+
+- Status: Local removal staged on 2026-09-07 is put on HOLD / PUSH FREEZE per Boss's direction. Strictly NO push to GitHub.
+- Background & Staged Changes (2026-09-07):
+  - Local preparation was made to decommission the AI Q&A / News proxy feature:
+    - Removed `#page-news` / AI Q&A section from `index.html`
+    - Streamlined `js/news-ai.js` and updated Service Worker cache identifier to `mydash-v3-remove-news-qa-20260907-1` in `sw.js`
+  - Full rollback snapshots were created and preserved safely in the repository tree:
+    - `js/news-ai.backup-before-remove-news-20260907.js` (13.8 KB full feature source)
+    - `sw.backup-before-remove-news-20260907.js`
+- Boss Evaluation & Operational Decision (2026-09-08):
+  - The Boss reviewed the live UI (`ไม่ทำตามสั่ง.png`), tested the AI Q&A feature, confirmed its utility, and ordered a halt on deployment.
+  - Strict mandate: DO NOT push to GitHub.
+  - Remote repository (`porbboyza-afk/Dashboard` @ `main`) remains clean and untouched at commit `9d2f7ee`.
+  - Full restoration readiness: 100% reversible; ready to restore full news feature back to working tree upon confirmation.
 
 ## 2026-08-04 Monthly AI Busy-Service Hardening
 

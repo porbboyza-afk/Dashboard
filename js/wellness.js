@@ -9,11 +9,8 @@ function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
 function formatSleepHours(value,{compact=false}={}){
   const hours=parseFloat(value);
   if(!Number.isFinite(hours))return '—';
-  const totalMinutes=Math.max(0,Math.round(hours*60));
-  const h=Math.floor(totalMinutes/60);
-  const m=totalMinutes%60;
-  if(compact)return m?`${h}ชม ${m}น`:`${h}ชม`;
-  return m?`${h} ชม. ${m} นาที`:`${h} ชม.`;
+  const displayHours=Number(Math.max(0,hours).toFixed(2));
+  return compact?`${displayHours} ชม.`:`${displayHours} ชั่วโมง`;
 }
 
 function dateDaysAgo(days){
