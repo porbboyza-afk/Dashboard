@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-health-connect-laps-20260908-1';
+const CACHE_NAME = 'mydash-v3-coros-cadence-20260910-1';
 const APP_SHELL = [
   './',
   './index.html',

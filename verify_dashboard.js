@@ -155,7 +155,7 @@ ensureContains(indexPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-health-connect-laps-20260908-1',
+  'mydash-v3-coros-cadence-20260910-1',
   './app-redesign.css?v=20260711-1',
   './training-studio-ui.css?v=20260711-1',
   './studio-shell.css?v=20260711-1',
@@ -363,7 +363,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-health-connect-laps-20260908-1',
+  'mydash-v3-coros-cadence-20260910-1',
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',

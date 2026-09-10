@@ -170,6 +170,7 @@ function postRunMetric(label,value,color='var(--text)'){
 }
 
 function postRunHealthConnectLaps(workout){
+  if(workout?.corosDetail?.laps?.length)return postRunCorosLaps(workout.corosDetail);
   const detail=workout?.healthConnectDetail;
   if(!detail)return '';
   const laps=Array.isArray(detail.laps)?detail.laps:Object.values(detail.laps||{});
@@ -183,6 +184,13 @@ function postRunHealthConnectLaps(workout){
     <div class="text-sm c2 mt-8">${laps.length? 'แสดงรอบตามที่ต้นทางบันทึก ระยะต่อรอบอาจไม่ใช่ 1 กม. · เวลาและ pace รวมช่วงหยุดพัก':'ต้นทางไม่ได้ส่ง Lap มาในกิจกรรมนี้'} · ข้อมูลระยะทาง ${number(detail.distanceRecordCount)??0} ช่วง</div>
     ${detail.truncated?'<div class="text-sm c2">ข้อมูลรายละเอียดถูกจำกัดจำนวน จึงแสดงไม่ครบทุกช่วง</div>':''}
     ${rows?`<div style="overflow-x:auto"><table class="strava-lap-table"><thead><tr><th>รอบ</th><th>ระยะ</th><th>เวลา</th><th>Pace /km</th></tr></thead><tbody>${rows}</tbody></table></div>`:''}</div>`;
+}
+
+function postRunCorosLaps(detail){
+  const clock=minutes=>{const seconds=Math.round(Number(minutes)*60);return Number.isFinite(seconds)&&seconds>=0?`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`:'--';};
+  const number=value=>value!==null&&value!==undefined&&Number.isFinite(Number(value))?Number(value):null;
+  const rows=detail.laps.map((lap,index)=>`<tr><td>${index+1}</td><td>${number(lap.distanceKm)??'--'} km</td><td>${clock(lap.durationMin)}</td><td>${number(lap.pace)>0?formatPace(Number(lap.pace)):'--'}</td><td>${number(lap.averageHr)??'--'}</td><td>${number(lap.cadence)??'--'}</td></tr>`).join('');
+  return `<div class="card mt-16"><div class="card-label">COROS · Splits</div><div class="text-sm c2 mt-8">ระยะและเวลารายช่วงจาก COROS รวมช่วงท้ายที่ไม่เต็มกิโลเมตร · เวลารายช่วงอาจต่างจากเวลาจับกิจกรรม</div><div style="overflow-x:auto"><table class="strava-lap-table"><thead><tr><th>ช่วง</th><th>ระยะ</th><th>เวลา</th><th>Pace /km</th><th>HR</th><th>Cad</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
 }
 
 function postRunRenderWorkoutList(selectedKey){
@@ -255,7 +263,7 @@ function renderPostRunReview(){
     ${postRunHealthConnectLaps(workout)}
     ${facts.intervalAnalysis?`<div class="card mt-16"><div class="card-label">Interval Analysis</div><div class="coach-session-preview mt-8">Actual: ${facts.intervalAnalysis.reps} x ${facts.intervalAnalysis.repDist} km @ ${escapeHTML(facts.intervalAnalysis.repPace||'--')} · Rest ${facts.intervalAnalysis.restTime||0} min${facts.intervalAnalysis.plannedMainSet?`<br>Plan: ${escapeHTML(facts.intervalAnalysis.plannedMainSet)}`:''}</div></div>`:''}
     ${facts.sessionClassification?`<div class="card mt-16"><div class="card-label">Training Analyst</div><div class="text-sm mt-8">${escapeHTML(facts.sessionClassification.type)} · ${facts.sessionClassification.confidence}% · ${facts.sessionClassification.confirmed?'คุณยืนยันแล้ว':'ผลอัตโนมัติ'}</div><div class="text-xs c3 mt-4">${escapeHTML((facts.sessionClassification.evidence||[]).join(' · ')||'ยังไม่มีหลักฐานเพิ่มเติม')}</div>${facts.trainingContext?.weather&&facts.trainingContext.weather!=='not logged'?`<div class="text-xs c3 mt-4">สภาพการวิ่ง: ${escapeHTML(facts.trainingContext.weather)}</div>`:''}</div>`:''}
-    ${facts.activityAnalysis?`<div class="card mt-16"><div class="card-label">Garmin Lap Evidence</div><div class="text-sm mt-8">${escapeHTML(facts.activityAnalysis.type)} · ${facts.activityAnalysis.confidence}% · Work ${facts.activityAnalysis.workMinutes} min · Recovery ${facts.activityAnalysis.recoveryMinutes} min · HR drift ${facts.activityAnalysis.hrDrift===null?'--':facts.activityAnalysis.hrDrift+'%'}</div><div class="text-xs c3 mt-4">${facts.activityAnalysis.lapCount?`${facts.activityAnalysis.lapCount} laps analyzed from source data.`:'Summary-only source; no lap-level conclusion.'}</div></div>`:''}
+    ${facts.activityAnalysis?`<div class="card mt-16"><div class="card-label">Activity Lap Evidence</div><div class="text-sm mt-8">${escapeHTML(facts.activityAnalysis.type)} · ${facts.activityAnalysis.confidence}% · Work ${facts.activityAnalysis.workMinutes} min · Recovery ${facts.activityAnalysis.recoveryMinutes} min · HR drift ${facts.activityAnalysis.hrDrift===null?'--':facts.activityAnalysis.hrDrift+'%'}</div><div class="text-xs c3 mt-4">${facts.activityAnalysis.lapCount?`${facts.activityAnalysis.lapCount} laps analyzed from source data.`:'Summary-only source; no lap-level conclusion.'}</div></div>`:''}
     <div class="card mt-16">
       <div class="flex justify-between items-center gap-12 flex-wrap">
         <div>

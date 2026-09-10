@@ -145,7 +145,11 @@ function renderMonthStats(){
   renderHRZoneChart(monthWks);
   const listEl=document.getElementById('month-activity-list');
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
-  if(listEl){listEl.innerHTML=monthWks.length?[...monthWks].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(w=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background .15s" onclick="showActivityDetail(encodeURIComponent(JSON.stringify(${JSON.stringify(JSON.stringify(w))})))" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'"><span style="font-size:15px">${em[w.type]||'🏅'}</span><div style="flex:1"><div style="font-size:12px;font-weight:600">${parseFloat(w.dist||0).toFixed(2)} km${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}${sourceBadge(w,true)}</div><div style="font-size:10px;color:var(--text2);font-family:var(--font-mono)">${w.date}${w.name?' · '+w.name:''}</div></div>${w.hr?`<span style="font-size:11px;color:var(--red)">♥${w.hr}</span>`:''}<span style="color:var(--text3);font-size:14px">›</span></div>`).join(''):'<p class="text-sm c2">ไม่มีกิจกรรมเดือนนี้</p>';}
+  if(listEl){
+    const activities=[...monthWks].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    listEl.innerHTML=activities.length?activities.map((w,index)=>`<button type="button" data-activity-index="${index}" class="btn btn-ghost" style="display:flex;width:100%;text-align:left;align-items:center;gap:8px;padding:10px 6px;border-bottom:1px solid var(--border);white-space:normal"><span>${em[w.type]||'🏅'}</span><span style="flex:1;min-width:0"><strong>${parseFloat(w.dist||0).toFixed(2)} km${sourceBadge(w,true)}</strong><br><small>${escapeHTML(w.date||'')}${w.name?' · '+escapeHTML(w.name):''}</small></span><span>ดูรายละเอียด ›</span></button>`).join(''):'<p class="text-sm c2">ไม่มีกิจกรรมเดือนนี้</p>';
+    window.bindActivityDetails?.(listEl,activities);
+  }
 }
 
 async function getClassifiedActivitiesForInsights(){

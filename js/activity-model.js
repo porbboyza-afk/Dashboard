@@ -14,6 +14,7 @@
   function sourceMeta(workoutOrSource) {
     const source = typeof workoutOrSource === 'string' ? workoutOrSource : (workoutOrSource?.source || 'manual');
     const sourceApp = typeof workoutOrSource === 'object' ? String(workoutOrSource.sourceApp || '').toLowerCase() : '';
+    if (source === 'coros' || workoutOrSource?.corosDetail?.source === 'coros') return { label: 'COROS', title: 'COROS activity / splits', color: 'var(--accent)', bg: 'var(--accent-light)' };
     if (source === 'health_connect') return { label: sourceApp.includes('garmin') ? 'GARMIN' : 'HC', title: 'Health Connect', color: 'var(--green)', bg: 'rgba(52,199,89,.14)' };
     if (source === 'garmin') return { label: 'GARMIN DIRECT', title: 'Garmin Direct', color: 'var(--green)', bg: 'rgba(52,199,89,.14)' };
     if (source === 'strava_recovered') return { label: 'STRAVA LEGACY', title: 'Recovered Strava cache', color: 'var(--strava)', bg: 'rgba(252,76,2,.15)' };
@@ -32,6 +33,7 @@
   }
 
   function activitySourcePriority(workout) {
+    if (workout?.corosDetail?.laps?.length) return 65;
     const source = workout?.source || 'manual';
     if (source === 'garmin') return 60;
     if (source === 'health_connect') return 50;
@@ -68,6 +70,9 @@
 
   function isDuplicateCandidate(first, second) {
     if (!first || !second || first === second || (first.date || '') !== (second.date || '')) return false;
+    const firstCoros = first.corosDetail?.sourceId || (first.source === 'coros' ? first.sourceId : null);
+    const secondCoros = second.corosDetail?.sourceId || (second.source === 'coros' ? second.sourceId : null);
+    if (firstCoros && secondCoros && String(firstCoros) !== String(secondCoros)) return false;
     const firstKey = activitySourceKey(first);
     const secondKey = activitySourceKey(second);
     if (firstKey && secondKey && firstKey === secondKey) return false;
@@ -143,7 +148,8 @@
   function getAllActivities() {
     const seen = new Map();
     [...(root._workouts || []), ...(root._stravaWorkouts || [])].forEach(workout => {
-      const fingerprint = workoutFingerprint(workout);
+      const corosId = workout.corosDetail?.sourceId || (workout.source === 'coros' ? workout.sourceId : null);
+      const fingerprint = corosId ? `coros:${corosId}` : workoutFingerprint(workout);
       const previous = seen.get(fingerprint);
       if (!previous || pickPrimaryWorkout(workout, previous) === workout) {
         seen.set(fingerprint, { ...workout, _dedupedWith: previous ? [...(previous._dedupedWith || []), previous.source || 'manual'] : workout._dedupedWith });

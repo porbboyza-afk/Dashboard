@@ -1,5 +1,38 @@
 # AI Handoff Log
 
+## 2026-09-10 PORDELL COROS migration
+
+- Activity Detail now calculates the displayed cadence from duration-weighted COROS split cadence when the summary workout has no cad field. Cache identifier is mydash-v3-coros-cadence-20260910-1. `coros_activity_test.js`, parser tests 12/12, verifier, and browser smoke passed. GPS route remains explicitly unavailable: the accepted COROS payload has no coordinates and the bridge has not imported any track/stream data.
+- COROS authenticated on PORDELL; runtime at LOCALAPPDATA/MyDash/coros-bridge. Live --apply succeeded with Firebase read-back. Parser failure was a 750 m activity (not a LabelId naming issue); meter distances now convert to km. Activities without split groups now retain summary data with coverage.laps=false instead of being skipped. Two successive writes added the previously absent activities; each reported Verified activity 1/1 and Firebase writes verified.
+- PORDELL task MyDash COROS Sync installed with daily 07:00 and 20:00 triggers, timezone SE Asia Standard Time. Scheduler acceptance returned LastTaskResult=0; next run 20:00. Requires signed-in Windows user and online PC; StartWhenAvailable enabled. Original machine COROS task disabled after PORDELL acceptance; Garmin untouched.
+- Local parser tests 11 passed, including meter conversion regression. Web UI remains unpublished under existing push freeze.
+
+## 2026-09-09 COROS Live Sync and Local Split UI
+
+- Scheduler acceptance completed: actual Windows-task run September 9 at 10:05:05 ICT returned LastTaskResult=0 and Ready; next run 12:05:05 ICT. The operational task is enabled, not just a proposed schedule.
+
+- User completed COROS browser authorization. Windows DPAPI token storage and authenticated MCP reads succeeded. Verified six running activities September 1–9, including imported Huawei workout on September 8: 8.03 km, eight 1-km splits plus 30 m, with time, HR and cadence.
+- Implemented tools/coros-sync-bridge/sync.py. It queries each day in a rolling nine-day window, validates COROS list/JSON response formats, chooses ONLY lap group type 10 (kilometer distance splits), checks raw distance scale 100000/km against pace and activity totals, and retains separate timer/elapsed values. It does not claim these splits are original watch-button laps, and does not merge whole-activity or 5-km groups into them.
+- Live Firebase sync completed and each modified record was read back: five existing workouts enriched with corosDetail, one new workout at coros_480195645422993509. No existing summary/manual fields overwritten or activities deleted. September 2 duplicate Health Connect records were disambiguated by precise start timestamp; the existing duplicate itself was not deleted.
+- Second live run verified idempotency: fetched=6, enriched=0, created=0, unchanged=6, review=0, no_splits=0. Backup snapshots are encrypted under LOCALAPPDATA/MyDash/coros-sync; plaintext Firebase payload files are transient and removed after the command. Initial failed writes were due to Firebase CLI explicitly rejecting stdin on Windows; changed to temporary file input and verified success.
+- Installed Windows task MyDash COROS Sync (every two hours + user logon, StartWhenAvailable, IgnoreNew, pythonw.exe, limited privileges). It runs only while this Windows user is logged in and PC/network are available. Desktop shortcuts: Sync COROS to MyDash.lnk and COROS Sync Status.lnk. A manual scheduler-triggered acceptance run was started; check its final LastTaskResult before claiming that execution passed. Garmin tasks unchanged.
+- Added local COROS source badges, activity-detail and Post-Run Review split table (distance/time/pace/HR/cadence), and source-neutral evidence heading. Prefer COROS-enriched duplicate records and preserve distinct COROS IDs even when same-day totals look alike. PWA cache: mydash-v3-coros-splits-20260909-1.
+- Verification: Python connection/sync tests 17/17; coros_activity_test.js (source integration, partial kilometer, lap clock, duplicate handling); verify_dashboard.js; browser smoke (no page/console/request errors). Final task scheduler result still to verify below.
+- Publication boundary: GitHub push freeze still applies. Live Firebase has COROS details, but the new COROS tables/badges are local and require a separately authorized web release. Do not tell the user their hosted page already contains the unpublished UI.
+- Operational limits: running codes 100–103 only, rolling nine days (manual --days up to 30), no GPS/wellness fetch, no webhook, unknown schemas fail closed, ambiguous matches are withheld. A failed multi-record run may partially complete and is retryable. The pre-write re-read is not a transactional lock against a concurrent external writer.
+
+## 2026-09-09 COROS Automated Activity Source — Connection Gate
+
+- User now uses Huawei Watch Fit 4 -> Huawei Health -> Health Sync -> Health Connect. A separate transfer helper sends Huawei activities to COROS with the detailed workout data visible there. Do not assume that helper's identity or that COROS MCP exposes every imported field until verified.
+- User requires automatic or semi-automatic delivery; manual FIT export/upload is not an acceptable routine workflow. User authorized starting the COROS bridge implementation.
+- Added tools/coros-sync-bridge/connect.py: official COROS device/browser OAuth flow with PKCE/state checking, Windows DPAPI encryption for pending state/tokens/read probes, refresh-token support, activity-read-only tool allowlist, paginated tool discovery, and redacted errors. No credentials in repository or command arguments.
+- Live login-start successfully registered MyDash COROS Sync and created a browser authorization session on the US COROS MCP endpoint. User authorization is still required. Login URL is transient; regenerate with login-start if expired. Encrypted runtime is under LOCALAPPDATA/MyDash/coros-sync.
+- Connection tests pass 6/6 (untrusted endpoints, state mismatch, token refresh/rotation, invalid token and repeated catalog cursor). Authenticated lap reads and DPAPI token round-trip after authorization are not verified yet.
+- Resume: run login-finish, then tools; inspect actual schemas for querySportRecords/getActivityDetail/queryActivityLapData before sending arguments. Probe one imported Huawei activity, establish lap units and elapsed/timer semantics, then implement deterministic enrichment of existing MyDash workout keys. Do not guess field mappings or write raw responses to Firebase.
+- This is an authentication/read probe, NOT a completed automatic sync service. Firebase writer, matching, scheduling and dashboard sync action are pending. A Windows scheduled bridge requires the computer to be available; token revocation may require reauthorization.
+- GitHub push freeze preserved. No existing activity, Firebase data, Garmin scheduler, worker deployment or unrelated source edits changed.
+- Correction to earlier assistant summary: this handoff does contain September 8 entries near the top; the July entry at EOF was not the latest project state.
+
 ## 2026-08-21 Universal Deduplication, Pace Sanity Guard & Firebase Cleanup
 
 Status: Implemented, verified locally, and deployed to `main` on GitHub (`de7281b`).

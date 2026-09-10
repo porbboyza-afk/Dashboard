@@ -1,12 +1,20 @@
 (function(root) {
   'use strict';
 
-  const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+  const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)) ? Number(value) : null;
   const activityKey = workout => `${workout?.source || 'manual'}_${workout?.sourceId || workout?._key || workout?.id || workout?.stravaId || ''}`;
   const detailFor = workout => {
+    if (workout?.corosDetail?.source === 'coros' && Array.isArray(workout.corosDetail.laps)) return workout.corosDetail;
     const key = activityKey(workout);
     const garmin = root.AppState?.get('activityDetails') || {};
     if (garmin[key]) return garmin[key];
+    const health = workout?.healthConnectDetail;
+    if (health) return {source:'health_connect', healthConnectDetail:health,
+      laps:Object.values(health.laps || {}).map((lap,index)=>({index:index+1,
+        distanceKm:finite(lap.distanceMeters)===null?null:lap.distanceMeters/1000,
+        durationMin:finite(lap.durationSeconds)===null?null:lap.durationSeconds/60,
+        pace:lap.distanceMeters>0&&lap.durationSeconds>0?lap.durationSeconds/60/(lap.distanceMeters/1000):null})),
+      coverage:{laps:!!Object.values(health.laps||{}).length,map:false,streams:false}};
     const strava = root._stravaDetailCache?.[workout?.stravaId];
     return strava ? {source:'strava', sourceId:String(workout.stravaId), laps:(strava.laps || []).map((lap, index) => ({
       index:index + 1, distanceKm:finite(lap.distance) ? +(lap.distance / 1000).toFixed(4) : null,
@@ -43,14 +51,16 @@
     const avgHr = rows => { const values = rows.map(row => finite(row.averageHr)).filter(Boolean); return values.length ? values.reduce((a,b)=>a+b,0)/values.length : null; };
     const firstHr=avgHr(first), secondHr=avgHr(second);
     const hrDrift=firstHr&&secondHr ? +((secondHr-firstHr)/firstHr*100).toFixed(1) : null;
-    const type = work.length >= 3 && recovery.length >= 1 ? 'interval' : work.length >= 2 ? 'tempo' : 'steady';
+    const type = !laps.length ? 'unknown' : work.length >= 3 && recovery.length >= 1 ? 'interval' : work.length >= 2 ? 'tempo' : 'steady';
     return {detail, laps, type, confidence: laps.length ? Math.min(95, 45 + laps.length * 7) : 0,
       workMinutes:+work.reduce((sum,lap)=>sum+finite(lap.durationMin),0).toFixed(1), recoveryMinutes:+recovery.reduce((sum,lap)=>sum+finite(lap.durationMin),0).toFixed(1),
-      averagePace:weighted('pace'), averageHr:weighted('averageHr'), hrDrift, coverage:detail?.coverage || {laps:false,map:false,streams:false}};
+      averagePace:weighted('pace'), averageHr:weighted('averageHr'), averageCadence:weighted('cadence'), hrDrift, coverage:detail?.coverage || {laps:false,map:false,streams:false}};
   }
 
   function lapRows(analysis) {
+    if(analysis.detail?.healthConnectDetail && root.postRunHealthConnectLaps)return root.postRunHealthConnectLaps(analysis.detail);
     if (!analysis.laps.length) return '<div class="text-sm c2">No lap detail from this source yet.</div>';
+    if(analysis.detail?.source==='coros' && root.postRunCorosLaps)return root.postRunCorosLaps(analysis.detail);
     return `<table class="strava-lap-table"><thead><tr><th>Lap</th><th>Role</th><th>Pace</th><th>HR</th><th>Cad</th></tr></thead><tbody>${analysis.laps.map(lap => `<tr><td>${lap.index}</td><td>${lap.role}</td><td>${lap.pace ? root.formatPace(lap.pace) : '--'}</td><td>${lap.averageHr ? Math.round(lap.averageHr) : '--'}</td><td>${lap.cadence ? Math.round(lap.cadence) : '--'}</td></tr>`).join('')}</tbody></table>`;
   }
 
@@ -65,11 +75,41 @@
   }
 
   root.MyDashActivityAnalysis = {activityKey, detailFor, analyze};
+  root.bindActivityDetails = function(container, activities) {
+    container?.querySelectorAll('[data-activity-index]').forEach(element => {
+      const workout=activities[Number(element.dataset.activityIndex)];
+      if(!workout)return;
+      const open=()=>root.showActivityDetail(workout);
+      element.addEventListener('click',open);
+      if(element.tagName!=='BUTTON'){
+        element.setAttribute('role','button');element.tabIndex=0;
+        element.addEventListener('keydown',event=>{if(event.target===element&&['Enter',' '].includes(event.key)){event.preventDefault();open();}});
+      }
+    });
+  };
   root.showActivityDetail = function(encoded) {
     let workout; try { workout = typeof encoded === 'object' ? encoded : JSON.parse(decodeURIComponent(encoded)); } catch (_) { try { workout = JSON.parse(encoded); } catch (_) { return; } }
+    if(!workout||typeof workout!=='object')return;
     const analysis = analyze(workout); const reviewKey = String(root.postRunWorkoutKey(workout)).replace(/'/g, "\\'"); document.getElementById('act-detail-overlay')?.remove();
     const overlay=document.createElement('div'); overlay.id='act-detail-overlay'; overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:910;display:flex;align-items:center;justify-content:center;padding:16px';
     overlay.innerHTML=`<div style="background:var(--surface);width:min(860px,100%);max-height:90vh;overflow:auto;border-radius:8px;padding:20px"><div class="flex justify-between items-center"><div><div class="card-label">Activity Detail</div><h2 style="margin:4px 0">${root.escapeHTML(workout.name||workout.type||'Activity')} · ${root.escapeHTML(workout.date||'')}</h2></div><button class="btn btn-sm" onclick="document.getElementById('act-detail-overlay').remove()">Close</button></div><div class="grid g3 mt-16"><div class="card"><div class="card-label">Summary</div><strong>${workout.dist||0} km · ${workout.avgPace?root.formatPace(workout.avgPace):'--'}/km</strong><div class="text-sm c2 mt-4">HR ${workout.hr||'--'} · Cad ${workout.cad||'--'}</div></div><div class="card"><div class="card-label">Workout Analysis</div><strong>${analysis.type.toUpperCase()} · ${analysis.confidence}%</strong><div class="text-sm c2 mt-4">Work ${analysis.workMinutes} min · Recovery ${analysis.recoveryMinutes} min</div></div><div class="card"><div class="card-label">HR Drift</div><strong>${analysis.hrDrift===null?'--':analysis.hrDrift+'%'}</strong><div class="text-sm c2 mt-4">Calculated from first vs second half</div></div></div><div class="card mt-16"><div class="card-label">GPS Route</div>${routePreview(analysis.detail)}</div><div class="card mt-16"><div class="card-label">Laps / Splits</div>${lapRows(analysis)}</div><div class="flex gap-8 mt-16"><button class="btn btn-primary btn-sm" onclick="document.getElementById('act-detail-overlay').remove();openPostRunReview('${reviewKey}')">Open Post-Run Review</button><span class="text-sm c2">Map ${analysis.coverage.map?'available in source data':'not available'} · Streams ${analysis.coverage.streams?'available':'not imported yet'}</span></div></div>`;
-    document.body.appendChild(overlay); overlay.addEventListener('click', event => {if(event.target===overlay) overlay.remove();});
+    const summary=overlay.querySelector('.grid .card');
+    const summaryMetrics=summary?.querySelector('.text-sm');
+    const summaryHr=finite(workout.hr) ?? analysis.averageHr;
+    const summaryCadence=finite(workout.cad) ?? analysis.averageCadence;
+    if(summaryMetrics) summaryMetrics.textContent=`HR ${summaryHr===null?'--':Math.round(summaryHr)} · Cad ${summaryCadence===null?'--':Math.round(summaryCadence)} spm`;
+    const duration=document.createElement('div');duration.className='text-sm c2 mt-4';
+    duration.textContent=`เวลา ${finite(workout.time)===null?'--':Number(workout.time).toFixed(2)} นาที`;
+    summary?.appendChild(duration);
+    const notes=document.createElement('div');notes.className='text-sm c2 mt-4';
+    notes.textContent=[workout.rpe?`RPE ${workout.rpe}/10`:'',workout.shoe,workout.note].filter(Boolean).join(' · ');
+    summary?.appendChild(notes);
+    if(!analysis.laps.length){const card=overlay.querySelectorAll('.grid .card')[1];card.querySelector('strong').textContent='ยังไม่มีข้อมูลรอบสำหรับวิเคราะห์';card.querySelector('.text-sm').textContent='ดูสรุปกิจกรรมได้ตามข้อมูลที่ต้นทางส่งมา';}
+    const review=overlay.querySelector('.btn-primary');review.removeAttribute('onclick');
+    review.addEventListener('click',()=>{overlay.remove();root.openPostRunReview(root.postRunWorkoutKey(workout));});
+    overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Activity Detail');
+    const previousFocus=document.activeElement;
+    overlay.addEventListener('keydown',event=>{if(event.key==='Escape'){overlay.remove();previousFocus?.focus();}});
+    document.body.appendChild(overlay);overlay.querySelector('button')?.focus();overlay.addEventListener('click', event => {if(event.target===overlay) overlay.remove();});
   };
 })(window);

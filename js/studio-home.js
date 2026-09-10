@@ -84,7 +84,7 @@
     const history = activities.slice(0, 3).map(activity => `<div class="studio-story-row">
       <div class="studio-story-date">${escapeHtml((activity.date || '').slice(5).replace('-', '/')) || '—'}</div>
       <div><b>${escapeHtml(activity.name || activity.type || 'Activity')}</b><p>${escapeHtml(activityLine(activity))}</p></div>
-      <button class="studio-icon-button" title="Post-run review" onclick="openPostRunReview('${escapeHtml(typeof root.postRunWorkoutKey === 'function' ? root.postRunWorkoutKey(activity) : activity._key || '')}')">Review</button>
+      <button type="button" class="studio-icon-button" data-activity-index="${activities.indexOf(activity)}">ดูรายละเอียด</button>
     </div>`).join('') || '<p class="studio-empty">No activity yet. Add a run or sync Health Connect to begin.</p>';
     const signedIn = root._fb?.isSignedIn?.();
     const title = hasPlan ? sessionTitle(todaySession) : 'No active training plan';
@@ -104,6 +104,8 @@
       <header class="studio-section-head"><h2>${escapeHtml(plan?.goal || 'Training week')}</h2><span>${plan ? `${plan.totalWeeks || '—'} weeks · ${plan.sessions?.filter(session => session.type !== 'Rest').length || 0} planned sessions` : 'Create a Coach plan to populate the board'}</span></header>
       <section class="studio-board">${schedule}</section>
       <section class="studio-bottom"><article class="studio-panel"><h3>RECENT TRAINING</h3>${history}</article><aside class="studio-panel"><h3>LOAD DISTRIBUTION</h3><div class="studio-load"><i style="width:${Math.min(100, Math.max(8, (load.acute || 0) / 6))}%"></i></div><p class="studio-panel-copy">7-day load: ${Math.round(load.acute || 0)} AU · ${load.acwr == null ? 'Build more history for ACWR' : `ACWR ${load.acwr.toFixed(2)}`}</p><div class="studio-coach-note"><b>Coach context</b>${escapeHtml(decision?.reasons?.join(' · ') || 'Your daily decision will appear here once you have wellness and plan data.')}</div></aside></section>`;
+    root.bindActivityDetails?.(host,activities);
+    const allButton=document.createElement('button');allButton.type='button';allButton.className='studio-secondary';allButton.textContent='ดูกิจกรรมทั้งหมด';allButton.onclick=()=>root.showPage('fitness-log');host.querySelector('.studio-bottom .studio-panel')?.appendChild(allButton);
   }
 
   function init() {

@@ -3130,19 +3130,20 @@ async function saveWorkout(){
 function renderRecentWorkouts(){
   const c=document.getElementById('recent-workouts-list');if(!c)return;
   const em={run:'🏃',interval:'⚡',bike:'🚴',swim:'🏊',walk:'🚶'};
-  if(!window._workouts.length){c.innerHTML='<p class="text-sm c2">No data</p>';return;}
-  c.innerHTML=window._workouts.slice(0,10).map((w,index)=>{
+  const all=getAllActivities(),activities=all.slice(0,window._activityLogLimit||30);
+  if(!activities.length){c.innerHTML='<p class="text-sm c2">No data</p>';return;}
+  c.innerHTML=activities.map((w,index)=>{
     let main='',sub='';
     if(w.type==='interval'&&w.interval){const iv=w.interval;main=`⚡ ${iv.reps}×${iv.repDist}km @ ${iv.repPace||'—'} · Total ${w.dist}km`;sub=`${w.date} · Rest ${iv.restTime}min`;}
     else{main=`${w.dist}km · ${w.time}min${w.hr?' · ♥'+w.hr:''}`;sub=`${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}`;}
-    const reviewKey=typeof postRunWorkoutKey==='function'?postRunWorkoutKey(w):(w._key||'');
-    return `<div class="workout-row"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1;min-width:0"><div class="workout-title">${escapeHTML(main)}</div><div class="workout-meta">${escapeHTML(sub)}${w.rpe?' · RPE '+w.rpe:''}${w.shoe?' · '+escapeHTML(w.shoe):''}</div></div><button onclick="openPostRunReview('${escapeHTML(reviewKey)}')" class="btn btn-ghost btn-sm" title="สรุปหลังซ้อม">🧾</button><button onclick="editWorkout('${w._key}')" class="btn btn-ghost btn-sm" title="แก้ไข">✎</button><button onclick="deleteWorkout('${w._key}')" class="btn btn-ghost btn-sm" title="ลบ">✕</button></div>`;
+    sub += `${w.rpe?' · RPE '+w.rpe:''}${w.shoe?' · '+w.shoe:''}`;
+    const editable=!!w._key&&(window._workouts||[]).some(item=>item._key===w._key);
+    return `<div class="workout-row" style="flex-wrap:wrap"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1;min-width:140px"><div class="workout-title">${escapeHTML(main)}${sourceBadge(w,true)}</div><div class="workout-meta">${escapeHTML(sub)}</div></div><button type="button" data-activity-index="${index}" class="btn btn-ghost btn-sm">ดูรายละเอียด</button>${editable?`<button data-edit-index="${index}" class="btn btn-ghost btn-sm" title="แก้ไข">✎</button><button data-delete-index="${index}" class="btn btn-ghost btn-sm" title="ลบ">✕</button>`:''}</div>`;
   }).join('');
-  c.querySelectorAll('.workout-row').forEach((row,index)=>{
-    row.style.cursor='pointer';
-    row.title='Open activity detail';
-    row.addEventListener('click',event=>{if(!event.target.closest('button'))showActivityDetail(window._workouts[index]);});
-  });
+  window.bindActivityDetails?.(c,activities);
+  c.querySelectorAll('[data-edit-index]').forEach(button=>button.addEventListener('click',()=>editWorkout(activities[Number(button.dataset.editIndex)]._key)));
+  c.querySelectorAll('[data-delete-index]').forEach(button=>button.addEventListener('click',()=>deleteWorkout(activities[Number(button.dataset.deleteIndex)]._key)));
+  if(all.length>activities.length){const more=document.createElement('button');more.className='btn btn-ghost btn-sm';more.textContent=`ดูเพิ่ม (${all.length-activities.length})`;more.onclick=()=>{window._activityLogLimit=(window._activityLogLimit||30)+30;renderRecentWorkouts();};c.appendChild(more);}
 }
 
 async function deleteWorkout(key){if(!confirm('Delete this entry?'))return;try{await window._fb.removeData(`workouts/${key}`);showToast('Deleted');}catch(e){showToast('Delete failed','error');}}
@@ -3750,15 +3751,16 @@ function showCalDay(dateStr) {
   if (!detail) return;
   const d = new Date(dateStr + 'T00:00:00');
   if (lbl) lbl.textContent = d.toLocaleDateString('th-TH', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  if (actsEl) actsEl.innerHTML = acts.map(w => `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="showActivityDetail(${JSON.stringify(JSON.stringify(w)).slice(1,-1)})">
+  if (actsEl) actsEl.innerHTML = acts.map((w,index) => `
+    <div data-activity-index="${index}" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
       <span style="font-size:18px">${em[w.type]||'🏅'}</span>
       <div style="flex:1">
         <div style="font-size:13px;font-weight:600">${parseFloat(w.dist||0).toFixed(2)} km · ${Math.round(w.time||0)} min${w.hr?' · HR '+w.hr:''}</div>
-        <div style="font-size:11px;color:var(--text2)">${w.name||''}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}</div>
+        <div style="font-size:11px;color:var(--text2)">${escapeHTML(w.name||'')}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}</div>
       </div>
       <span style="color:var(--text3)">›</span>
     </div>`).join('');
+  window.bindActivityDetails?.(actsEl,acts);
   detail.style.display = 'block';
   detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
