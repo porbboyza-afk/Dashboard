@@ -88,13 +88,10 @@
       <button type="button" class="studio-icon-button" data-activity-index="${activities.indexOf(activity)}">ดูรายละเอียด</button>
     </div>`).join('') || '<p class="studio-empty">No activity yet. Add a run or sync Health Connect to begin.</p>';
     const signedIn = root._fb?.isSignedIn?.();
-    const title = hasPlan ? sessionTitle(todaySession) : 'Your day, your pace';
-    const intro = hasPlan ? sessionDetail(todaySession) : 'Check in, log a session, or create a plan when you are ready.';
-    const sessionGuidance = hasPlan ? (decision?.applyLabel || 'Follow the planned effort. Stop or reduce if pain changes your stride.') : 'No session is scheduled today. An unplanned activity is still part of your training history.';
-    const primaryAction = hasPlan ? 'View session' : 'Log activity';
-    const primaryHandler = hasPlan ? 'openStudioPlan()' : "showPage('fitness-log')";
-    const secondaryAction = hasPlan ? 'Morning check-in' : 'Create plan';
-    const secondaryHandler = hasPlan ? "showPage('wellness')" : "showPage('coach')";
+    const title = hasPlan ? sessionTitle(todaySession) : 'No active training plan';
+    const intro = hasPlan ? sessionDetail(todaySession) : 'Create a goal-based plan to receive a daily session, recovery guidance, and a weekly board.';
+    const sessionGuidance = hasPlan ? (decision?.applyLabel || 'Follow the planned effort. Stop or reduce if pain changes your stride.') : 'MyDash will not invent a workout when no plan exists. Create a plan first, or record an unplanned activity.';
+    const primaryAction = hasPlan ? 'Open plan' : 'Create plan';
     host.innerHTML = `<div class="studio-date">${new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}</div>
       <section class="studio-intro">
         <div><h1>Today: <em>${escapeHtml(title)}</em></h1><p>${escapeHtml(intro)}</p></div>
@@ -102,7 +99,7 @@
       </section>
       ${!signedIn ? `<section class="studio-login"><div><b>Sync your training data</b><span>Sign in to load workouts, wellness, and your active plan.</span></div><button class="studio-primary" onclick="window._fb.loginGoogle()">Sign in with Google</button></section>` : ''}
       <section class="studio-today-grid">
-        <article class="studio-session-card"><span>${hasPlan ? "TODAY'S SESSION" : 'TODAY'}</span><h2>${escapeHtml(hasPlan ? title : 'No planned session')}</h2><p>${escapeHtml(sessionGuidance)}</p><div class="studio-pills"><i>${escapeHtml(hasPlan ? (todaySession?.targetHR || 'Use talk test') : 'Log how you feel')}</i><i>${escapeHtml(hasPlan ? (todaySession?.targetPaceRange || todaySession?.targetPace || 'Controlled effort') : 'No prescribed effort')}</i><i>${escapeHtml(hasPlan ? (decision?.action || 'plan') : 'Open day')}</i></div><div class="studio-actions"><button class="studio-primary" onclick="${primaryHandler}">${primaryAction}</button><button class="studio-secondary" onclick="${secondaryHandler}">${secondaryAction}</button></div></article>
+        <article class="studio-session-card"><span>${hasPlan ? "TODAY'S SESSION" : 'PLAN STATUS'}</span><h2>${escapeHtml(title)}</h2><p>${escapeHtml(sessionGuidance)}</p><div class="studio-pills"><i>${escapeHtml(hasPlan ? (todaySession?.targetHR || 'Use talk test') : 'No plan')}</i><i>${escapeHtml(hasPlan ? (todaySession?.targetPaceRange || todaySession?.targetPace || 'Controlled effort') : 'No prescribed effort')}</i><i>${escapeHtml(hasPlan ? (decision?.action || 'plan') : 'Create first')}</i></div><div class="studio-actions"><button class="studio-primary" onclick="${hasPlan ? 'openStudioPlan()' : "showPage('coach')"}">${hasPlan ? 'View session' : primaryAction}</button><button class="studio-secondary" onclick="${hasPlan ? "showPage('wellness')" : "showPage('fitness-log')"}">${hasPlan ? 'Morning check-in' : 'Log activity'}</button></div></article>
         <aside class="studio-signals"><div><b>${weekly.weeklyDistanceKm.toFixed(1)}</b><small>KM THIS WEEK</small></div><div><b>${weekly.weeklyActivityCount}</b><small>ACTIVITIES</small></div><div><b>${load.acwr == null ? '—' : load.acwr.toFixed(2)}</b><small>ACWR</small></div><div><b>${sleep}</b><small>SLEEP</small></div></aside>
       </section>
       <header class="studio-section-head"><h2>${escapeHtml(plan?.goal || 'Training week')}</h2><span>${plan ? `${plan.totalWeeks || '—'} weeks · ${plan.sessions?.filter(session => session.type !== 'Rest').length || 0} planned sessions` : 'Create a Coach plan to populate the board'}</span></header>

@@ -3116,9 +3116,9 @@ function renderRecentWorkouts(){
   c.innerHTML=activities.map((w,index)=>{
     let main='',sub='';
     if(w.type==='interval'&&w.interval){const iv=w.interval;main=`⚡ ${iv.reps}×${iv.repDist}km @ ${iv.repPace||'—'} · Total ${w.dist}km`;sub=`${w.date} · Rest ${iv.restTime}min`;}
-    else{main=`${w.dist}km · ${formatActivityMinutes(w.time)}min${w.hr?' · ♥'+w.hr:''}`;sub=`${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}`;}
+    else{main=`${w.dist}km · ${w.time}min${w.hr?' · ♥'+w.hr:''}`;sub=`${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}`;}
     sub += `${w.rpe?' · RPE '+w.rpe:''}${w.shoe?' · '+w.shoe:''}`;
-    const editable=w.source==='manual';
+    const editable=!!w._key&&(window._workouts||[]).some(item=>item._key===w._key);
     return `<div class="workout-row ui-list-row" data-activity-index="${index}" style="flex-wrap:wrap"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1;min-width:140px"><div class="workout-title">${escapeHTML(main)}${sourceBadge(w,true)}</div><div class="workout-meta">${escapeHTML(sub)}</div></div><button type="button" data-activity-index="${index}" class="btn btn-ghost btn-sm">ดูรายละเอียด</button>${editable?`<button data-edit-index="${index}" class="btn btn-ghost btn-sm" title="แก้ไข">✎</button><button data-delete-index="${index}" class="btn btn-ghost btn-sm" title="ลบ">✕</button>`:''}</div>`;
   }).join('');
   window.bindActivityDetails?.(c,activities);
@@ -3129,7 +3129,6 @@ function renderRecentWorkouts(){
 
 async function deleteWorkout(key){if(!confirm('Delete this entry?'))return;try{await window._fb.removeData(`workouts/${key}`);showToast('Deleted');}catch(e){showToast('Delete failed','error');}}
 function formatPace(p){if(!p||isNaN(p))return'—';const t=Math.round(p*60);return`${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;}
-function formatActivityMinutes(value){const minutes=Number(value);if(!Number.isFinite(minutes))return'—';return Number(minutes.toFixed(1)).toString();}
 function paceStrToDecimal(str){if(!str)return 0;const p=str.trim().split(':');if(p.length<2)return parseFloat(str)||0;return(parseInt(p[0])||0)+(parseInt(p[1])||0)/60;}
 
 // ── STATS NAV ──
