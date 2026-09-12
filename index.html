@@ -1751,7 +1751,7 @@ img, video, iframe, canvas { max-width: 100%; }
               <div class="form-group"><label>Distance (km)</label><input type="number" id="r-distance" step="0.01" placeholder="0.00" onchange="buildSplits()"></div>
               <div class="form-group"><label>Time (min)</label><input type="number" id="r-time" step="0.1" placeholder="0"></div>
             </div>
-            <details class="ui-advanced-fields"><summary>Watch metrics and splits</summary><p class="ui-form-hint">Optional for manual entries. Imported activities bring these from their source.</p><div class="grid g2" style="gap:10px">
+            <div class="grid g2" style="gap:10px">
               <div class="form-group"><label>HR avg (bpm)</label><input type="number" id="r-hr" placeholder="—"></div>
               <div class="form-group"><label>Cadence (spm)</label><input type="number" id="r-cadence" placeholder="170"></div>
             </div>
@@ -1768,7 +1768,7 @@ img, video, iframe, canvas { max-width: 100%; }
                 <span id="avg-pace-disp" style="font-family:var(--font-mono);font-size:11px;color:var(--green)">Avg Pace: —</span>
               </div>
               <div id="splits-area"><p class="text-sm c2" style="font-style:italic">กรอกระยะทางเพื่อสร้าง Splits</p></div>
-            </div></details>
+            </div>
           </div>
 
           <div id="fields-interval" style="display:none">
@@ -1806,7 +1806,6 @@ img, video, iframe, canvas { max-width: 100%; }
             </div>
           </div>
 
-          <div id="activity-quick-experience" class="grid g2" style="gap:10px"></div>
           <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 8px">Your experience</div>
           <div class="grid g2" style="gap:10px">
             <div class="form-group"><label>Intent (optional)</label>
@@ -2455,7 +2454,7 @@ img, video, iframe, canvas { max-width: 100%; }
           <div class="wellness-form-grid">
             <div class="form-group"><label>Status</label>
               <select id="w-health-status"><option value="">No change / normal</option><option value="sick">ป่วย</option><option value="medication">ใช้ยา</option><option value="injured">บาดเจ็บ</option></select>
-            </div></details>
+            </div>
           </div>
           <div class="form-group"><label>Pain location</label><input type="text" id="w-pain-location" maxlength="120" placeholder="เช่น เข่าซ้าย / น่องขวา"></div>
           <div class="form-group"><label>Note</label><textarea id="w-note" rows="3" maxlength="500" placeholder="ป่วย พักผ่อนน้อย หรือข้อมูลอื่นที่มีผลต่อการฝึก"></textarea></div>
