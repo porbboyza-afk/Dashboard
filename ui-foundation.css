@@ -32,3 +32,47 @@
 .ui-advanced-fields summary { color:var(--ui-muted); cursor:pointer; font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
 .ui-form-hint { margin:0 0 12px; color:var(--ui-muted); font-size:12px; line-height:1.5; }
 @media (max-width:768px) { .ui-more-overlay { align-items:flex-end; padding:0; } .ui-more-panel { width:100%; max-height:82vh; border-radius:22px 22px 0 0; padding:16px 14px 24px; } .ui-more-panel::before { content:''; display:block; width:38px; height:4px; border-radius:99px; background:var(--ui-border); margin:0 auto 12px; } }
+
+/* Today is the daily decision surface; its cards use the same hierarchy as Activities and Health. */
+.studio-home { max-width:1240px; padding-bottom:36px; }
+.studio-date { color:var(--ui-muted); font-size:11px; font-weight:800; letter-spacing:.12em; }
+.studio-intro { align-items:stretch; gap:20px; margin:16px 0 20px; }
+.studio-intro h1 { font-size:clamp(28px,4vw,46px); line-height:1.04; letter-spacing:-.045em; }
+.studio-intro h1 em { color:var(--ui-accent); font-style:normal; }
+.studio-intro p { max-width:670px; color:var(--ui-muted); font-size:15px; line-height:1.55; }
+.studio-readiness { min-width:220px; border:1px solid var(--ui-border); border-radius:var(--ui-radius); background:var(--ui-surface); padding:16px; box-shadow:var(--ui-shadow); }
+.studio-readiness span,.studio-session-card>span,.studio-panel h3 { color:var(--ui-muted); font-size:10px; font-weight:800; letter-spacing:.1em; }
+.studio-readiness strong { color:var(--ui-text); font-size:22px; line-height:1.2; }
+.studio-readiness small { color:var(--ui-muted); line-height:1.45; }
+.studio-today-grid { gap:16px; }
+.studio-session-card { border:1px solid rgba(200,250,84,.26); border-radius:20px; background:linear-gradient(135deg,#1d2b22,#17211d 68%); padding:24px; box-shadow:var(--ui-shadow); }
+.studio-session-card h2 { margin:8px 0; color:var(--ui-text); font-size:clamp(23px,3vw,32px); letter-spacing:-.03em; }
+.studio-session-card p { color:var(--ui-muted); line-height:1.55; }
+.studio-pills i { border:1px solid var(--ui-border); border-radius:999px; background:rgba(255,255,255,.035); color:var(--ui-text); font-style:normal; }
+.studio-primary,.studio-secondary { border-radius:10px; font-weight:800; }
+.studio-primary { background:var(--ui-accent); color:#12200d; }
+.studio-secondary { border-color:var(--ui-border); background:transparent; color:var(--ui-text); }
+.studio-signals { border:1px solid var(--ui-border); border-radius:20px; background:var(--ui-surface); padding:8px; }
+.studio-signals>div { border-radius:12px; padding:15px 12px; }
+.studio-signals>div:hover { background:var(--ui-surface-raised); }
+.studio-signals b { color:var(--ui-accent); font-size:22px; }
+.studio-signals small { color:var(--ui-muted); }
+.studio-section-head { align-items:end; margin:28px 0 12px; }
+.studio-section-head h2 { color:var(--ui-text); font-size:19px; letter-spacing:-.02em; }
+.studio-section-head span { color:var(--ui-muted); }
+.studio-board { gap:10px; }
+.studio-day { border:1px solid var(--ui-border); border-radius:14px; background:var(--ui-surface); padding:11px; min-height:154px; transition:transform .16s ease,border-color .16s ease,background .16s ease; }
+.studio-day.is-actionable { cursor:pointer; }
+.studio-day.is-actionable:hover,.studio-day.is-actionable:focus-visible { background:var(--ui-surface-raised); border-color:rgba(200,250,84,.6); outline:none; transform:translateY(-2px); }
+.studio-day.is-today { border-color:var(--ui-accent); box-shadow:inset 0 0 0 1px rgba(200,250,84,.15); }
+.studio-day-date { color:var(--ui-muted); }
+.studio-workout { border-radius:10px; padding:10px; }
+.studio-workout b { color:var(--ui-text); }
+.studio-workout small { color:var(--ui-muted); line-height:1.4; }
+.studio-bottom { gap:16px; }
+.studio-panel { border:1px solid var(--ui-border); border-radius:var(--ui-radius); background:var(--ui-surface); padding:18px; }
+.studio-story-row { border-radius:12px; padding:10px 8px; }
+.studio-story-date { color:var(--ui-accent); }
+.studio-story-row p,.studio-panel-copy { color:var(--ui-muted); }
+.studio-coach-note { border-radius:12px; background:var(--ui-surface-raised); color:var(--ui-text); }
+@media (max-width:768px) { .studio-intro { display:block; } .studio-readiness { margin-top:14px; } .studio-session-card { padding:18px; } .studio-board { grid-template-columns:repeat(2,minmax(0,1fr)); } .studio-day { min-height:138px; } }

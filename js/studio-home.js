@@ -68,10 +68,11 @@
     const reason = decision?.reasons?.[0] || readiness.reasons?.[0] || 'Add a morning check-in to personalize today’s decision.';
     const schedule = weekDates().map(day => {
       const session = (plan?.sessions || []).find(item => item.date === day) || null;
+      const sessionIndex = session ? (plan?.sessions || []).indexOf(session) : -1;
       const activity = activities.find(item => item.date === day) || null;
       const isToday = day === today;
       const done = !!activity || !!plan?.completedDates?.[day];
-      return `<article class="studio-day ${isToday ? 'is-today' : ''} ${done ? 'is-done' : ''}">
+      return `<article class="studio-day ${isToday ? 'is-today' : ''} ${done ? 'is-done' : ''} ${sessionIndex >= 0 ? 'is-actionable' : ''}" ${sessionIndex >= 0 ? `data-studio-session-index="${sessionIndex}" tabindex="0" role="button"` : ''}>
         <div class="studio-day-date">${dateLabel(day)}</div>
         <div class="studio-workout ${sessionStyle(session)}">
           <span>${session ? escapeHtml(session.type || 'SESSION') : 'OPEN'}</span>
@@ -98,13 +99,18 @@
       </section>
       ${!signedIn ? `<section class="studio-login"><div><b>Sync your training data</b><span>Sign in to load workouts, wellness, and your active plan.</span></div><button class="studio-primary" onclick="window._fb.loginGoogle()">Sign in with Google</button></section>` : ''}
       <section class="studio-today-grid">
-        <article class="studio-session-card"><span>${hasPlan ? "TODAY'S SESSION" : 'PLAN STATUS'}</span><h2>${escapeHtml(title)}</h2><p>${escapeHtml(sessionGuidance)}</p><div class="studio-pills"><i>${escapeHtml(hasPlan ? (todaySession?.targetHR || 'Use talk test') : 'No plan')}</i><i>${escapeHtml(hasPlan ? (todaySession?.targetPaceRange || todaySession?.targetPace || 'Controlled effort') : 'No prescribed effort')}</i><i>${escapeHtml(hasPlan ? (decision?.action || 'plan') : 'Create first')}</i></div><div class="studio-actions"><button class="studio-primary" onclick="${hasPlan ? 'openStudioPlan()' : "showPage('coach')"}">${primaryAction}</button><button class="studio-secondary" onclick="${hasPlan ? "showPage('wellness')" : "showPage('fitness-log')"}">${hasPlan ? 'Check in' : 'Log activity'}</button></div></article>
+        <article class="studio-session-card"><span>${hasPlan ? "TODAY'S SESSION" : 'PLAN STATUS'}</span><h2>${escapeHtml(title)}</h2><p>${escapeHtml(sessionGuidance)}</p><div class="studio-pills"><i>${escapeHtml(hasPlan ? (todaySession?.targetHR || 'Use talk test') : 'No plan')}</i><i>${escapeHtml(hasPlan ? (todaySession?.targetPaceRange || todaySession?.targetPace || 'Controlled effort') : 'No prescribed effort')}</i><i>${escapeHtml(hasPlan ? (decision?.action || 'plan') : 'Create first')}</i></div><div class="studio-actions"><button class="studio-primary" onclick="${hasPlan ? 'openStudioPlan()' : "showPage('coach')"}">${hasPlan ? 'View session' : primaryAction}</button><button class="studio-secondary" onclick="${hasPlan ? "showPage('wellness')" : "showPage('fitness-log')"}">${hasPlan ? 'Morning check-in' : 'Log activity'}</button></div></article>
         <aside class="studio-signals"><div><b>${weekly.weeklyDistanceKm.toFixed(1)}</b><small>KM THIS WEEK</small></div><div><b>${weekly.weeklyActivityCount}</b><small>ACTIVITIES</small></div><div><b>${load.acwr == null ? '—' : load.acwr.toFixed(2)}</b><small>ACWR</small></div><div><b>${sleep}</b><small>SLEEP</small></div></aside>
       </section>
       <header class="studio-section-head"><h2>${escapeHtml(plan?.goal || 'Training week')}</h2><span>${plan ? `${plan.totalWeeks || '—'} weeks · ${plan.sessions?.filter(session => session.type !== 'Rest').length || 0} planned sessions` : 'Create a Coach plan to populate the board'}</span></header>
       <section class="studio-board">${schedule}</section>
       <section class="studio-bottom"><article class="studio-panel"><h3>RECENT TRAINING</h3>${history}</article><aside class="studio-panel"><h3>LOAD DISTRIBUTION</h3><div class="studio-load"><i style="width:${Math.min(100, Math.max(8, (load.acute || 0) / 6))}%"></i></div><p class="studio-panel-copy">7-day load: ${Math.round(load.acute || 0)} AU · ${load.acwr == null ? 'Build more history for ACWR' : `ACWR ${load.acwr.toFixed(2)}`}</p><div class="studio-coach-note"><b>Coach context</b>${escapeHtml(decision?.reasons?.join(' · ') || 'Your daily decision will appear here once you have wellness and plan data.')}</div></aside></section>`;
     root.bindActivityDetails?.(host,activities);
+    host.querySelectorAll('[data-studio-session-index]').forEach(card => {
+      const open = () => root.openStudioSession?.(Number(card.dataset.studioSessionIndex));
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); open(); } });
+    });
     const allButton=document.createElement('button');allButton.type='button';allButton.className='studio-secondary';allButton.textContent='ดูกิจกรรมทั้งหมด';allButton.onclick=()=>root.showPage('fitness-log');host.querySelector('.studio-bottom .studio-panel')?.appendChild(allButton);
   }
 
@@ -121,6 +127,13 @@
     const today = todayKey();
     const index = (plan?.sessions || []).findIndex(session => session.date === today && session.type !== 'Rest');
     if (index >= 0 && typeof root.showCoachSessionDetail === 'function') {
+      setTimeout(() => root.showCoachSessionDetail(index), 80);
+    }
+  };
+  root.openStudioSession = function openStudioSession(index) {
+    root.showPage('coach');
+    if (typeof root.switchCoachTab === 'function') root.switchCoachTab('track', null);
+    if (Number.isInteger(index) && index >= 0 && typeof root.showCoachSessionDetail === 'function') {
       setTimeout(() => root.showCoachSessionDetail(index), 80);
     }
   };
