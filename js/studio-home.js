@@ -81,7 +81,7 @@
         ${done ? `<div class="studio-done">Completed${activity ? ` · ${escapeHtml(activityLine(activity))}` : ''}</div>` : ''}
       </article>`;
     }).join('');
-    const history = activities.slice(0, 3).map(activity => `<div class="studio-story-row">
+    const history = activities.slice(0, 3).map(activity => `<div class="studio-story-row ui-list-row" data-activity-index="${activities.indexOf(activity)}">
       <div class="studio-story-date">${escapeHtml((activity.date || '').slice(5).replace('-', '/')) || '—'}</div>
       <div><b>${escapeHtml(activity.name || activity.type || 'Activity')}</b><p>${escapeHtml(activityLine(activity))}</p></div>
       <button type="button" class="studio-icon-button" data-activity-index="${activities.indexOf(activity)}">ดูรายละเอียด</button>

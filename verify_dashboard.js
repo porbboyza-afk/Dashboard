@@ -116,6 +116,7 @@ ensureContains(indexPath, [
   '<link rel="stylesheet" href="training-studio-ui.css?v=20260711-1">',
   '<link rel="stylesheet" href="studio-shell.css?v=20260711-1">',
   '<link rel="stylesheet" href="studio-surfaces.css?v=20260711-1">',
+  '<link rel="stylesheet" href="ui-foundation.css?v=20260912-1">',
   'class="workspace-topbar"',
   '<script src="js/date-utils.js"></script>',
   '<script src="js/ui-core.js"></script>',
@@ -146,6 +147,7 @@ ensureContains(indexPath, [
   '<script src="js/studio-coach.js"></script>',
   '<script src="js/chart-data.js"></script>',
   '<script src="js/chart-semantics.js"></script>',
+  '<script src="js/ui-foundation.js"></script>',
   'id="page-post-run-review"',
   'function mdToHtml(text)',
   'out.innerHTML = mdToHtml(reply);',
@@ -155,11 +157,13 @@ ensureContains(indexPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-coros-cadence-20260910-1',
+  'mydash-v3-ui-foundation-20260912-1',
   './app-redesign.css?v=20260711-1',
   './training-studio-ui.css?v=20260711-1',
   './studio-shell.css?v=20260711-1',
   './studio-surfaces.css?v=20260711-1',
+  './ui-foundation.css?v=20260912-1',
+  './js/ui-foundation.js',
   './js/studio-home.js',
   './js/studio-coach.js',
   './js/services/manual-plan-builder.js',
@@ -363,7 +367,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-coros-cadence-20260910-1',
+  'mydash-v3-ui-foundation-20260912-1',
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',

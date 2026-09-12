@@ -166,7 +166,7 @@ function getWellnessFormEntry() {
     hrv: wellnessNumberValue('w-hrv'),
     spo2: wellnessNumberValue('w-spo2'),
     bloodPressure: wellnessFieldValue('w-bp'),
-    healthStatus: wellnessFieldValue('w-health-status') || 'normal',
+    healthStatus: wellnessFieldValue('w-health-status'),
     painLocation: wellnessFieldValue('w-pain-location'),
     note: wellnessFieldValue('w-note')
   };
@@ -178,6 +178,7 @@ function mergeWellnessEntry(existing, formEntry) {
     const isBlank = value === null || value === '';
     if (!isBlank || merged[key] === undefined || merged[key] === null || merged[key] === '') merged[key] = value;
   });
+  if (!merged.healthStatus) merged.healthStatus = existing?.healthStatus || 'normal';
   merged.recoveryScore = calculateRecoveryScore(merged);
   merged.createdAt = existing?.createdAt || Date.now();
   merged.updatedAt = Date.now();
@@ -213,7 +214,7 @@ function loadWellnessToForm(keyOrDate) {
 function resetWellnessForm() {
   ['w-weight','w-body-fat','w-rhr','w-sleep-hours','w-sleep-quality','w-fatigue','w-stress','w-soreness','w-mood','w-hrv','w-spo2','w-bp','w-pain-location','w-note'].forEach(id => setWellnessInput(id, ''));
   setWellnessInput('w-date', toLocalDateStr());
-  setWellnessInput('w-health-status', 'normal');
+  setWellnessInput('w-health-status', '');
   const btn = document.getElementById('wellness-save-btn');
   if (btn) btn.textContent = '💾 Save wellness';
 }

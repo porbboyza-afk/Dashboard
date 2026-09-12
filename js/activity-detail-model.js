@@ -79,11 +79,15 @@
     container?.querySelectorAll('[data-activity-index]').forEach(element => {
       const workout=activities[Number(element.dataset.activityIndex)];
       if(!workout)return;
-      const open=()=>root.showActivityDetail(workout);
+      const open=event=>{
+        if(event?.target?.closest('[data-activity-index]')!==element)return;
+        if(event?.target?.closest('[data-edit-index],[data-delete-index]'))return;
+        root.showActivityDetail(workout);
+      };
       element.addEventListener('click',open);
       if(element.tagName!=='BUTTON'){
         element.setAttribute('role','button');element.tabIndex=0;
-        element.addEventListener('keydown',event=>{if(event.target===element&&['Enter',' '].includes(event.key)){event.preventDefault();open();}});
+        element.addEventListener('keydown',event=>{if(event.target===element&&['Enter',' '].includes(event.key)){event.preventDefault();open(event);}});
       }
     });
   };

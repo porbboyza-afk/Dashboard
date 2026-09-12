@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-coros-cadence-20260910-1';
+const CACHE_NAME = 'mydash-v3-ui-foundation-20260912-1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const APP_SHELL = [
   './training-studio-ui.css?v=20260711-1',
   './studio-shell.css?v=20260711-1',
   './studio-surfaces.css?v=20260711-1',
+  './ui-foundation.css?v=20260912-1',
   './manifest.json?v=20260711-2',
   './icon-192.png?v=20260710-3',
   './icon-512.png?v=20260710-3',
@@ -38,6 +39,7 @@ const APP_SHELL = [
   ,'./js/studio-coach.js'
   ,'./js/chart-semantics.js'
   ,'./js/chart-data.js'
+  ,'./js/ui-foundation.js'
 ];
 
 self.addEventListener('install', event => {
