@@ -64,12 +64,12 @@ function showPage(id) {
   document.getElementById('page-' + id)?.classList.add('active');
   document.querySelector(`.nav-item[data-page="${id}"]`)?.classList.add('active');
   const pageTitles = {
-    today: 'Today',
-    'fitness-log': 'Activities',
+    today: 'Dashboard',
+    'fitness-log': 'Activity Log',
     'post-run-review': 'Post-Run Review',
-    'fitness-stats': 'Insights',
-    coach: 'Plan',
-    wellness: 'Health',
+    'fitness-stats': 'Training Insights',
+    coach: 'Coach',
+    wellness: 'Wellness',
     strava: 'Data Sources',
     news: 'AI Q&A',
     settings: 'Settings'

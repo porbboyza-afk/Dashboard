@@ -1436,7 +1436,6 @@ img, video, iframe, canvas { max-width: 100%; }
   <link rel="stylesheet" href="training-studio-ui.css?v=20260711-1">
   <link rel="stylesheet" href="studio-shell.css?v=20260711-1">
   <link rel="stylesheet" href="studio-surfaces.css?v=20260711-1">
-  <link rel="stylesheet" href="ui-foundation.css?v=20260912-1">
 </head>
 <body>
 
@@ -1461,15 +1460,22 @@ img, video, iframe, canvas { max-width: 100%; }
       </div>
 
       <div class="nav">
-        <div class="nav-section-label">Daily training</div>
-        <div class="nav-item" data-page="today" onclick="showPage('today')"><span class="nav-icon">🏠</span><span>Today</span></div>
-        <div class="nav-item" data-page="fitness-log" onclick="showPage('fitness-log')"><span class="nav-icon">💪</span><span>Activities</span></div>
-        <div class="nav-item" data-page="coach" onclick="showPage('coach')"><span class="nav-icon">🗓️</span><span>Plan</span></div>
-        <div class="nav-item" data-page="wellness" onclick="showPage('wellness')"><span class="nav-icon">🫀</span><span>Health</span></div>
-        <div class="nav-item" data-page="fitness-stats" onclick="showPage('fitness-stats')"><span class="nav-icon">📊</span><span>Insights</span></div>
+        <div class="nav-section-label">Overview</div>
+        <div class="nav-item" data-page="today" onclick="showPage('today')"><span class="nav-icon">🏠</span><span>Dashboard</span></div>
 
-        <div class="nav-section-label">Workspace</div>
-        <div class="nav-item ui-more-trigger" onclick="openMoreMenu()"><span class="nav-icon">☰</span><span>More</span></div>
+        <div class="nav-section-label">Health & Run</div>
+        <div class="nav-item" data-page="fitness-log" onclick="showPage('fitness-log')"><span class="nav-icon">💪</span><span>Activity Log</span></div>
+        <div class="nav-item" data-page="post-run-review" onclick="openPostRunReview()"><span class="nav-icon">🧾</span><span>Post-Run Review</span></div>
+        <div class="nav-item" data-page="wellness" onclick="showPage('wellness')"><span class="nav-icon">🫀</span><span>Daily Wellness</span></div>
+        <div class="nav-item" data-page="fitness-stats" onclick="showPage('fitness-stats')"><span class="nav-icon">📊</span><span>Statistics</span></div>
+        <div class="nav-item" data-page="coach" onclick="showPage('coach')"><span class="nav-icon">🤖</span><span>AI Coach</span></div>
+        <div class="nav-item" data-page="strava" onclick="showPage('strava')"><span class="nav-icon">🔌</span><span>Sources</span></div>
+
+
+
+        <div class="nav-section-label">Tools</div>
+        <div class="nav-item" data-page="news" onclick="showPage('news')"><span class="nav-icon">💬</span><span>AI Q&A</span></div>
+        <div class="nav-item" data-page="settings" onclick="showPage('settings')"><span class="nav-icon">⚙️</span><span>Settings</span></div>
       </div>
     </div>
 
@@ -1490,7 +1496,7 @@ img, video, iframe, canvas { max-width: 100%; }
     <header class="workspace-topbar">
       <div class="workspace-title-block">
         <div class="workspace-eyebrow">MYDASH / PERFORMANCE</div>
-        <div class="workspace-title" id="workspace-title">Today</div>
+        <div class="workspace-title" id="workspace-title">Dashboard</div>
       </div>
       <div class="workspace-status"><span class="workspace-status-dot"></span><span id="workspace-status-label">Live data</span></div>
     </header>
@@ -1725,8 +1731,8 @@ img, video, iframe, canvas { max-width: 100%; }
     <div class="page" id="page-fitness-log">
       <div class="flex justify-between items-center mb-20 flex-wrap gap-12">
         <div class="page-header" style="margin:0">
-          <div class="page-title">Activities 💪</div>
-          <div class="page-subtitle">Every run and workout, with its source and detail</div>
+          <div class="page-title">Activity Log 💪</div>
+          <div class="page-subtitle">Realtime sync → Firebase</div>
         </div>
         <button class="btn btn-ghost btn-sm" type="button" onclick="showToast('DeepSeek Chat ยังไม่รองรับการอ่านภาพ กรุณากรอกข้อมูลด้วยตนเอง','info')">
           📸 Photo import unavailable
@@ -1748,7 +1754,7 @@ img, video, iframe, canvas { max-width: 100%; }
 
           <div id="fields-normal">
             <div class="grid g2" style="gap:10px">
-              <div class="form-group"><label>Distance (km)</label><input type="number" id="r-distance" step="0.01" placeholder="0.00" onchange="buildSplits()"></div>
+              <div class="form-group"><label>Distance (km)</label><input type="number" id="r-distance" step="0.01" placeholder="0.00" oninput="buildSplits()"></div>
               <div class="form-group"><label>Time (min)</label><input type="number" id="r-time" step="0.1" placeholder="0"></div>
             </div>
             <div class="grid g2" style="gap:10px">
@@ -1806,9 +1812,9 @@ img, video, iframe, canvas { max-width: 100%; }
             </div>
           </div>
 
-          <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 8px">Your experience</div>
+          <div style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 8px">Training Context</div>
           <div class="grid g2" style="gap:10px">
-            <div class="form-group"><label>Intent (optional)</label>
+            <div class="form-group"><label>Session purpose</label>
               <select id="r-purpose">
                 <option value="easy">Easy</option><option value="recovery">Recovery</option>
                 <option value="tempo">Tempo</option><option value="interval">Interval</option>
@@ -1818,7 +1824,7 @@ img, video, iframe, canvas { max-width: 100%; }
             </div>
             <div class="form-group"><label>RPE (1–10)</label><input type="number" id="r-rpe" min="1" max="10" placeholder="5"></div>
           </div>
-          <details class="ui-advanced-fields"><summary>More activity details</summary><p class="ui-form-hint">Use this for manual data that did not come from your watch. Splits are optional.</p><div class="grid g2" style="gap:10px">
+          <div class="grid g2" style="gap:10px">
             <div class="form-group"><label>Shoe / Equipment</label><input type="text" id="r-shoe" maxlength="80" placeholder="เช่น Nike Pegasus 41"></div>
             <div class="form-group"><label>Surface</label>
               <select id="r-surface"><option value="">—</option><option>Road</option><option>Track</option><option>Trail</option><option>Treadmill</option><option>Pool</option><option>Indoor</option></select>
@@ -1833,7 +1839,7 @@ img, video, iframe, canvas { max-width: 100%; }
             <div class="form-group"><label>Pain location</label><input type="text" id="r-pain-location" maxlength="80" placeholder="เช่น เข่าซ้าย"></div>
           </div>
           <div class="form-group"><label>Post-workout feeling</label><input type="text" id="r-feeling" maxlength="160" placeholder="สดชื่น / หนักกว่าปกติ / ขาไม่ตอบสนอง"></div>
-          <div class="form-group"><label>Notes / Route</label><textarea id="r-note" rows="2" placeholder="Route, conditions, feeling..."></textarea></div></details>
+          <div class="form-group"><label>Notes / Route</label><textarea id="r-note" rows="2" placeholder="Route, conditions, feeling..."></textarea></div>
           <button class="btn btn-primary w100" id="workout-save-btn" onclick="saveWorkout()">☁️ Save to Cloud</button>
           <button class="btn btn-ghost w100 mt-8" id="workout-cancel-edit" onclick="cancelWorkoutEdit()" style="display:none">ยกเลิกการแก้ไข</button>
         </div>
@@ -2442,7 +2448,18 @@ img, video, iframe, canvas { max-width: 100%; }
         <div class="card">
           <div class="card-label">Morning Check-in</div>
           <div class="form-group"><label>Date</label><input type="date" id="w-date"></div>
-          <p class="ui-form-hint">Log how you feel. Synced overnight values are kept when these fields are left blank.</p>
+          <div class="wellness-form-grid">
+            <div class="form-group"><label>Weight (kg)</label><input type="number" id="w-weight" min="20" max="300" step="0.1" placeholder="—"></div>
+            <div class="form-group"><label>Body Fat (%, optional)</label><input type="number" id="w-body-fat" min="1" max="80" step="0.1" placeholder="—"></div>
+          </div>
+          <div class="wellness-form-grid">
+            <div class="form-group"><label>Resting HR (bpm)</label><input type="number" id="w-rhr" min="30" max="220" placeholder="—"></div>
+            <div class="form-group"><label>HRV (ms, manual optional)</label><input type="number" id="w-hrv" min="1" max="300" placeholder="Garmin may not share"></div>
+          </div>
+          <div class="wellness-form-grid">
+            <div class="form-group"><label>Sleep (hours)</label><input type="number" id="w-sleep-hours" min="0" max="24" step="0.1" placeholder="7.5"></div>
+            <div class="form-group"><label>Sleep quality (1–10)</label><input type="number" id="w-sleep-quality" min="1" max="10" placeholder="7"></div>
+          </div>
           <div class="wellness-form-grid">
             <div class="form-group"><label>Fatigue (1–10)</label><input type="number" id="w-fatigue" min="1" max="10" placeholder="3"></div>
             <div class="form-group"><label>Stress (1–10)</label><input type="number" id="w-stress" min="1" max="10" placeholder="3"></div>
@@ -2452,13 +2469,16 @@ img, video, iframe, canvas { max-width: 100%; }
             <div class="form-group"><label>Mood (1–10)</label><input type="number" id="w-mood" min="1" max="10" placeholder="7"></div>
           </div>
           <div class="wellness-form-grid">
+            <div class="form-group"><label>SpO₂ (%, optional)</label><input type="number" id="w-spo2" min="70" max="100" placeholder="—"></div>
+            <div class="form-group"><label>Blood pressure</label><input type="text" id="w-bp" maxlength="20" placeholder="120/80"></div>
+          </div>
+          <div class="wellness-form-grid">
             <div class="form-group"><label>Status</label>
-              <select id="w-health-status"><option value="">No change / normal</option><option value="sick">ป่วย</option><option value="medication">ใช้ยา</option><option value="injured">บาดเจ็บ</option></select>
+              <select id="w-health-status"><option value="normal">ปกติ</option><option value="sick">ป่วย</option><option value="medication">ใช้ยา</option><option value="injured">บาดเจ็บ</option></select>
             </div>
           </div>
           <div class="form-group"><label>Pain location</label><input type="text" id="w-pain-location" maxlength="120" placeholder="เช่น เข่าซ้าย / น่องขวา"></div>
           <div class="form-group"><label>Note</label><textarea id="w-note" rows="3" maxlength="500" placeholder="ป่วย พักผ่อนน้อย หรือข้อมูลอื่นที่มีผลต่อการฝึก"></textarea></div>
-          <details class="ui-advanced-fields"><summary>Synced metrics and body details</summary><p class="ui-form-hint">Only fill a value if you want to add or correct it manually.</p><div class="wellness-form-grid"><div class="form-group"><label>Sleep (hours)</label><input type="number" id="w-sleep-hours" min="0" max="24" step="0.1" placeholder="7.5"></div><div class="form-group"><label>Sleep quality (1–10)</label><input type="number" id="w-sleep-quality" min="1" max="10" placeholder="7"></div></div><div class="wellness-form-grid"><div class="form-group"><label>Resting HR (bpm)</label><input type="number" id="w-rhr" min="30" max="220" placeholder="—"></div><div class="form-group"><label>HRV (ms)</label><input type="number" id="w-hrv" min="1" max="300" placeholder="—"></div></div><div class="wellness-form-grid"><div class="form-group"><label>Weight (kg)</label><input type="number" id="w-weight" min="20" max="300" step="0.1" placeholder="—"></div><div class="form-group"><label>Body Fat (%)</label><input type="number" id="w-body-fat" min="1" max="80" step="0.1" placeholder="—"></div></div><div class="wellness-form-grid"><div class="form-group"><label>SpO₂ (%)</label><input type="number" id="w-spo2" min="70" max="100" placeholder="—"></div><div class="form-group"><label>Blood pressure</label><input type="text" id="w-bp" maxlength="20" placeholder="120/80"></div></div></details>
           <div class="flex gap-8 flex-wrap">
             <button class="btn btn-primary" id="wellness-save-btn" style="flex:1" onclick="saveWellness()">💾 Save wellness</button>
             <button class="btn btn-ghost" type="button" onclick="resetWellnessForm()">ล้างฟอร์ม</button>
@@ -3118,7 +3138,7 @@ function renderRecentWorkouts(){
     else{main=`${w.dist}km · ${w.time}min${w.hr?' · ♥'+w.hr:''}`;sub=`${w.date}${w.avgPace?' · '+formatPace(w.avgPace)+'/km':''}`;}
     sub += `${w.rpe?' · RPE '+w.rpe:''}${w.shoe?' · '+w.shoe:''}`;
     const editable=!!w._key&&(window._workouts||[]).some(item=>item._key===w._key);
-    return `<div class="workout-row ui-list-row" data-activity-index="${index}" style="flex-wrap:wrap"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1;min-width:140px"><div class="workout-title">${escapeHTML(main)}${sourceBadge(w,true)}</div><div class="workout-meta">${escapeHTML(sub)}</div></div><button type="button" data-activity-index="${index}" class="btn btn-ghost btn-sm">ดูรายละเอียด</button>${editable?`<button data-edit-index="${index}" class="btn btn-ghost btn-sm" title="แก้ไข">✎</button><button data-delete-index="${index}" class="btn btn-ghost btn-sm" title="ลบ">✕</button>`:''}</div>`;
+    return `<div class="workout-row" style="flex-wrap:wrap"><div class="workout-icon-wrap" style="background:var(--accent-light)">${em[w.type]||'🏅'}</div><div style="flex:1;min-width:140px"><div class="workout-title">${escapeHTML(main)}${sourceBadge(w,true)}</div><div class="workout-meta">${escapeHTML(sub)}</div></div><button type="button" data-activity-index="${index}" class="btn btn-ghost btn-sm">ดูรายละเอียด</button>${editable?`<button data-edit-index="${index}" class="btn btn-ghost btn-sm" title="แก้ไข">✎</button><button data-delete-index="${index}" class="btn btn-ghost btn-sm" title="ลบ">✕</button>`:''}</div>`;
   }).join('');
   window.bindActivityDetails?.(c,activities);
   c.querySelectorAll('[data-edit-index]').forEach(button=>button.addEventListener('click',()=>editWorkout(activities[Number(button.dataset.editIndex)]._key)));
@@ -3942,12 +3962,16 @@ const wellnessDate = document.getElementById('w-date'); if (wellnessDate) wellne
 // ── MOBILE DRAWER ──
 (function() {
   const navPages = [
-    { page:'today',         icon:'🏠', label:'Today' },
-    { page:'fitness-log',   icon:'💪', label:'Activities' },
-    { page:'coach',         icon:'🗓️', label:'Plan' },
-    { page:'wellness',      icon:'🫀', label:'Health' },
-    { page:'fitness-stats', icon:'📊', label:'Insights' },
-    { page:'more',          icon:'☰', label:'More' },
+    { page:'today',         icon:'🏠', label:'Dashboard' },
+    { page:'fitness-log',   icon:'💪', label:'Activity' },
+    { page:'post-run-review', icon:'🧾', label:'Review' },
+    { page:'wellness',      icon:'🫀', label:'Wellness' },
+    { page:'fitness-stats', icon:'📊', label:'Statistics' },
+    { page:'coach',         icon:'🤖', label:'AI Coach' },
+    { page:'strava',        icon:'🔌', label:'Sources' },
+
+    { page:'news',          icon:'💬', label:'AI Q&A' },
+    { page:'settings',      icon:'⚙️', label:'Settings' },
   ];
 
   // Inject button + drawer into body
@@ -4006,7 +4030,7 @@ const wellnessDate = document.getElementById('w-date'); if (wellnessDate) wellne
   };
   window.mobNav = function(page) {
     closeMobDrawer();
-    setTimeout(() => page === 'more' ? window.openMoreMenu?.() : showPage(page), 120);
+    setTimeout(() => showPage(page), 120);
   };
 
   btn.addEventListener('click', () => openMobDrawer());
@@ -4127,7 +4151,6 @@ if (window.matchMedia('(display-mode: standalone)').matches) {
     <script src="js/studio-coach.js"></script>
     <script src="js/chart-semantics.js"></script>
     <script src="js/chart-data.js"></script>
-    <script src="js/ui-foundation.js"></script>
 <div id="share-stats-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9000;backdrop-filter:blur(12px);overflow-y:auto;padding:24px 16px 40px">
   <div style="max-width:480px;margin:0 auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
