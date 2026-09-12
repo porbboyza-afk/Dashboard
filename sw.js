@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-daily-decision-20260912-1';
+const CACHE_NAME = 'mydash-v3-activity-review-20260912-1';
 const APP_SHELL = [
   './',
   './index.html',

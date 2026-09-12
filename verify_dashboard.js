@@ -157,7 +157,7 @@ ensureContains(indexPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-daily-decision-20260912-1',
+  'mydash-v3-activity-review-20260912-1',
   './app-redesign.css?v=20260711-1',
   './training-studio-ui.css?v=20260711-1',
   './studio-shell.css?v=20260711-1',
@@ -367,7 +367,7 @@ ensureContains(racesScriptPath, [
 ]);
 
 ensureContains(swPath, [
-  'mydash-v3-daily-decision-20260912-1',
+  'mydash-v3-activity-review-20260912-1',
   './js/training-dashboard-view-model.js',
   './js/date-utils.js',
   './js/ui-core.js',
