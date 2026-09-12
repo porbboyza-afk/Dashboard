@@ -76,3 +76,53 @@
 .studio-story-row p,.studio-panel-copy { color:var(--ui-muted); }
 .studio-coach-note { border-radius:12px; background:var(--ui-surface-raised); color:var(--ui-text); }
 @media (max-width:768px) { .studio-intro { display:block; } .studio-readiness { margin-top:14px; } .studio-session-card { padding:18px; } .studio-board { grid-template-columns:repeat(2,minmax(0,1fr)); } .studio-day { min-height:138px; } }
+
+/* Daily Coach: the mobile home follows the approved readiness-first layout. */
+@media (max-width:768px) {
+  .main { padding:0 0 84px; background:#f4f2ec; }
+  .workspace-topbar { display:none; }
+  #page-today.studio-enabled { display:block !important; background:#f4f2ec; }
+  .studio-home { padding:0 14px 24px; color:#10223d; }
+  .studio-date { margin:0 -14px; padding:22px 22px 0; color:rgba(255,255,255,.76); background:linear-gradient(145deg,#102b52,#0d213d); }
+  .studio-intro { margin:0 -14px; min-height:230px; padding:22px; border-radius:0 0 28px 28px; background:linear-gradient(145deg,#12335d,#0b1d36 72%); }
+  .studio-intro h1 { margin:0; max-width:290px; color:#fff; font-size:38px; }
+  .studio-intro h1 em { color:#fff; }
+  .studio-intro p { max-width:270px; color:rgba(255,255,255,.78); font-size:15px; }
+  .studio-readiness { margin:24px 0 -82px; min-height:142px; border:0; border-radius:20px; background:#fff; box-shadow:0 12px 30px rgba(10,32,58,.17); padding:18px; }
+  .studio-readiness span,.studio-readiness small { color:#5b6a80; }
+  .studio-readiness strong { color:#158a7d; font-size:27px; }
+  .studio-today-grid { display:block; padding-top:108px; }
+  .studio-session-card { border:0; border-radius:18px; background:#e3f0ee; box-shadow:none; padding:17px; }
+  .studio-session-card>span,.studio-panel h3 { color:#52647a; }
+  .studio-session-card h2 { color:#10223d; font-size:24px; }
+  .studio-session-card p { color:#52647a; }
+  .studio-pills { display:none; }
+  .studio-primary { background:#118f82; color:#fff; }
+  .studio-secondary { border-color:#a9bfbd; color:#17354a; }
+  .studio-signals { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:12px; border:0; border-radius:0; background:transparent; padding:0; }
+  .studio-signals>div { min-height:94px; border-radius:15px; background:#fff; box-shadow:0 4px 14px rgba(10,32,58,.06); }
+  .studio-signals b { color:#10223d; font-size:23px; }
+  .studio-signals small { color:#52647a; }
+  .studio-section-head { margin:26px 4px 12px; }
+  .studio-section-head h2 { color:#10223d; }
+  .studio-section-head span { color:#52647a; font-size:11px; }
+  .studio-board { display:block; border-radius:18px; background:#fff; padding:8px 12px; box-shadow:0 4px 14px rgba(10,32,58,.06); }
+  .studio-day { display:grid; grid-template-columns:56px 1fr auto; align-items:center; gap:9px; min-height:0; padding:12px 2px; border:0; border-bottom:1px solid #e5e9e7; border-radius:0; background:transparent; transform:none !important; box-shadow:none; }
+  .studio-day:last-child { border-bottom:0; }
+  .studio-day.is-today { border-color:#e5e9e7; box-shadow:none; }
+  .studio-day-date { color:#52647a; font-size:11px; }
+  .studio-workout { padding:0; background:transparent !important; }
+  .studio-workout b { color:#10223d; font-size:14px; }
+  .studio-workout small { display:none; }
+  .studio-done { color:#118f82; font-size:10px; }
+  .studio-bottom { display:block; }
+  .studio-panel { margin-top:16px; border:0; border-radius:18px; background:#fff; box-shadow:0 4px 14px rgba(10,32,58,.06); }
+  .studio-story-row { background:#fff !important; }
+  .studio-coach-note { background:#fff4dc; color:#4d3912; }
+  #mob-menu-btn { display:none !important; }
+  #daily-tabbar { position:fixed; inset:auto 0 0; z-index:970; display:grid; grid-template-columns:repeat(5,1fr); border-top:1px solid #dce4e1; background:#102b52; padding:9px 8px max(9px,env(safe-area-inset-bottom)); }
+  #daily-tabbar button { border:0; background:transparent; color:rgba(255,255,255,.67); display:grid; justify-items:center; gap:3px; padding:2px; font:700 10px var(--font-body); }
+  #daily-tabbar button span { font-size:19px; line-height:1; }
+  #daily-tabbar button.active { color:#69e1d0; }
+}
+@media (min-width:769px) { #daily-tabbar { display:none; } }
