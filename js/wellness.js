@@ -9,8 +9,11 @@ function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
 function formatSleepHours(value,{compact=false}={}){
   const hours=parseFloat(value);
   if(!Number.isFinite(hours))return '—';
-  const displayHours=Number(Math.max(0,hours).toFixed(2));
-  return compact?`${displayHours} ชม.`:`${displayHours} ชั่วโมง`;
+  const totalMinutes=Math.round(Math.max(0,hours)*60);
+  const wholeHours=Math.floor(totalMinutes/60);
+  const minutes=totalMinutes%60;
+  if(compact)return minutes?`${wholeHours}ชม ${minutes}น`:`${wholeHours}ชม`;
+  return minutes?`${wholeHours} ชม. ${minutes} นาที`:`${wholeHours} ชม.`;
 }
 
 function dateDaysAgo(days){
@@ -324,7 +327,8 @@ function wellnessTrend(current, previous, unit = '') {
   if (current === null || previous === null) return 'ข้อมูลยังไม่พอสำหรับเปรียบเทียบ';
   const diff = current - previous;
   if (Math.abs(diff) < .05) return 'ใกล้เคียงช่วงก่อนหน้า';
-  return `${diff > 0 ? '↑' : '↓'} ${Math.abs(diff).toFixed(unit === 'h' ? 1 : 0)}${unit} จากช่วงก่อนหน้า`;
+  const amount = unit === 'h' ? formatSleepHours(Math.abs(diff), {compact:true}) : `${Math.abs(diff).toFixed(0)}${unit}`;
+  return `${diff > 0 ? '↑' : '↓'} ${amount} จากช่วงก่อนหน้า`;
 }
 
 function wellnessSummaryRows(current, previous) {

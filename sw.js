@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mydash-v3-coros-cadence-20260910-1';
+const CACHE_NAME = 'mydash-v3-sleep-duration-20260914-1';
 const APP_SHELL = [
   './',
   './index.html',

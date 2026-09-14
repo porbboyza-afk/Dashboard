@@ -3145,3 +3145,8 @@ Verification:
 - Live auto-sync succeeded and Firebase returned `automatic:true`, `status:success`, `schema_version:2`.
 - Scheduler reports both tasks enabled/Ready; bridge tests pass 37/37 and dashboard regression passes.
 - Remaining validation is operational only: observe the first unattended 21:00 and next 09:00 executions and continue a multi-day soak.
+# 2026-09-14 — Sleep duration display audit (local, unpublished)
+
+- Main-app `sleepHours` is stored as decimal hours, including Garmin `sleepMinutes / 60` and Health Connect elapsed-session minutes / 60. The current formatter printed the raw decimal (`7.18 ชั่วโมง`), which is not a clock-style duration. Restored hour/minute presentation across views and sleep trend; `7.18` now reads `7 ชม. 11 นาที`, `5.5` reads `5 ชม. 30 นาที`. Manual input now accepts 0.01-hour precision and explains decimal-hour entry. Bumped PWA cache.
+- Existing `wellness` records can contain a Garmin source, a manual update, and a Health Connect sync timestamp together. Health Connect currently fills only empty fields. The Sep 13 private snapshot cannot establish which source is correct for a reported mismatch, so no historical Firebase values were overwritten. A concrete date and source-app duration are needed before changing source precedence or backfilling.
+- Verified locally: `node verify_dashboard.js`, `python smoke_test_dashboard.py`, and focused duration cases passed. No GitHub push or Firebase write in this audit.
