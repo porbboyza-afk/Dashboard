@@ -1,0 +1,152 @@
+// Compatibility with the main MyDash activity model (2026-09-15).
+// Operates on copies; never changes stored activities. Keep parity tests when editing.
+function workoutFingerprint(workout) {
+    return `${workout.date || ''}|${String(workout.type || '').toLowerCase()}|${Math.round(parseFloat(workout.dist || 0) * 20)}|${Math.round(parseFloat(workout.time || 0))}`;
+  }
+
+  function activitySourcePriority(workout) {
+    if (workout?.corosDetail?.laps?.length) return 65;
+    const source = workout?.source || 'manual';
+    if (source === 'garmin') return 60;
+    if (source === 'health_connect') return 50;
+    if (source === 'manual' || !workout?.source) return 45;
+    if (source === 'strava_recovered') return 30;
+    if (source === 'strava_archive') return 25;
+    if (source === 'strava') return 20;
+    return 10;
+  }
+
+  function activitySourceKey(workout) {
+    return `${workout?.source || 'manual'}:${workout?._key || workout?.id || workout?.stravaId || workout?.date || ''}`;
+  }
+
+  function isStravaLike(workout) {
+    return ['strava', 'strava_recovered', 'strava_archive'].includes(workout?.source || '');
+  }
+
+  function activityPace(workout) {
+    const dist = parseFloat(workout?.dist || 0);
+    const time = parseFloat(workout?.time || 0);
+    if (dist <= 0 || time <= 0) return null;
+    return time / dist;
+  }
+
+  function isPaceAnomaly(workout) {
+    const dist = parseFloat(workout?.dist || 0);
+    const pace = activityPace(workout);
+    const type = String(workout?.type || '').toLowerCase();
+    if (type === 'walk') return pace !== null && pace < 4.5;
+    if (dist >= 1.0 && pace !== null && pace < 3.75) return true;
+    return dist >= 0.5 && pace !== null && pace < 3.4;
+  }
+
+  function isDuplicateCandidate(first, second) {
+    if (!first || !second || first === second || (first.date || '') !== (second.date || '')) return false;
+    const firstCoros = first.corosDetail?.sourceId || (first.source === 'coros' ? first.sourceId : null);
+    const secondCoros = second.corosDetail?.sourceId || (second.source === 'coros' ? second.sourceId : null);
+    if (firstCoros && secondCoros && String(firstCoros) !== String(secondCoros)) return false;
+    const firstKey = activitySourceKey(first);
+    const secondKey = activitySourceKey(second);
+    if (firstKey && secondKey && firstKey === secondKey) return false;
+
+    const firstDistance = parseFloat(first.dist || 0);
+    const secondDistance = parseFloat(second.dist || 0);
+    const firstTime = parseFloat(first.time || 0);
+    const secondTime = parseFloat(second.time || 0);
+    if (!firstDistance || !secondDistance || !firstTime || !secondTime) return false;
+
+    const distanceDifference = Math.abs(firstDistance - secondDistance);
+    const timeDifference = Math.abs(firstTime - secondTime);
+    const maxDistance = Math.max(firstDistance, secondDistance);
+    const maxTime = Math.max(firstTime, secondTime);
+
+    // 1. Near match / rounding difference across same or different sources
+    const isNearMatch = (distanceDifference <= 0.35 || distanceDifference / maxDistance <= 0.05)
+      && (timeDifference <= 3.5 || timeDifference / maxTime <= 0.07);
+    if (isNearMatch) return true;
+
+    // 2. Double-distance anomaly (e.g. 6 km vs 12 km in same duration)
+    const isDoubleDistanceMatch = (timeDifference <= 3.5 || timeDifference / maxTime <= 0.06)
+      && (Math.abs(firstDistance - 2 * secondDistance) <= 0.6 || Math.abs(secondDistance - 2 * firstDistance) <= 0.6);
+    if (isDoubleDistanceMatch) return true;
+
+    return false;
+  }
+
+  function pickPrimaryWorkout(first, second) {
+    const anomalyFirst = isPaceAnomaly(first);
+    const anomalySecond = isPaceAnomaly(second);
+    if (anomalyFirst && !anomalySecond) return second;
+    if (anomalySecond && !anomalyFirst) return first;
+
+    const prioFirst = activitySourcePriority(first);
+    const prioSecond = activitySourcePriority(second);
+    if (prioFirst > prioSecond) return first;
+    if (prioSecond > prioFirst) return second;
+
+    const score = w => (w.hr ? 2 : 0) + (w.cadence ? 1 : 0) + (w.cal ? 1 : 0);
+    return score(first) >= score(second) ? first : second;
+  }
+
+  function duplicateRoundingRegression() {
+    return isDuplicateCandidate(
+      { date: '2026-07-09', type: 'run', source: 'garmin', dist: 1.33, time: 9 },
+      { date: '2026-07-09', type: 'run', source: 'health_connect', dist: 1.32889, time: 8.9667 }
+    );
+  }
+
+  function duplicateCandidatePairs(activities = []) {
+    const rows = activities.filter(workout => workout?.date).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const pairs = [];
+    for (let index = 0; index < rows.length; index += 1) {
+      for (let candidateIndex = index + 1; candidateIndex < rows.length; candidateIndex += 1) {
+        if (rows[candidateIndex].date !== rows[index].date) break;
+        if (!isDuplicateCandidate(rows[index], rows[candidateIndex])) continue;
+
+        const primary = pickPrimaryWorkout(rows[index], rows[candidateIndex]);
+        const duplicate = primary === rows[index] ? rows[candidateIndex] : rows[index];
+        pairs.push({
+          primary,
+          duplicate,
+          reason: 'same-day distance/time near match',
+          distDiff: +Math.abs((parseFloat(rows[index].dist) || 0) - (parseFloat(rows[candidateIndex].dist) || 0)).toFixed(2),
+          timeDiff: Math.round(Math.abs((parseFloat(rows[index].time) || 0) - (parseFloat(rows[candidateIndex].time) || 0)))
+        });
+      }
+    }
+    return pairs;
+  }
+
+  export function canonicalWorkouts(workouts = [], stravaWorkouts = []) {
+    const seen = new Map();
+    [...(workouts || []), ...(stravaWorkouts || [])].forEach(workout => {
+      const corosId = workout.corosDetail?.sourceId || (workout.source === 'coros' ? workout.sourceId : null);
+      const fingerprint = corosId ? `coros:${corosId}` : workoutFingerprint(workout);
+      const previous = seen.get(fingerprint);
+      if (!previous || pickPrimaryWorkout(workout, previous) === workout) {
+        seen.set(fingerprint, { ...workout, _dedupedWith: previous ? [...(previous._dedupedWith || []), previous.source || 'manual'] : workout._dedupedWith });
+      } else {
+        previous._dedupedWith = [...(previous._dedupedWith || []), workout.source || 'manual'];
+      }
+    });
+
+    const merged = [...seen.values()];
+    const suppressed = new Set();
+    duplicateCandidatePairs(merged).forEach(pair => {
+      const primaryKey = activitySourceKey(pair.primary);
+      suppressed.add(activitySourceKey(pair.duplicate));
+      const target = merged.find(workout => activitySourceKey(workout) === primaryKey || workoutFingerprint(workout) === workoutFingerprint(pair.primary));
+      if (!target) return;
+      target._possibleDuplicates = [...(target._possibleDuplicates || []), {
+        source: pair.duplicate.source || 'manual',
+        key: pair.duplicate._key || pair.duplicate.id || '',
+        dist: pair.duplicate.dist,
+        time: pair.duplicate.time,
+        reason: pair.reason,
+        distDiff: pair.distDiff,
+        timeDiff: pair.timeDiff
+      }];
+    });
+
+    return merged.filter(workout => !suppressed.has(activitySourceKey(workout))).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  }

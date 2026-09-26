@@ -1,71 +1,29 @@
-const CACHE_NAME = 'mydash-v3-sleep-duration-20260914-1';
-const APP_SHELL = [
-  './',
-  './index.html',
-  './app-redesign.css?v=20260711-1',
-  './training-studio-ui.css?v=20260711-1',
-  './studio-shell.css?v=20260711-1',
-  './studio-surfaces.css?v=20260711-1',
-  './manifest.json?v=20260711-2',
-  './icon-192.png?v=20260710-3',
-  './icon-512.png?v=20260710-3',
-  './js/date-utils.js',
-  './js/ui-core.js',
-  './js/app-state.js',
-  './js/app-bootstrap.js',
-  './js/activity-model.js',
-  './js/today-dashboard-view-model.js',
-  './js/share-card.js',
-  './js/wellness.js',
-  './js/stats.js',
-  './js/news-ai.js',
-  './js/sources-strava.js',
-  './js/settings.js',
-  './js/backup-export.js',
-  './js/domain/training/profiles.js',
-  './js/domain/training/engine-v2.js',
-  './js/services/coach-repository.js',
-  './js/services/manual-plan-builder.js',
-  './js/services/plan-file-import.js',
-  './js/training-dashboard-view-model.js',
-  './js/coach.js',
-  './js/races.js',
-  './js/domain/review/matcher-v2.js',
-  './js/post-run-review.js'
-  ,'./js/activity-detail-model.js'
-  ,'./js/training-analyst.js'
-  ,'./js/studio-home.js'
-  ,'./js/studio-coach.js'
-  ,'./js/chart-semantics.js'
-  ,'./js/chart-data.js'
-];
+const PREFIX='mydash-performance-'+encodeURIComponent(new URL(self.registration.scope).pathname)+'-';
+const CACHE = PREFIX+'v3';
+const SHELL = ['offline.html','styles.css','src/ui/favicon.svg','src/ui/icon-192.png','src/ui/icon-512.png','manifest.webmanifest'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
-  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
 });
+self.addEventListener('message',event=>{if(event.data?.type==='ACTIVATE_UPDATE')self.skipWaiting();});
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
-  );
-  self.clients.claim();
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => (key.startsWith(PREFIX) && key !== CACHE)||(new URL(self.registration.scope).pathname==='/'&&['mydash-performance-shell-v1','mydash-performance-shell-v2'].includes(key))).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
 
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) {
-    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+  const request = event.request;
+  const url = new URL(request.url);
+  const scope=new URL(self.registration.scope);
+  if(!url.pathname.startsWith(scope.pathname))return;
+  const relative=url.pathname.slice(scope.pathname.length);
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.endsWith('/api/snapshot')) return;
+
+  if (request.mode === 'navigate' && ['', 'index.html'].includes(relative)) {
+    event.respondWith(fetch(request).catch(async()=> (await caches.open(CACHE)).match(new URL('offline.html',scope).href)));
     return;
   }
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        return response;
-      })
-      .catch(() => caches.match(event.request).then(hit => hit || caches.match('./index.html')))
-  );
+
+  if (!SHELL.includes(relative)||url.search) return;
+  event.respondWith(fetch(request).catch(async()=> (await caches.open(CACHE)).match(new URL(relative,scope).href)));
 });
