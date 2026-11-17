@@ -29,10 +29,30 @@ export function intervalDetail(activity) {
 function routePreview(points) {
   const valid=(Array.isArray(points)?points:[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&Math.abs(p.lat)<=90&&Math.abs(p.lng)<=180);
   if (valid.length<2) return '<p class="muted">ไม่มีพิกัด GPS ในข้อมูลกิจกรรมที่นำเข้ามา</p>';
+  const W=340,H=220,PAD=16;
+  const merc=(lat,lng,z)=>{const s=256*Math.pow(2,z),r=lat*Math.PI/180;return [(lng+180)/360*s,(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*s];};
   const lats=valid.map(p=>p.lat), lngs=valid.map(p=>p.lng);
-  const minLat=Math.min(...lats), minLng=Math.min(...lngs);
-  const latSpan=Math.max(...lats)-minLat || .00001, lngSpan=Math.max(...lngs)-minLng || .00001;
-  const scale=Math.min(300/lngSpan,170/latSpan);
-  const path=valid.map(p=>`${20+(p.lng-minLng)*scale},${190-(p.lat-minLat)*scale}`).join(' ');
-  return `<svg viewBox="0 0 340 210" class="route-chart" role="img" aria-label="รูปร่างเส้นทางจากพิกัด GPS"><polyline points="${path}" fill="none" stroke="#ed6b2d" stroke-width="3"/></svg><p class="small muted">รูปร่างเส้นทางจากพิกัดที่บันทึก • ไม่มีแผนที่พื้นหลัง</p>`;
+  const maxLat=Math.max(...lats), minLat=Math.min(...lats), maxLng=Math.max(...lngs), minLng=Math.min(...lngs);
+  let z=18;
+  for(;z>3;z--){const [x0,y0]=merc(maxLat,minLng,z),[x1,y1]=merc(minLat,maxLng,z);if(x1-x0<=W-2*PAD && y1-y0<=H-2*PAD)break;}
+  const [bx0,by0]=merc(maxLat,minLng,z),[bx1,by1]=merc(minLat,maxLng,z);
+  const ox=(bx0+bx1)/2-W/2, oy=(by0+by1)/2-H/2, n=Math.pow(2,z);
+  let tiles='';
+  for(let tx=Math.floor(ox/256); tx<=Math.floor((ox+W)/256); tx++)
+    for(let ty=Math.floor(oy/256); ty<=Math.floor((oy+H)/256); ty++){
+      if(ty<0||ty>=n) continue;
+      const wx=((tx%n)+n)%n;
+      tiles+=`<img src="https://tile.openstreetmap.org/${z}/${wx}/${ty}.png" alt="" width="256" height="256" loading="lazy" decoding="async" style="left:${Math.round(tx*256-ox)}px;top:${Math.round(ty*256-oy)}px">`;
+    }
+  const pt=p=>{const [x,y]=merc(p.lat,p.lng,z);return [(x-ox),(y-oy)];};
+  const xy=valid.map(pt);
+  const path=xy.map(([x,y])=>`${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const [sx,sy]=xy[0], [fx,fy]=xy[xy.length-1];
+  return `<div class="route-map" role="img" aria-label="แผนที่เส้นทางจากพิกัด GPS">`
+    +`<div class="route-tiles">${tiles}</div>`
+    +`<svg class="route-line" viewBox="0 0 ${W} ${H}"><polyline points="${path}" fill="none" stroke="#ed6b2d" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`
+    +`<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="5" fill="#2ecc71" stroke="#fff" stroke-width="2"/>`
+    +`<circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="5" fill="#e74c3c" stroke="#fff" stroke-width="2"/></svg>`
+    +`<span class="route-attrib">© OpenStreetMap</span></div>`
+    +`<p class="small muted">เส้นทางจากพิกัด GPS บนแผนที่ • ${valid.length} จุด • zoom ${z}</p>`;
 }
