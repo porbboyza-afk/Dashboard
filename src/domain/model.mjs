@@ -48,12 +48,12 @@ function resolveDetail(row, data) {
       cadence: positive(lap.average_cadence) ? lap.average_cadence*2 : null,
     })), map: cached.detail?.map};
   if (Array.isArray(row.splits) && row.splits.length) return {
-    source:'manual',kind:'manual-splits',laps:row.splits.map(lap=>{
+    source:'manual',kind:'manual-splits',map:row.map,laps:row.splits.map(lap=>{
       const match=/^(\d+):([0-5]\d)$/.exec(String(lap.pace || ''));
       const pace=match?Number(match[1])+Number(match[2])/60:null;
       const distanceKm=positive(row.dist) && positive(lap.km) ? Math.max(0,Math.min(1,row.dist-lap.km+1)):null;
       return {index:lap.km,distanceKm,pace,durationMin:distanceKm && pace ? distanceKm*pace:null,
-        averageHr:lap.hr,durationOrigin:'derived-from-pace'};
+        averageHr:lap.hr,cadence:positive(lap.cad) ?? positive(lap.cadence),durationOrigin:'derived-from-pace'};
     }),
   };
   return null;
