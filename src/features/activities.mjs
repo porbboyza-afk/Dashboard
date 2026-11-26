@@ -42,7 +42,11 @@ function intervalsActivityFacts(detail) {
 }
 
 export function intervalDetail(activity) {
-  const interval=activity?.raw?.interval;
+  const data=activity?.raw;
+  return intervalSummaryCard(data?.interval)+intervalSegmentsCard(data?.intervalSegments);
+}
+
+function intervalSummaryCard(interval) {
   if (!interval || !(Number(interval.reps)>0)) return '';
   const detected=interval.autoDetected==='intervals.icu';
   const section=(label,row)=>row && (Number(row.dist)>0 || Number(row.time)>0)
@@ -53,6 +57,22 @@ export function intervalDetail(activity) {
   if (Number(interval.repHR)>0) fast.push(`${number(interval.repHR,0)} bpm`);
   const rest=healthValue(interval.restTime);
   return `<section class="card interval-detail"><div class="section-heading"><h2>ชุดซ้อม Interval</h2>${detected?'<span class="source">Intervals.icu</span>':''}</div><dl class="facts"><div><dt>ช่วงเร็ว</dt><dd>${e(fast.join(' · '))}</dd></div>${rest==null?'':`<div><dt>พักต่อรอบ</dt><dd>${number(rest,1)} นาที</dd></div>`}${section('วอร์มอัป',interval.warmup)}${section('คูลดาวน์',interval.cooldown)}</dl></section>`;
+}
+
+function intervalSegmentsCard(table) {
+  if (table?.source!=='intervals.icu' || !Array.isArray(table.rows)) return '';
+  const rows=table.rows.filter(row=>healthValue(row?.elapsedSec)>0);
+  if (!rows.length) return '';
+  const time=seconds=>healthValue(seconds)==null ? '—' : clock(Number(seconds)/60);
+  const percent=value=>healthValue(value)==null ? '—' : `${number(value,1)}%`;
+  const headings=['ช่วง','เริ่ม','จบ','เวลาที่ใช้','เพซ /กม.','Cadence เฉลี่ย','HR เฉลี่ย','HR สูงสุด','ความชันเฉลี่ย','Intensity','Zone','เวลาบันทึก'];
+  const body=rows.map((row,index)=>{
+    const cells=[index+1,time(row.startSec),time(row.endSec),time(row.elapsedSec),time(row.paceSecPerKm),
+      number(row.averageCadence,0),number(row.averageHr,0),number(row.maxHr,0),percent(row.averageGradientPct),
+      percent(row.intensityPct),number(row.zone,0),time(row.recordingSec)];
+    return `<tr>${cells.map(cell=>`<td>${e(cell)}</td>`).join('')}</tr>`;
+  }).join('');
+  return `<section class="card interval-detail"><div class="section-heading"><h2>ช่วงซ้อมจาก Intervals.icu</h2><span class="source">${rows.length} ช่วง</span></div><div class="table-scroll" role="region" aria-label="ตารางช่วงซ้อมจาก Intervals.icu" tabindex="0"><table><thead><tr>${headings.map(label=>`<th scope="col">${label}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
 
 function routePreview(points) {

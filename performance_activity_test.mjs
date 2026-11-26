@@ -37,6 +37,21 @@ test('a structured interval renders even when the imported workout type is run',
   assert.doesNotMatch(html, /พักต่อรอบ/);
 });
 
+test('source intervals display in their own table without a guessed work and recovery summary', () => {
+  const intervalSegments = {source:'intervals.icu',rows:[
+    {startSec:0,endSec:60,elapsedSec:60,paceSecPerKm:280,recordingSec:60,averageGradientPct:0},
+    {startSec:60,endSec:150,elapsedSec:90,paceSecPerKm:520,recordingSec:90,averageHr:120},
+  ]};
+  const activity = normalizeActivity('demo', {...run,intervalSegments});
+  const html = intervalDetail(activity);
+  assert.match(html, /ช่วงซ้อมจาก Intervals\.icu/);
+  assert.equal((html.match(/<tbody><tr>|<\/tr><tr>/g) || []).length, 2);
+  assert.match(html, /<td>0:00<\/td><td>1:00<\/td><td>1:00<\/td><td>4:40<\/td>/);
+  assert.match(html, /<td>0%<\/td>/);
+  assert.doesNotMatch(html, /ชุดซ้อม Interval|พักต่อรอบ/);
+  assert.equal(activity.laps.length, 6);
+});
+
 test('Home and Wellness retain separately dated values on sparse sync days', () => {
   const model = buildModel({data: {wellness: {
     '2026-11-26': {icuWellness: {ctl: 30, atl: 40, rampRate: 0}},
