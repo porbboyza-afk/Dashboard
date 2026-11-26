@@ -25,4 +25,4 @@ export function dateLabel(date, options = {}) {
   return Number.isNaN(parsed.valueOf()) ? 'ไม่ทราบวันที่' : parsed.toLocaleDateString('th-TH',{day:'numeric',month:'short',...options});
 }
 export const activityUrl = activity => `#activity/${encodeURIComponent(activity.id)}`;
-export const sourceLabel = source => ({coros:'COROS',health_connect:'Health Connect',garmin:'Garmin',manual:'Manual',strava:'Strava',strava_recovered:'Strava archive',strava_archive:'Strava archive'}[source] || source);
+export const sourceLabel = source => ({coros:'COROS',health_connect:'Health Connect',garmin:'Garmin',intervals:'Intervals.icu','intervals.icu':'Intervals.icu',manual:'Manual',strava:'Strava',strava_recovered:'Strava archive',strava_archive:'Strava archive'}[source] || source);

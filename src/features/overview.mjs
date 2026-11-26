@@ -1,4 +1,4 @@
-import {periodBounds, summarize, localDate, trainingActivities, wellnessSourceState, cleanHealthConnectStreak} from '../domain/model.mjs';
+import {periodBounds, summarize, localDate, trainingActivities, wellnessSourceState, healthValue, latestWellnessValue} from '../domain/model.mjs';
 import {escape as e, number, dateLabel, sleepDuration, sourceLabel} from '../ui/format.mjs';
 import {icon} from '../ui/icons.mjs';
 import {pageHeading, activityRow, metric, empty} from '../ui/components.mjs';
@@ -36,15 +36,58 @@ export function progress(model, period='week', date=localDate()) {
 }
 
 const healthMetrics=[
-  {key:'sleepHours',label:'Sleep',unit:'ชม.',icon:'moon',format:value=>sleepDuration(value),axis:value=>`${number(value,1)} ชม.`,color:'#496c5c'},
+  {key:'sleepHours',label:'Sleep',unit:'',icon:'moon',format:value=>sleepDuration(value),axis:value=>`${number(value,1)} ชม.`,color:'#496c5c'},
   {key:'restingHR',label:'Resting HR',unit:'bpm',icon:'heart',format:value=>number(value,0),axis:value=>`${number(value,0)} bpm`,color:'#c55e42'},
   {key:'hrv',label:'HRV',unit:'ms',icon:'wave',format:value=>number(value,0),axis:value=>`${number(value,0)} ms`,color:'#307e79'},
   {key:'spo2',label:'SpO₂',unit:'%',icon:'sun',format:value=>number(value,0),axis:value=>`${number(value,0)}%`,color:'#bd8a35'},
 ];
 
-function healthTrend(records, definition) {
+const supplementalHealthMetrics=[
+  {key:'steps',label:'จำนวนก้าว',unit:'ก้าว',icon:'shoe',digits:0},
+  {key:'sleepScore',label:'คะแนนการนอน',unit:'/ 100',icon:'moon',digits:0},
+  {key:'vo2max',label:'VO₂ max',unit:'ml/kg/min',icon:'wave',digits:1},
+  {key:'weight',label:'น้ำหนัก',unit:'kg',icon:'user',digits:1,preferSaved:true},
+];
+
+const trainingWellnessMetrics=[
+  {key:'ctl',label:'Fitness (CTL)',unit:'',icon:'progress',digits:1},
+  {key:'atl',label:'Fatigue (ATL)',unit:'',icon:'wave',digits:1},
+  {key:'rampRate',label:'Ramp Rate',unit:'จุด/สัปดาห์',icon:'progress',digits:2},
+];
+
+const intervalsDailyFields=[
+  ['avgSleepingHR','หัวใจเฉลี่ยขณะหลับ','bpm'], ['respiration','อัตราหายใจ','ครั้ง/นาที'],
+  ['floorsClimbed','จำนวนชั้น','ชั้น'], ['bodyFat','ไขมันในร่างกาย','%'],
+  ['systolic','ความดันตัวบน','mmHg'], ['diastolic','ความดันตัวล่าง','mmHg'],
+  ['kcalConsumed','พลังงานที่รับเข้า','kcal'], ['hrvSDNN','HRV (SDNN)','ms'],
+  ['soreness','อาการปวดกล้ามเนื้อ',''], ['fatigue','ความล้าที่รายงาน',''],
+  ['stress','ความเครียด',''], ['mood','อารมณ์',''],
+  ['motivation','แรงจูงใจ',''], ['injury','อาการบาดเจ็บ',''],
+];
+
+const formatHealthMetric=(item,value)=>item.format ? item.format(value) : number(value,item.digits);
+const primaryHealthValue=(row,item)=>healthValue(row[item.key]);
+
+function additionalHealthValue(row,item) {
+  const value=item.preferSaved ? healthValue(row.weight) : null;
+  return value ?? healthValue(row.icuWellness?.[item.key]);
+}
+
+function latestHealthMetric(records,item,readValue) {
+  const latest=latestWellnessValue(records,row=>readValue(row,item));
+  if (!latest) return '';
+  return metric(item.icon,item.label,formatHealthMetric(item,latest.value),item.unit,`#health/${encodeURIComponent(latest.row.date)}`,dateLabel(latest.row.date));
+}
+
+function additionalHealthCards(records,items,title,source='') {
+  const cards=items.map(item=>latestHealthMetric(records,item,additionalHealthValue)).join('');
+  if (!cards) return '';
+  return `<section class="card"><div class="section-heading"><h2>${e(title)}</h2>${source?`<span class="source">${e(source)}</span>`:''}</div><div class="metrics detail-metrics">${cards}</div></section>`;
+}
+
+function healthTrend(records, definition, readValue=primaryHealthValue) {
   const timeline=records.slice(0,28).reverse();
-  const points=timeline.map((row,index)=>({row,index,value:row[definition.key] == null || row[definition.key] === '' ? NaN : Number(row[definition.key])})).filter(point=>Number.isFinite(point.value));
+  const points=timeline.map((row,index)=>({row,index,value:readValue(row,definition)})).filter(point=>point.value!=null);
   if (points.length<2) return `<section class="trend-card"><div class="section-heading"><h2>${icon(definition.icon)} ${e(definition.label)}</h2><span class="source">แนวโน้ม 28 วัน</span></div><p class="muted">มีข้อมูลไม่พอสำหรับแสดงแนวโน้ม</p></section>`;
   const values=points.map(point=>point.value), rawLow=Math.min(...values), rawHigh=Math.max(...values);
   const span=rawHigh-rawLow || Math.max(Math.abs(rawHigh)*.08,1);
@@ -55,38 +98,58 @@ function healthTrend(records, definition) {
   const coords=points.map(point=>`${xFor(point.index).toFixed(1)},${yFor(point.value).toFixed(1)}`);
   const ticks=[high,(high+low)/2,low];
   const latest=points.at(-1);
-  const unit=definition.key==='sleepHours' ? '' : definition.unit;
-  const recordsList=points.slice().reverse().map(point=>`<a href="#health/${e(point.row.date)}"><span>${dateLabel(point.row.date,{year:'numeric',weekday:'short'})}</span><strong>${e(definition.format(point.value))}${unit ? ` <small>${e(unit)}</small>` : ''}</strong></a>`).join('');
-  return `<section class="trend-card"><div class="section-heading"><div><h2>${icon(definition.icon)} ${e(definition.label)}</h2><p class="muted">${points.length} วันที่มีค่าใน 28 วันล่าสุด · แตะจุดหรือดูรายวัน</p></div><strong>${e(definition.format(latest.value))}${unit ? ` <small>${e(unit)}</small>` : ''}</strong></div><svg class="health-trend-chart" viewBox="0 0 ${width} 150" role="img" aria-label="แนวโน้ม ${e(definition.label)} พร้อมแกนตั้งและจุดข้อมูลที่กดได้"><g class="trend-grid">${ticks.map(value=>`<line x1="${left}" x2="${right}" y1="${yFor(value).toFixed(1)}" y2="${yFor(value).toFixed(1)}"/><text x="${left-7}" y="${(yFor(value)+4).toFixed(1)}" text-anchor="end">${e(definition.axis(value))}</text>`).join('')}</g><polyline points="${coords.join(' ')}" fill="none" stroke="${definition.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${points.map((point,index)=>`<a href="#health/${e(point.row.date)}" aria-label="${e(dateLabel(point.row.date,{year:'numeric'}))}: ${e(definition.format(point.value))}"><title>${e(dateLabel(point.row.date,{year:'numeric'}))}: ${e(definition.format(point.value))}</title><circle cx="${xFor(point.index).toFixed(1)}" cy="${yFor(point.value).toFixed(1)}" r="${index===points.length-1?5:3.5}" fill="${definition.color}"/></a>`).join('')}<text class="trend-date" x="${left}" y="141">${e(dateLabel(timeline[0].date))}</text><text class="trend-date" x="${right}" y="141" text-anchor="end">${e(dateLabel(latest.row.date))}</text></svg><details class="trend-records"><summary>ดูค่ารายวัน ${points.length} วัน</summary><div>${recordsList}</div></details></section>`;
+  const unit=definition.unit;
+  const format=value=>formatHealthMetric(definition,value);
+  const axis=definition.axis || format;
+  const color=definition.color || '#307e79';
+  const recordsList=points.slice().reverse().map(point=>`<a href="#health/${e(point.row.date)}"><span>${dateLabel(point.row.date,{year:'numeric',weekday:'short'})}</span><strong>${e(format(point.value))}${unit ? ` <small>${e(unit)}</small>` : ''}</strong></a>`).join('');
+  return `<section class="trend-card"><div class="section-heading"><div><h2>${icon(definition.icon)} ${e(definition.label)}</h2><p class="muted">${points.length} วันที่มีค่าใน 28 วันล่าสุด · แตะจุดหรือดูรายวัน</p></div><strong>${e(format(latest.value))}${unit ? ` <small>${e(unit)}</small>` : ''}</strong></div><svg class="health-trend-chart" viewBox="0 0 ${width} 150" role="img" aria-label="แนวโน้ม ${e(definition.label)} พร้อมแกนตั้งและจุดข้อมูลที่กดได้"><g class="trend-grid">${ticks.map(value=>`<line x1="${left}" x2="${right}" y1="${yFor(value).toFixed(1)}" y2="${yFor(value).toFixed(1)}"/><text x="${left-7}" y="${(yFor(value)+4).toFixed(1)}" text-anchor="end">${e(axis(value))}</text>`).join('')}</g><polyline points="${coords.join(' ')}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${points.map((point,index)=>`<a href="#health/${e(point.row.date)}" aria-label="${e(dateLabel(point.row.date,{year:'numeric'}))}: ${e(format(point.value))}"><title>${e(dateLabel(point.row.date,{year:'numeric'}))}: ${e(format(point.value))}</title><circle cx="${xFor(point.index).toFixed(1)}" cy="${yFor(point.value).toFixed(1)}" r="${index===points.length-1?5:3.5}" fill="${color}"/></a>`).join('')}<text class="trend-date" x="${left}" y="141">${e(dateLabel(timeline[0].date))}</text><text class="trend-date" x="${right}" y="141" text-anchor="end">${e(dateLabel(timeline.at(-1).date))}</text></svg><details class="trend-records"><summary>ดูค่ารายวัน ${points.length} วัน</summary><div>${recordsList}</div></details></section>`;
 }
 
 function healthDay(model, date) {
   const row=model.wellness.find(entry=>entry.date===date);
   if (!row) return `${pageHeading('HEALTH DETAIL','ไม่พบข้อมูลของวันนี้','วันดังกล่าวไม่มีข้อมูลสุขภาพที่อ่านได้')}<a class="button" href="#health">กลับไปสุขภาพ</a>`;
-  const sourceNote='';
-  const details=[
-    ['Sleep',sleepDuration(row.sleepHours)], ['Resting HR',`${number(row.restingHR,0)} bpm`],
-    ['HRV',`${number(row.hrv,0)} ms`], ['SpO₂',`${number(row.spo2,0)} %`],
-    ['แหล่งข้อมูล',row.sources.map(sourceLabel).join(' + ') || '—'],
-  ];
-  return `${pageHeading('HEALTH DETAIL',dateLabel(row.date,{year:'numeric',weekday:'long'}),'ค่าที่บันทึกไว้ของวันนี้ ไม่มีการคำนวณทดแทนข้อมูลที่หายไป')}<section class="metrics detail-metrics">${healthMetrics.map(item=>metric(item.icon,item.label,item.format(row[item.key]),item.key==='sleepHours'?'':item.unit)).join('')}</section>${sourceNote?`<p class="data-policy">${e(sourceNote)}</p>`:''}<section class="card"><h2>รายละเอียดและแหล่งข้อมูล</h2><dl class="facts">${details.map(([label,value])=>`<div><dt>${e(label)}</dt><dd>${e(value)}</dd></div>`).join('')}</dl></section>`;
+  const extra=additionalHealthCards([row],supplementalHealthMetrics,'สุขภาพเพิ่มเติม');
+  const load=additionalHealthCards([row],trainingWellnessMetrics,'ภาระการฝึก','Intervals.icu');
+  const icu=row.icuWellness;
+  const details=intervalsDailyFields.flatMap(([key,label,unit])=>{
+    const value=healthValue(icu?.[key]);
+    return value==null ? [] : [[label,[number(value,1),unit].filter(Boolean).join(' ')]];
+  });
+  if (typeof icu?.sleepQualityText==='string' && icu.sleepQualityText.trim()) {
+    details.unshift(['คุณภาพการนอน',icu.sleepQualityText]);
+  } else if (healthValue(row.sleepQuality)!=null) {
+    details.unshift(['คุณภาพการนอน',`${number(row.sleepQuality,1)} / 10`]);
+  }
+  const detailsCard=details.length ? `<section class="card"><h2>รายละเอียดเพิ่มเติม</h2><dl class="facts">${details.map(([label,value])=>`<div><dt>${e(label)}</dt><dd>${e(value)}</dd></div>`).join('')}</dl></section>` : '';
+  return `${pageHeading('HEALTH DETAIL',dateLabel(row.date,{year:'numeric',weekday:'long'}),'')}
+    <section class="metrics detail-metrics">${healthMetrics.map(item=>metric(item.icon,item.label,item.format(healthValue(row[item.key])),item.unit)).join('')}</section>
+    ${extra}${load}${detailsCard}<p class="muted">แหล่งข้อมูล ${e(healthSourceLabel(row))}</p>`;
 }
 
 function healthSourceLabel(row) {
   const state=wellnessSourceState(row);
-  if (state==='mixed_legacy') return 'Health Connect + Garmin';
-  if (state==='garmin_legacy') return 'Garmin';
-  return row.sources.map(sourceLabel).join(' + ') || '—';
+  const sources=[...(row.sources || [])];
+  if (state==='mixed_legacy') sources.push('health_connect','garmin');
+  if (state==='garmin_legacy') sources.push('garmin');
+  if (row.icuWellness) sources.push('intervals');
+  return [...new Set(sources.map(sourceLabel))].join(' + ') || '—';
 }
 
 export function health(model, selectedDate='') {
   if (selectedDate) return healthDay(model,selectedDate);
-  const latest=model.wellness[0];
+  const latest=healthMetrics.map(item=>latestHealthMetric(model.wellness,item,primaryHealthValue) || metric(item.icon,item.label,'—',item.unit)).join('');
+  const extra=additionalHealthCards(model.wellness,supplementalHealthMetrics,'สุขภาพเพิ่มเติม');
+  const load=additionalHealthCards(model.wellness,trainingWellnessMetrics,'ภาระการฝึก','Intervals.icu');
+  const chartDays=model.wellness.slice(0,28);
+  const extraCharts=[...supplementalHealthMetrics,...trainingWellnessMetrics]
+    .filter(item=>chartDays.filter(row=>additionalHealthValue(row,item)!=null).length>=2)
+    .map(item=>healthTrend(chartDays,item,additionalHealthValue)).join('');
+  const extraTrends=extraCharts ? `<details class="card"><summary>แนวโน้มสุขภาพและภาระการฝึกเพิ่มเติม</summary><div class="health-trends">${extraCharts}</div></details>` : '';
   const rows=records=>`<div class="table-scroll"><table><thead><tr><th>วันที่</th><th>นอน (ชม.)</th><th>RHR</th><th>HRV</th><th>SpO₂</th><th>แหล่งข้อมูล</th></tr></thead><tbody>${records.map(row=>`<tr class="health-row"><td><a href="#health/${e(row.date)}">${dateLabel(row.date,{year:'2-digit'})}</a></td><td>${sleepDuration(row.sleepHours)}</td><td>${number(row.restingHR,0)}</td><td>${number(row.hrv,0)}</td><td>${number(row.spo2,0)}</td><td>${e(healthSourceLabel(row))}</td></tr>`).join('')}</tbody></table></div>`;
-  const readiness=`<section class="card readiness-pending"><p class="eyebrow">READINESS</p><h2>ยังไม่มีคะแนนความพร้อม</h2></section>`;
   const recent=model.wellness.slice(0,14), older=model.wellness.slice(14);
   const history=model.wellness.length ? `${rows(recent)}${older.length?`<details class="health-history"><summary>ดูประวัติเก่าอีก ${older.length} วัน</summary>${rows(older)}</details>`:''}` : empty('ยังไม่มีข้อมูลสุขภาพ','ข้อมูลที่ซิงก์จะปรากฏเมื่ออ่านข้อมูลใหม่');
-  return `${pageHeading('RECOVERY & HEALTH','สุขภาพและการนอน','ดูค่าล่าสุด แนวโน้ม และกดวันเพื่อดูรายละเอียด')}<details class="card"><summary>ไฟล์สุขภาพและเทียบข้อมูลแอปเก่า</summary><p><button type="button" data-export-health="json">ส่งออก JSON</button> <button type="button" data-export-health="csv">ส่งออก CSV</button></p><label>เลือกไฟล์ JSON จากแอปเก่า<input id="health-compare-file" type="file" accept=".json,application/json"></label><p class="muted">เปิดเทียบค่าในเครื่อง ไม่มีการบันทึกทับข้อมูลบัญชี</p><div id="health-compare-result" aria-live="polite"></div></details><section class="metrics">${metric('moon','Sleep',sleepDuration(latest?.sleepHours),'','',latest?dateLabel(latest.date):'ไม่มีข้อมูล')}${metric('heart','Resting HR',number(latest?.restingHR,0),'bpm')}${metric('wave','HRV',number(latest?.hrv,0),'ms')}${metric('sun','SpO₂',number(latest?.spo2,0),'%')}</section>${readiness}<section class="health-trends"><div class="section-heading"><div><p class="eyebrow">TRENDS</p><h2>แนวโน้มสุขภาพ</h2></div><span class="source">จากวันที่มีข้อมูลจริง</span></div>${healthMetrics.map(item=>healthTrend(model.wellness,item)).join('')}</section><section class="card"><div class="section-heading"><h2>ประวัติสุขภาพ</h2><span class="source">กดวันที่เพื่อดูรายละเอียด</span></div>${history}</section>`;
+  return `${pageHeading('RECOVERY & HEALTH','สุขภาพและการนอน','ดูค่าล่าสุด แนวโน้ม และกดวันเพื่อดูรายละเอียด')}<details class="card"><summary>ไฟล์สุขภาพและเทียบข้อมูลแอปเก่า</summary><p><button type="button" data-export-health="json">ส่งออก JSON</button> <button type="button" data-export-health="csv">ส่งออก CSV</button></p><label>เลือกไฟล์ JSON จากแอปเก่า<input id="health-compare-file" type="file" accept=".json,application/json"></label><p class="muted">เปิดเทียบค่าในเครื่อง ไม่มีการบันทึกทับข้อมูลบัญชี</p><div id="health-compare-result" aria-live="polite"></div></details><section class="metrics">${latest}</section>${extra}${load}<section class="health-trends"><div class="section-heading"><div><p class="eyebrow">TRENDS</p><h2>แนวโน้มสุขภาพ</h2></div><span class="source">จากวันที่มีข้อมูลจริง</span></div>${healthMetrics.map(item=>healthTrend(model.wellness,item)).join('')}</section>${extraTrends}<section class="card"><div class="section-heading"><h2>ประวัติสุขภาพ</h2><span class="source">กดวันที่เพื่อดูรายละเอียด</span></div>${history}</section>`;
 }
 
 export function plan(model) {

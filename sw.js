@@ -1,5 +1,5 @@
 const PREFIX='mydash-performance-'+encodeURIComponent(new URL(self.registration.scope).pathname)+'-';
-const CACHE = PREFIX+'v3';
+const CACHE = PREFIX+'v4';
 const SHELL = ['offline.html','styles.css','src/ui/favicon.svg','src/ui/icon-192.png','src/ui/icon-512.png','manifest.webmanifest'];
 
 self.addEventListener('install', event => {

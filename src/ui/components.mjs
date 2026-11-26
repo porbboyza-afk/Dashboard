@@ -35,5 +35,10 @@ export function splitChart(laps) {
 
 export function splitTable(activity) {
   if (!activity.laps.length) return empty('ไม่มีข้อมูลรอบวิ่ง','แหล่งข้อมูลนี้ส่งมาเฉพาะรายละเอียดสรุปกิจกรรม');
-  return `<p class="muted">${activity.lapKind==='kilometer-splits' ? 'ช่วงระยะทางจาก COROS รวมช่วงท้ายที่ไม่เต็มกิโลเมตร' : activity.lapKind==='manual-splits'?'รอบที่กรอกเอง • เวลาแต่ละช่วงคำนวณจากเพซและระยะ':'รอบที่แหล่งข้อมูลบันทึกไว้'}</p><div class="table-scroll"><table><thead><tr><th>ช่วง</th><th>ระยะ km</th><th>เวลา</th><th>เพซ /km</th><th>HR</th><th>Cadence</th></tr></thead><tbody>${activity.laps.map(lap=>`<tr><td>${e(lap.index)}</td><td>${number(lap.distanceKm,2)}</td><td>${clock(lap.durationMin)}</td><td>${clock(lap.pace)}</td><td>${number(lap.averageHr,0)}</td><td>${number(lap.cadence,0)}</td></tr>`).join('')}</tbody></table></div>`;
+  const descriptions={
+    'kilometer-splits':'ช่วงระยะทางจาก COROS รวมช่วงท้ายที่ไม่เต็มกิโลเมตร',
+    'intervals-kilometer-splits':'รอบรายกิโลจาก Intervals.icu รวมช่วงท้ายที่ไม่เต็มกิโลเมตร',
+    'manual-splits':'รอบที่กรอกเอง • เวลาแต่ละช่วงคำนวณจากเพซและระยะ',
+  };
+  return `<p class="muted">${descriptions[activity.lapKind] || 'รอบที่แหล่งข้อมูลบันทึกไว้'}</p><div class="table-scroll"><table><thead><tr><th>ช่วง</th><th>ระยะ km</th><th>เวลา</th><th>เพซ /km</th><th>HR</th><th>Cadence</th></tr></thead><tbody>${activity.laps.map(lap=>`<tr><td>${e(lap.index)}</td><td>${number(lap.distanceKm,2)}</td><td>${clock(lap.durationMin)}</td><td>${clock(lap.pace)}</td><td>${number(lap.averageHr,0)}</td><td>${number(lap.cadence,0)}</td></tr>`).join('')}</tbody></table></div>`;
 }

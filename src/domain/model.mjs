@@ -27,41 +27,55 @@ function normalizeLap(lap, index) {
     averageHr: positive(lap.averageHr), cadence: positive(lap.cadence)};
 }
 
+function workoutSplits(row) {
+  if (!row.splits) return null;
+  const isIntervals=!row.manualFields?.includes('splits') && (row.source==='intervals' || Boolean(row.splitsChecked && row.intervalsDetail));
+  const laps=entries(row.splits).map(([,lap])=>{
+    const match=/^(\d+):([0-5]\d)(?:\/km)?$/.exec(String(lap.pace || ''));
+    const pace=positive(lap.paceSec) ? Number(lap.paceSec)/60 : match ? Number(match[1])+Number(match[2])/60 : null;
+    const remaining=positive(row.dist) && positive(lap.km) ? Math.min(1,row.dist-lap.km+1) : null;
+    const distanceKm=positive(lap.dist) ?? positive(remaining);
+    return {index:lap.km,distanceKm,pace,durationMin:distanceKm && pace ? distanceKm*pace : null,
+      averageHr:lap.hr,cadence:positive(lap.cad) ?? positive(lap.cadence),durationOrigin:'derived-from-pace'};
+  });
+  return {source:isIntervals?'intervals':'manual',kind:isIntervals?'intervals-kilometer-splits':'manual-splits',laps};
+}
+
 function resolveDetail(row, data) {
-  if (row.corosDetail?.source === 'coros') return {...row.corosDetail, kind: 'kilometer-splits'};
   const key = `${row.source || 'manual'}_${row.sourceId || row._key || row.id || row.stravaId || ''}`;
   const stored = data.activity_details?.[key];
-  if (stored) return {...stored, kind: 'recorded-laps'};
-  if (row.healthConnectDetail) return {
+  const coros = row.corosDetail?.source === 'coros' ? {...row.corosDetail, kind:'kilometer-splits'} : null;
+  const recorded = stored ? {...stored, kind:'recorded-laps'} : null;
+  const healthConnect = row.healthConnectDetail ? {
     source: 'health_connect', kind: 'recorded-laps',
     laps: Object.values(row.healthConnectDetail.laps || {}).map((lap, index) => ({
       index: index+1, distanceKm: positive(lap.distanceMeters) ? lap.distanceMeters/1000 : null,
       durationMin: positive(lap.durationSeconds) ? lap.durationSeconds/60 : null,
     })),
-  };
+  } : null;
   const cached = data.strava_activity_details?.[row.stravaId || row.sourceId];
-  if (cached) return {source: 'strava', kind: 'recorded-laps',
+  const strava = cached ? {source: 'strava', kind: 'recorded-laps',
     laps: (cached.laps || []).map((lap, index) => ({index: index+1,
       distanceKm: positive(lap.distance) ? lap.distance/1000 : null,
       durationMin: positive(lap.moving_time) ? lap.moving_time/60 : null,
       averageHr: lap.average_heartrate,
       cadence: positive(lap.average_cadence) ? lap.average_cadence*2 : null,
-    })), map: cached.detail?.map};
-  if (Array.isArray(row.splits) && row.splits.length) return {
-    source:'manual',kind:'manual-splits',map:row.map,laps:row.splits.map(lap=>{
-      const match=/^(\d+):([0-5]\d)$/.exec(String(lap.pace || ''));
-      const pace=match?Number(match[1])+Number(match[2])/60:null;
-      const distanceKm=positive(row.dist) && positive(lap.km) ? Math.max(0,Math.min(1,row.dist-lap.km+1)):null;
-      return {index:lap.km,distanceKm,pace,durationMin:distanceKm && pace ? distanceKm*pace:null,
-        averageHr:lap.hr,cadence:positive(lap.cad) ?? positive(lap.cadence),durationOrigin:'derived-from-pace'};
-    }),
-  };
-  return null;
+    })), map: cached.detail?.map} : null;
+  const splits = workoutSplits(row);
+  const lapSources = [splits?.source==='intervals' ? splits : null,coros,recorded,healthConnect,strava,splits];
+  const detail = lapSources.find(item=>Object.keys(item?.laps || {}).length) ?? lapSources.find(Boolean);
+  let route=[];
+  for (const item of [recorded,coros,row,strava]) {
+    const points=item?.track?.points;
+    route=Array.isArray(points) && points.length>1 ? points : decodePolyline(item?.map?.polyline || item?.map?.summary_polyline);
+    if (route?.length>1) break;
+  }
+  return {detail,route};
 }
 
 export function normalizeActivity(key, row, data = {}, origin = 'workouts') {
   const raw = {...row, _key: key};
-  const detail = resolveDetail(raw, data);
+  const {detail,route} = resolveDetail(raw, data);
   const laps = Object.values(detail?.laps || {}).map(normalizeLap);
   const cadenceLaps = laps.filter(lap => lap.cadence && lap.durationMin);
   const duration = cadenceLaps.reduce((sum, lap) => sum+lap.durationMin, 0);
@@ -71,14 +85,14 @@ export function normalizeActivity(key, row, data = {}, origin = 'workouts') {
   // provenance independently from display reconciliation.
   const source = row.source || detail?.source || 'manual';
   return {
-    id: `${origin}:${key}`, key, origin, raw, name: row.name || row.purpose || row.type || 'Activity',
+    id: `${origin}:${key}`, key, origin, raw, name: row.name || row.purpose || row.intervalsDetail?.name || row.type || 'Activity',
     date: row.date || '', type: row.type || 'run', source,
     sourceId: row.corosDetail?.sourceId || row.sourceId || row.stravaId || null,
     distanceKm: positive(row.dist), durationMin: positive(row.time),
     averageHr: positive(row.hr), cadence: positive(row.cad) ?? weighted,
     cadenceOrigin: positive(row.cad) ? 'summary' : weighted ? 'splits' : null,
-    laps, lapKind: detail?.kind || null,
-    route: detail?.track?.points || decodePolyline(detail?.map?.polyline || detail?.map?.summary_polyline),
+    laps, lapKind: detail?.kind || null, lapSource: detail?.source || null,
+    route,
     note: row.note || '', rpe: positive(row.rpe), shoe: row.shoe || '',
     startedAt: row.startTimeUtc || row.startTime || row.startTimestamp || row.startDateTime || '',
     aliases: [String(key)],
@@ -172,10 +186,25 @@ export function wellnessFrom(data = {}) {
     const normalized=stated.map(source=>String(source).trim().toLowerCase()).filter(Boolean);
     if (record.healthConnectSyncedAt != null && !normalized.includes('health_connect')) normalized.push('health_connect');
     if (Array.isArray(record.garminDomains) && record.garminDomains.length && !normalized.includes('garmin')) normalized.push('garmin');
-    merged.sources=[...new Set([...(byDate.get(date)?.sources || []),...(normalized.length ? normalized : ['manual'])])];
+    const recordSources=normalized.length ? normalized : [record.icuWellness ? 'intervals' : 'manual'];
+    merged.sources=[...new Set([...(byDate.get(date)?.sources || []),...recordSources])];
     byDate.set(date, merged);
   }
   return [...byDate.values()].sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+export function healthValue(value) {
+  if (typeof value==='number') return Number.isFinite(value) ? value : null;
+  if (typeof value!=='string' || !value.trim()) return null;
+  return finite(value);
+}
+
+export function latestWellnessValue(records,readValue) {
+  for (const row of records) {
+    const value=readValue(row);
+    if (value!=null) return {row,value};
+  }
+  return null;
 }
 
 export function activePlanFrom(data = {}) {
